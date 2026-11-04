@@ -2,7 +2,7 @@
 
 ![RamenOS circuit-board ramen bowl header](docs/assets/ramenos-header.png)
 
-[![ci](https://github.com/maxwellsantoro/RamenOS/actions/workflows/ci.yml/badge.svg)](https://github.com/maxwellsantoro/RamenOS/actions/workflows/ci.yml)
+[![ci](https://github.com/whole-machine-works/RamenOS/actions/workflows/ci.yml/badge.svg)](https://github.com/whole-machine-works/RamenOS/actions/workflows/ci.yml)
 [![license: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](Cargo.toml)
 
 **Last Updated:** 2026-10-14
@@ -72,7 +72,7 @@ unrelated resource read, and recover the original receipt after restart.
 Install the pinned Rust toolchain and `just` using [Getting Started](docs/GETTING_STARTED.md), then run:
 
 ```bash
-git clone https://github.com/maxwellsantoro/RamenOS.git
+git clone https://github.com/whole-machine-works/RamenOS.git
 cd RamenOS
 just foundry-agent-task-proof-rt
 ```
@@ -145,7 +145,7 @@ Install the pinned Rust toolchain, `just`, QEMU, and OVMF using
 [Getting Started](docs/GETTING_STARTED.md), then:
 
 ```bash
-git clone https://github.com/maxwellsantoro/RamenOS.git
+git clone https://github.com/whole-machine-works/RamenOS.git
 cd RamenOS
 
 # Host: snapshots, subscriptions, filtered views, and runner integration tests
