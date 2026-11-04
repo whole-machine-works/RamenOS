@@ -9,7 +9,7 @@ Usage:
   python3 tools/org/mint_app_token.py \\
     --app-id 1234567 \\
     --key /secure/path/ramen-implementer.private-key.pem \\
-    --repo maxwellsantoro/RamenOS \\
+    --repo whole-machine-works/RamenOS \\
     | gh auth login --with-token
 
   # just resolve and print the installation id, then exit:
@@ -72,7 +72,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Mint a GitHub App installation access token.")
     parser.add_argument("--app-id", required=True)
     parser.add_argument("--key", required=True, help="path to the app PEM private key")
-    parser.add_argument("--repo", default="maxwellsantoro/RamenOS", help="repo to resolve the installation for")
+    parser.add_argument("--repo", default="whole-machine-works/RamenOS", help="repo to resolve the installation for")
     parser.add_argument("--installation-id", help="skip discovery if you already know the installation id")
     parser.add_argument("--print-installation-id", action="store_true", help="resolve and print the installation id, then exit")
     args = parser.parse_args()

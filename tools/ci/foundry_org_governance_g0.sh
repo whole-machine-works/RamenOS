@@ -72,6 +72,7 @@ require_file "docs/org/trials/2026-06-23-g0-9-first-a2-to-a3-loop.md" "G0_9_TRIA
 require_file "docs/org/HUMAN_DIRECTIVE_V0.md" "HUMAN_DIRECTIVE_DOC_MISSING"
 require_file "docs/org/MERGE_GATE_V0.md" "MERGE_GATE_DOC_MISSING"
 require_file "docs/org/RAMEN_IMPLEMENTER_BOT.md" "IMPLEMENTER_BOT_DOC_MISSING"
+require_file "tools/org/test_mint_app_token.py" "IMPLEMENTER_BOT_CONTROLS_MISSING"
 require_file "docs/research/SLICE_NAMESPACING.md" "SLICE_NAMESPACING_DOC_MISSING"
 require_file "docs/research/slices/R-OFFERS-1-airlock-leakage-meter.md" "R_OFFERS_1_DOC_MISSING"
 require_file "schemas/org/human_directive_v0.schema.json" "HUMAN_DIRECTIVE_SCHEMA_MISSING"
@@ -94,6 +95,9 @@ grep -q 'ObsContract' docs/research/questions/RQ-0001-offer-boundaries.md \
   || fail "RQ0001_OBSCONTRACT_MISSING" "offer research question must track observable authority"
 grep -q 'Handoff packets' docs/research/questions/RQ-0002-ai-org-kernel.md \
   || fail "RQ0002_HANDOFF_MISSING" "org kernel research question must track handoffs"
+
+echo "$GATE_ID: INFO step=implementer_bot_controls"
+python3 -m unittest discover -s tools/org -p test_mint_app_token.py -v
 
 echo "$GATE_ID: INFO step=status_drift"
 python3 tools/org/status_drift.py --root "$ROOT_DIR" --out out/org/status_drift.json

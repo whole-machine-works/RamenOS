@@ -1,7 +1,7 @@
 # ramen-implementer (A2 implementer bot)
 
-**Last Updated:** 2026-06-24
-**Status:** Active operational identity
+**Last Updated:** 2026-11-04
+**Status:** A2 identity; verify installation on the current repository owner
 
 `ramen-implementer` is a GitHub App that acts as RamenOrg's **A2 implementer
 identity**. It opens pull requests attributed to `ramen-implementer[bot]`
@@ -19,7 +19,8 @@ This is how PRs get created *as the org, not as a person*.
 | App slug | `ramen-implementer` |
 | App ID | `4129163` |
 | Client ID | `Iv23liPH0guXIg4sMIsp` (OAuth device flows only — not used by the token flow below) |
-| Installation ID | `142233521` (on `maxwellsantoro/RamenOS`) |
+| Repository | `whole-machine-works/RamenOS` |
+| Installation ID | Discover from the current repository; do not reuse the former personal-account installation ID. |
 | PR author shown as | `ramen-implementer[bot]` (API: `app/ramen-implementer`) |
 | Authority level | **A2** — branch, code, run gates, open PRs. No self-approve, merge, release, hardware, or public-support authority. |
 
@@ -30,7 +31,14 @@ This is how PRs get created *as the org, not as a person*.
 - `workflows: write` — modify `.github/workflows/`
 - `metadata: read` — baseline (required)
 
-The recorded installation is repo-scoped. These API permissions can perform
+Install the existing app on **Whole Machine Works**, selecting only
+`whole-machine-works/RamenOS`. A repository transfer does not establish that the
+app has an installation on the receiving organization. Confirm the installation
+in the organization's GitHub Apps settings and verify repository access below
+before opening a PR. Do not grant access to the private research archive for this
+RamenOS workflow.
+
+The installation must remain repo-scoped. These API permissions can perform
 more actions than the A2 role authorizes, including PR review/merge operations;
 the role and separate reviewer requirements still apply. Runner selection and
 fork handling depend on workflow and repository settings, not this identity.
@@ -54,14 +62,18 @@ it prints to stdout.
 ```sh
 export GH_TOKEN=$(python3 tools/org/mint_app_token.py \
   --app-id 4129163 \
-  --key ~/.config/ramenos/ramen-implementer.private-key.pem)
+  --key ~/.config/ramenos/ramen-implementer.private-key.pem \
+  --repo whole-machine-works/RamenOS)
 ```
 
 `gh` prefers `GH_TOKEN` over stored auth, so the session acts as the bot until
 you clear both `GH_TOKEN` and `GITHUB_TOKEN` before using stored reviewer auth.
 Capture it without printing the value or enabling shell
 tracing; tracing/debug output can expose an expanded assignment. To resolve only
-the installation id, add `--print-installation-id`.
+the installation id without minting a token, add `--print-installation-id`. The
+helper defaults to `whole-machine-works/RamenOS`; an explicit `--repo` can select
+another repository. `--installation-id` skips discovery, so use it only after
+independently verifying that installation's current repository access.
 
 ### Verifying the bot
 
@@ -70,9 +82,14 @@ GitHub App installation tokens **cannot call `GET /user`** — it returns
 Verify with repo-scoped calls instead:
 
 ```sh
-gh api installation/repositories --jq '.repositories[].full_name'   # → maxwellsantoro/RamenOS
-gh api repos/maxwellsantoro/RamenOS --jq .full_name
+gh api installation/repositories --jq '.repositories[].full_name'   # → whole-machine-works/RamenOS
+gh api repos/whole-machine-works/RamenOS --jq .full_name
 ```
+
+Both calls must identify `whole-machine-works/RamenOS`. A successful app JWT or
+a historical installation ID alone does not establish repository access. Stop
+if discovery fails or the current repository is absent; repair the installation
+instead of switching PR authorship to the reviewer identity.
 
 ## Opening a PR as the bot
 
@@ -83,7 +100,8 @@ git push -u origin <branch>
 # 2. open the PR AS THE BOT so its author != the human reviewer
 export GH_TOKEN=$(python3 tools/org/mint_app_token.py \
   --app-id 4129163 \
-  --key ~/.config/ramenos/ramen-implementer.private-key.pem)
+  --key ~/.config/ramenos/ramen-implementer.private-key.pem \
+  --repo whole-machine-works/RamenOS)
 gh pr create --base main --head <branch> \
   --title "..." --body "..."
 ```
