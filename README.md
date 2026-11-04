@@ -1,47 +1,55 @@
 # RamenOS
 
+**An everyday operating system in development, with people in control and AI help
+on their terms.**
+
 ![RamenOS circuit-board ramen bowl header](docs/assets/ramenos-header.png)
 
 [![ci](https://github.com/whole-machine-works/RamenOS/actions/workflows/ci.yml/badge.svg)](https://github.com/whole-machine-works/RamenOS/actions/workflows/ci.yml)
 [![license: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](Cargo.toml)
 
-**Last Updated:** 2026-10-14
-**Status:** Public pre-alpha, active development
+Your computer should feel like it works for you. RamenOS is building an everyday
+operating system where tasks are straightforward, mistakes are recoverable, and
+AI can lend a hand with your permission. You decide what happens; the computer
+helps you get it done.
 
-RamenOS is a modern, post-Unix operating system being built for **humans and AI
-agents** to use efficiently and safely. Its goal is an everyday OS that combines
-fast execution, hardware adaptability, approachable human interactions, and
-structured interfaces for agents.
+We are working toward a computer where you can:
 
-The design separates kernel mechanisms, services, and software distribution.
-Drivers and software are intended to evolve independently behind **typed
-contracts**, with isolated execution, explicit permissions, and Foundry evidence
-to check failures and effects across boundaries. Useful compatibility stays,
-while native interfaces can evolve beyond inherited Unix constraints.
+- **Understand what you allow.** See which documents and resources an app or
+  assistant needs, and keep control over that access.
+- **Recover and keep working.** See whether your work is saved or still uncertain,
+  recover from a failed component, and continue with the next task.
+- **Choose how you work.** Use the computer yourself or ask an AI assistant to
+  help with a specific task. Keep core tasks usable without AI.
 
-Humans remain in control of intent and policy. Agents should discover permitted
-state and act through **scoped, revocable capabilities**, without requiring
-screen scraping or fragile command-output parsing for core control. OS Core,
-Foundry, and the Store are the three pillars supporting this product.
+**Public pre-alpha:** development components and scripted task proofs exist;
+a complete everyday desktop remains ahead. [Current Status](CURRENT_STATUS.md)
+records what runs and its limits. **Updated November 4, 2026.**
 
-Read the [Vision](VISION.md) for the destination. The project is public pre-alpha:
-substantial kernel and host components exist, including a scripted in-process
-editor/Store task. The actual editor process, target desktop/runtime, and broader
-hardware qualification remain work. The Agent Task
-Proof below tests one part of the vision; comparative agent benefits remain
-unproved.
+RamenOS is part of [Whole Machine Works](https://github.com/whole-machine-works),
+founded by [Maxwell Santoro](https://maxwellsantoro.com). Our sister project,
+**Newcomputer**, explores how software can benefit from better ways to run it
+while preserving the behavior people depend on. Together, we are working toward
+computers that can keep improving with less disruption to the people using them.
 
-Founded by [Maxwell Santoro](https://maxwellsantoro.com).
+- **Explore the destination:** [Vision](VISION.md).
+- **See the path to a useful computer:** [Roadmap](ROADMAP.md).
+- **Run a development component:** [Getting Started](docs/GETTING_STARTED.md).
+- **Help build it:** [Contributing](CONTRIBUTING.md) and [Next Tasks](NEXT_TASKS.md).
 
-## Enforced component boundaries
+## How we approach it
 
-Native [mapping consent](idl/harness/shmem_consent_v2.toml) and
-[trace delivery](idl/harness/trace_delivery_v3.toml) now have real x86-64/AArch64
-[QEMU regression coverage](tools/ci/foundry_shmem_dataplane_s8_phase4_integration.sh).
-The fixtures preserve occupied page-table entries and deliver actual trace bytes
-before cursor Commit. They program isolated, inactive roots; independently
-executing userspace remains the next boundary. [Current Status](CURRENT_STATUS.md)
-records the accepted source and the remaining process, transport and target joins.
+RamenOS is Rust-first and post-Unix: the design keeps useful compatibility paths
+while native interfaces develop around this product's needs.
+OS Core provides the kernel, services and runtimes; Foundry checks how components
+behave together; the Store is the planned route to discover software, preview its
+permissions and run it. Drivers and services are intended to improve independently
+behind explicit contracts, with failures contained and recovery checked.
+
+Agents should receive structured system state and scoped, revocable permissions.
+People decide what to grant; the system must enforce those permissions. These are
+design goals whose current implementation boundaries are recorded below and in the
+[Platform Overview](PLATFORM_OVERVIEW.md).
 
 ## Run the human host task proof
 
@@ -139,6 +147,16 @@ explains the host/target split. The kernel's capability checks and the host
 services' policies are real components; they are not yet one complete
 target-native agent environment.
 
+## Enforced component boundaries
+
+Native [mapping consent](idl/harness/shmem_consent_v2.toml) and
+[trace delivery](idl/harness/trace_delivery_v3.toml) now have real x86-64/AArch64
+[QEMU regression coverage](tools/ci/foundry_shmem_dataplane_s8_phase4_integration.sh).
+The fixtures preserve occupied page-table entries and deliver actual trace bytes
+before cursor Commit. They program isolated, inactive roots; independently
+executing userspace remains the next boundary. [Current Status](CURRENT_STATUS.md)
+records the accepted source and the remaining process, transport and target joins.
+
 ## Run the existing components
 
 Install the pinned Rust toolchain, `just`, QEMU, and OVMF using
@@ -180,12 +198,17 @@ transfers and do not establish device-backed native net/block I/O.
 
 ## What comes next
 
-Development follows a dependency-driven plan for a coordinator and simultaneous
-agents. The next product checkpoint is one complete human task: launch an app,
-understand its permissions, use keyboard input, save and reopen an artifact, and
-recover from a failed component without an AI model. Contracts and focused gates
-let runtime, input, desktop, Store, and SW0 work progress independently before
-integration. [Next Tasks](NEXT_TASKS.md) identifies the bounded work ready to assign.
+The priority is one complete human editing task: launch an app, understand its
+permissions, type, save, reopen and recover from a failed component without an AI
+model. We carry that task from the current scripted control into a real application
+process, then onto RamenOS with working input, display and persistent storage,
+and finally onto one qualified machine. [Next Tasks](NEXT_TASKS.md) identifies the
+bounded work ready to assign; [Roadmap](ROADMAP.md) defines what each step must show.
+
+Alongside that path, a small Newcomputer component will be evaluated for deciding
+the outcome of an uncertain Save. It must earn adoption through independent checks,
+useful results and demonstrated rollback. The human editing task can advance with
+its existing implementation while that research proceeds.
 
 The physical lane remains **live serial capture → AMT power/reset → S12 on SATA
 → S13 NVMe boot and verified reboot/rollback**, awaiting setup. Driver work still
@@ -211,7 +234,7 @@ See [Security Status](SECURITY_STATUS.md) for implementation limits and open ris
 - **Run or debug components:** [Getting Started](docs/GETTING_STARTED.md) and
   [Development Reference](docs/DEVELOPMENT_REFERENCE.md) for Store examples,
   operator settings, and the repository map.
-- **Help demonstrate the thesis:** [Agent Task Proof plan](docs/plans/2026-09-16-agent-task-proof.md).
+- **Help evaluate agent assistance:** [Agent Task Proof plan](docs/plans/2026-09-16-agent-task-proof.md).
 - **Help with hardware:** [Next Tasks](NEXT_TASKS.md) and
   [Evidence Levels](EVIDENCE_LEVELS.md); start driver work from Reference Vaults
   and protocol traces.
