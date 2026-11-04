@@ -1,6 +1,6 @@
 # Roadmap
 
-**Last Updated:** 2026-10-14
+**Last Updated:** 2026-11-04
 **Status:** Product checkpoints and dependencies; no completion-date or readiness claim
 
 [Vision](VISION.md) owns the destination: an everyday post-Unix OS for humans and
@@ -8,6 +8,14 @@ AI agents. [Current Status](CURRENT_STATUS.md) owns landed behavior and limits;
 [Next Tasks](NEXT_TASKS.md) owns the ready frontier and exact acceptance. Slice
 definitions live in [SLICES.md](SLICES.md), history in [Changelog](CHANGELOG.md),
 and rationale in [Decisions](DECISIONS.md).
+
+The priority is a person completing useful work and recovering when something
+goes wrong. First make one editing task dependable, then carry it onto RamenOS
+with persistent storage and one qualified machine. Evaluate a small Newcomputer
+replacement alongside that path. Expand the platform when a demonstrated task
+needs it. This ordering advances the vision of
+[Whole Machine Works](https://github.com/whole-machine-works) without making the
+human experience depend on a compiler speedup or a model study.
 
 <a id="deliver-the-first-integrated-human-task"></a>
 <a id="human-input-and-desktop-scope"></a>
@@ -22,13 +30,23 @@ The next process work starts with executable assertions and genuine owner stagin
 Target persistence needs
 actual storage IO/readback, not a host journal or embedded vector.
 
-| Checkpoint | Concrete completion | Dependencies / claim |
-|------------|---------------------|----------------------|
-| Reliable host control | Accepted: pending reply ownership, render cancellation/focus, pre-admission Save and bounded JournalSync staging recovery | Original18/Reader93 and thirteen transition regressions, affected consumers and hosted lanes pass on their recorded sources. Trusted in-process host scope. |
-| Real application process | Existing editor core runs in an actual Linux child through authenticated typed channels, immutable publications and retained original Save owners | Reviewed full process assertions and ownership-safe lifecycle; preserve in-process control. Host process evidence does not prove target or general containment. |
-| Same task on RamenOS/QEMU | Actual target loader/runtime, input, compositor/display and named required services execute the task with grants, denial and crash/restart | Join runtime+input+display branches; name any host services. Saving across restart additionally joins device-backed storage. |
-| Persistent target task | Actual block read/write/flush and Store IO produce verified save/reopen and failure recovery | Concrete device profile and durability/ordering assertions; vector or firmware-detection success is insufficient. |
-| Qualified reference machine | Repeat the task with live provenance, required input/display/storage qualification and reboot/readback/recovery | H0→H1 observation/actuation; relevant S12/S13 and controller evidence. One machine, no broad everyday-readiness claim. |
+| Priority / checkpoint | What it makes possible | Concrete completion and boundary |
+|-----------------------|------------------------|----------------------------------|
+| Foundation — reliable host control | Preserve work through the known ownership, focus, timeout and staging failures | Accepted in trusted in-process host scope: Original18/Reader93, thirteen transition regressions, affected consumers and hosted lanes pass on their recorded sources. |
+| 1 — real application process | An editor can fail without losing track of an admitted Save | Existing editor core runs in an actual Linux child through authenticated typed channels, immutable publications and retained original Save owners. Complete reviewed process assertions and lifecycle checks; preserve the in-process control. This remains host process evidence. |
+| 2 — same task on RamenOS/QEMU | A person can type, see the result and use the permissions and recovery flow on RamenOS | Actual target loader/runtime, device-backed input, compositor/display and named required services execute the task with grants, denial and crash/restart. Join runtime+input+display branches; name any host services. Saving across restart additionally joins device-backed storage. |
+| 3 — persistent target task | Saved work is available after restart, with failures reported honestly | Actual block read/write/flush and Store IO produce verified save/reopen and failure recovery for a concrete device profile and ordering contract. Vector or firmware-detection success is insufficient. |
+| 4 — qualified reference machine | Repeat the useful task on one real computer | Live provenance, required input/display/storage qualification and reboot/readback/recovery. Requires H0→H1 observation/actuation and relevant S12/S13/controller evidence. One machine does not establish broad everyday readiness. |
+
+At the first interactive checkpoint, include a recorded walkthrough by someone
+who did not implement the interaction. They should be able to identify which
+document is open, explain the access they are granting, edit with the keyboard,
+and distinguish saved, pending/unknown, denied and failed outcomes using the UI.
+After a deliberately injected failure, they should understand the offered recovery
+action and complete a fresh authorized Save. Record confusion and intervention
+alongside the technical result, and use them to choose the next usability repair.
+Freeze the walkthrough and its expected outcomes before evaluation; it complements
+the executable process/storage assertions and establishes no general usability claim.
 
 Use one application, one input controller and a basic display path. Accelerated
 GPU, pointer input, more apps, distributed transport and a generic deployment
@@ -89,11 +107,26 @@ qualifies actual implementations; Store helps discover, authorize and activate
 suitable artifacts. Fault containment and compatibility remain properties to
 measure, not consequences inferred from modular code or typed messages.
 
-After the genuine process task, run one bounded component-replacement experiment
-alongside target preparation. Keep its consumer unchanged; qualify a second
-implementation, activate it, inject failure and recover while an unrelated human
-task progresses. Define logical identity, implementation generation, unresolved
-operations, state compatibility and permitted service interruption first.
+Use the Newcomputer Save-recovery decision as the first proposed responsibility
+transfer after the genuine process task. It asks a question a person cares about:
+did this Save finish, and what can I safely do next? The component consumes
+authorized observations of the original operation; the existing Rust owner keeps
+all write authority and independently validates the result. Preserve uncertainty
+when the evidence cannot justify a definite answer, and never retry a mutation
+merely because its reply was lost.
+
+Language/compiler and adapter preparation can proceed against the shared frozen
+contract while the real process sequence advances. Integration joins accepted
+P0–P3 behavior. Adoption requires independent review, shadow comparison, a measured
+engineering benefit with acceptable overhead, and demonstrated rollback with a Save in flight.
+Retain Rust if the replacement does not earn adoption. This experiment proceeds
+alongside target preparation and does not gate the base human task; the arithmetic
+compiler experiment has its own comparison and decision.
+
+Keep the consumer unchanged; qualify a second implementation, activate it, inject
+failure and recover while an unrelated human task progresses. Define logical
+identity, implementation generation, unresolved operations, state compatibility
+and permitted service interruption first.
 Boot-time activation or bounded service interruption is acceptable when that is
 the evidenced recovery mode; uninterrupted hot swapping is not a universal promise.
 
@@ -108,6 +141,7 @@ opening a new generic framework before a real consumer needs it.
 
 | Lane | Useful work now | Acceptance boundary |
 |------|-----------------|---------------------|
+| Newcomputer cooperation | Callable recovery decision and bounded adapter preparation against the shared contract | Accepted real process task before integration; independent comparison, useful benefit, authority checks and rollback before adoption. No speedup prerequisite on the human task. |
 | SW0 Agent Task Proof | Remaining named authority/lifetime and offline provider-supervision controls | Complete deterministic A2 plus independently frozen bank/study releases before opt-in funded model collection. Host evidence is not target enforcement. |
 | Recovery / S13 | Slot publication/readback, revisioned selection and interrupted-phase verifier | Fresh new-slot and rollback boots with provenance for physical graduation; metadata scaffold is insufficient. |
 | H0–H3 | Lab setup, serial observer, AMT, SATA and NVMe qualification in order | Software preparation proceeds independently; physical acts require explicit authority and per-device evidence. |
@@ -140,6 +174,10 @@ owns commands and measurements.
 
 Useful software, compatibility-to-native ports, live Semantic State, broader
 hardware, native networking and sustained usability/reliability extend the product.
+Choose the next application or device from a task the reference-machine user
+cannot yet complete, or a failure they cannot recover from. Broader hardware,
+GPU acceleration, general deployment machinery and paid model comparisons stay
+off the first human task's critical path unless a named dependency requires them.
 Execution-fabric transport, generalized wizard/deployment orchestration and new
 research interfaces need a bounded consumer and evidence plan. Admit them when
 they unblock the next task or address a measured risk. Everyday readiness requires

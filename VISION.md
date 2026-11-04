@@ -1,17 +1,25 @@
 # RamenOS Vision
 
-**Last Updated:** 2026-10-08
+**Last Updated:** 2026-11-04
 **Status:** Product direction; implementation evidence lives in Current Status
 
-RamenOS is a modern, post-Unix operating system being built for humans and AI
-agents to use efficiently and safely. It aims to combine fast execution and
-hardware adaptability with a modular architecture, where drivers and software
-communicate through explicit contracts and failures are contained. Humans get
-approachable interactions; agents get structured system state and narrowly
-scoped, revocable permissions. Compatibility supports useful existing software
-while leaving native design free to evolve beyond inherited Unix constraints.
-Like the balance between noodles and broth, RamenOS seeks flexibility and
-adaptability without sacrificing safety or ease of use.
+RamenOS is building a computer experience where everyday work is simpler, AI helps
+on your terms, and you stay in control.
+
+We are developing an operating system for a future where people and AI assistants
+can work comfortably on the same computer. We want everyday tasks to feel clear
+and predictable, permissions to be understandable, and a problem in one place to
+cause as little disruption as possible. AI should be able to help with useful work
+while you decide what it can see and do, and you should be just as free to do
+things yourself. The vision is a dependable, approachable computer that gives you
+more capability without demanding more effort to manage it.
+
+RamenOS and Newcomputer are sister projects in
+[Whole Machine Works](https://github.com/whole-machine-works). Newcomputer explores
+how software can adopt better ways to run while keeping its promises. RamenOS
+grounds that research in everyday work: understanding permissions, saving a
+document, recovering from failure and improving one part of a computer without
+unnecessarily disrupting the rest.
 
 ## The product we are building
 
@@ -94,12 +102,12 @@ invariants, and [Evidence Levels](EVIDENCE_LEVELS.md) bounds readiness claims.
 
 ## Describing RamenOS
 
-Lead with an everyday post-Unix OS for humans and AI agents, then explain the
-architecture and current stage. Keep the broader product visible when describing
+Lead with an everyday operating system for people, their control over the computer,
+and AI help on their terms, then explain the architecture and current stage.
+Keep the broader product visible when describing
 an agent experiment, a driver gate, or a research result. Describe intended
 behavior as a goal until the matching evidence exists. Historical plans and
 trial reports retain their original scope and chronology.
 
-**Short description:** A Rust-first, post-Unix OS for humans and AI agents,
-designed for everyday use through explicit contracts, modular components,
-and evidence-backed development. Currently public pre-alpha.
+**Short description:** An everyday operating system in development, with people
+in control and AI help on their terms. Public pre-alpha.

@@ -1,6 +1,6 @@
 # Next Tasks
 
-**Last Updated:** 2026-10-15
+**Last Updated:** 2026-11-04
 **Status:** Authoritative ready work and acceptance dependencies
 
 [Current Status](CURRENT_STATUS.md) records landed behavior; [Roadmap](ROADMAP.md)
@@ -46,6 +46,23 @@ boundary, target/QEMU, persistent target storage and one qualified machine. The
 October 8 review supplied concrete regression scenarios, now covered by thirteen
 new maintained assertions with fresh macOS/Linux repair evidence. No paid study
 or physical actuation is needed for host qualification.
+
+Dispatch the next packet by its contribution to that task. P0–P3 owns the first
+priority: a real editor process with authorized access and original-outcome Save
+recovery. Use independent capacity for the named RUN0, IN0, STORE0 and UI2 joins
+below, keeping their review and integration ready for the same task on RamenOS.
+Broader apps/hardware, generic deployment machinery and model studies follow
+demonstrated needs. Newcomputer compiler or recovery preparation must not delay
+the existing process sequence, and the human task has no compiler-speedup gate.
+
+Before the first interactive UI evaluation, freeze a walkthrough and expected
+outcomes under the [roadmap](ROADMAP.md#shortest-path-to-a-useful-dependable-computer):
+open the intended document, explain requested access, type and save, understand
+pending/unknown or denied outcomes, recover from an injected failure, and complete
+a fresh authorized Save. Record whether a person who did not implement the UI
+can do this without interpreting developer logs. This is a usability acceptance
+requirement for the interactive task, not evidence supplied by the existing
+scripted controls or a change to the frozen process API.
 
 ### Completed repair batch: reliability and evidence
 
@@ -172,13 +189,23 @@ repairs; neither waits for a process-runtime merge or model study.
 | REC0 | S13 selection/publication contract and versioned failure schema | Inactive-slot publication/readback, revisioned selection and interrupted phases in host/QEMU. Physical new-slot and rollback boots remain H3. |
 | SW-A / SW-E | Remaining authority or provider-supervision controls in separate assigned files | Run named Linux/Docker gates; preserve unknown authority, failed/pending attempts, original cleanup and private bank/funded-work-order controls. Avoid repeating landed canary/accounting controls. Full A2 precedes paid model collection; no agent-study barrier on desktop work. |
 
-After the genuine process task, add a bounded component-replacement experiment
-alongside target preparation: one existing service interface, two implementations,
-qualified selection, explicit activation/failure/recovery and an unrelated human
-task that continues. Define permitted service interruption, generation and unresolved
-operation behavior first. Measure changes outside the component, reused evidence,
+The first proposed component replacement is the Newcomputer decision for the
+outcome of an uncertain Save. Prepare the language/compiler output, bounded Rust
+adapter and independently derived cases against the shared frozen contract while
+P0–P3 proceeds. The Rust parent retains every effectful handle and validates
+terminal receipts; a denied or uncertain observation must never trigger another
+Commit. RamenOS integration joins the accepted genuine P0–P3 process task.
+
+After that prerequisite, compare on identical authorized observations in shadow
+mode, with independent review and registered benefit/overhead criteria. Activation
+must preserve original-operation identity, owners and deadlines, honor revocation
+and expiry, allow an unrelated human task to progress, and demonstrate a fresh
+authorized Save after recovery.
+Retain the existing implementation if the candidate does not earn adoption.
+This experiment runs alongside target preparation and has no arithmetic-speedup
+prerequisite. Measure changes outside the component, reused evidence,
 qualification effort, disruption and recovery; do not open a generic deployment
-platform or hardware breadth project. Device variants require real DMA/reset evidence.
+platform or hardware breadth project. Later device variants require real DMA/reset evidence.
 
 ### Integration cadence
 
