@@ -690,6 +690,21 @@ class FiveLaneTests(unittest.TestCase):
             self.assertIn("uses: actions/upload-artifact@v4", block)
             self.assertRegex(block, r"(?m)^          include-hidden-files: true$")
 
+    def test_editor_binary_archive_contains_only_selected_build_files(self):
+        body = workflow_jobs()["editor"]
+        marker = "      - name: Retain selected editor process binaries\n"
+        self.assertEqual(body.count(marker), 1)
+        block = body.split(marker, 1)[1].split("\n      - name:", 1)[0]
+        self.assertIn("if: always()", block)
+        self.assertIn("uses: actions/upload-artifact@v4", block)
+        paths = block.split("          path: |\n", 1)[1].split("          if-no-files-found:", 1)[0]
+        self.assertEqual([line.strip() for line in paths.splitlines()], [
+            "target/D01ExplicitChildBuild/debug/editor-process",
+            "target/D01ExplicitAssertionChildBuild/debug/editor-process",
+            "target/debug/libartifact_editor.rlib",
+        ])
+        self.assertIn("if-no-files-found: error", block)
+
 
 
 if __name__ == "__main__":

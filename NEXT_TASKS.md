@@ -1,6 +1,6 @@
 # Next Tasks
 
-**Last Updated:** 2026-11-04
+**Last Updated:** 2026-11-05
 **Status:** Authoritative ready work and acceptance dependencies
 
 [Current Status](CURRENT_STATUS.md) records landed behavior; [Roadmap](ROADMAP.md)
@@ -29,18 +29,30 @@ have separate qualification and failure history in the plan.
 
 The next runtime joins remain independently bounded: authenticated caller identity
 from process execution; SMP page-table exclusion and active userspace translation;
-v3 trace-client carrier; native/target Store grant backend; full P0 assertions and
-the real editor child. Existing Domain Manager simulated policy and POSIX rlimits
+v3 trace-client carrier; and native/target Store grant backend. The process
+P0/private handoff and Linux editor child are implemented in the successor below. Existing Domain Manager simulated policy and POSIX rlimits
 remain explicit development limits. Do not infer these joins from host or QEMU
 fixture success.
 
 ## Ready work front
 
-**Now:** finish the accepted P0 successor through complete P1 finite controls, P3
-Save/recovery acceptance, independent review, fixed-source qualification and repository
-delivery. P0 authoring and the private handoff are reviewed and committed; normal
-combined P1/P2 and focused P3 Linux behavior have executed. Continue across packets
-until the accepted workflow is delivered. See the [live delivery record](docs/plans/editor-process-delivery-2026-11-04.md).
+**Now:** finish archival-successor qualification and authorized repository delivery
+of the implemented and independently reviewed P0–P3 Linux editor workflow in
+[PR52](https://github.com/whole-machine-works/RamenOS/pull/52). Complete P0/private
+handoff review and strict Linux API RED closed the authoring dependencies. The
+parent carrier, separate child and genuine common Save/original-recovery wrapper
+are implemented. Fixed commit `f412206` passes all five complete hosted lanes,
+including all thirty runtime families and the unchanged consumers. Preserve the
+additional local D19 timeout as a separate failed result with unknown cause; it
+has not been converted to a passing local editor-lane claim. The
+[qualification record](docs/plans/editor-process-delivery-qualification-2026-11-05.md)
+owns source, review and failure evidence. The f412 archive omits the selected two
+child ELFs and parent library despite retaining their execution/hash receipts.
+Qualify the archival successor in complete hosted CI and directly hash its own
+three uploaded files against its gate record before readiness. Complete independent
+review of that successor before the separately authorized A3 integration decision.
+Do not redispatch closed P0/P1/P2/P3
+handler preparation or complete the goal from counts, documentation or a draft PR.
 
 The first product checkpoint remains one keyboard-first human editing task that
 works without a model. Preserve its in-process control, then cross a real process
@@ -77,8 +89,8 @@ subsequent foundation fixes are accepted for their recorded source revisions.
 Do not redispatch completed repairs or rerun unchanged historical campaigns.
 Preserve original18/Reader93, regression13 and all affected consumers; changed
 inputs require fresh checks and reviewed source-registry successors. Complete P0
-authoring, independent handoff review and actual strict Linux API RED now release
-P1/P2. Their complete runtime qualification remains separate from that release.
+authoring, independent handoff review and actual strict Linux API RED released
+P1/P2. The later complete hosted runtime is recorded separately from that release.
 
 ### Process successor: split at real ownership boundaries
 
@@ -91,10 +103,10 @@ pure core and adapters are already accepted; do not reimplement them.
 
 | Packet / assigned writer | Inputs and dependency | Owned output and acceptance |
 |--------------------------|-----------------------|-----------------------------|
-| **P0 — assertion author** | Frozen process/live Save contracts; reviewed shared-core control | `apps/artifact_editor/tests/process_task.rs`, its `process_support/` helpers and specifically assigned private assertion files. Complete all thirty behavior/denial/failure families and original missing-API RED before handlers. Finish constructor/setup, Read/reopen, consuming owner return, Save-pause panic and uncertain parent-death controls. Independent assertion review releases P1/P2. |
-| **P1 — carrier author** | Accepted P0, fixed private ownership/wire handoff and relevant reliability fixes | Planned `services/desktop/src/editor_dev/process_editor.rs` and `process_editor/linux.rs`: held executable identity, authenticated bounded control, sole supervisor and exact descriptor/publication ownership. Cover malformed/foreign/stale channels, child failure and parent-death cleanup; uncertainty retains owners/charges/deadlines. |
-| **P2 — child author** | Accepted P0 and the same frozen P1 handoff; existing pure editor core/wire | Planned `apps/artifact_editor/src/bin/editor-process.rs`, built with child-only features, edits bounded text and publishes immutable frames. Reuse the accepted pure core. Implement concurrently with P1; acceptance needs their actual combined Linux runtime and must exclude Desktop/Store from the child's active graph. |
-| **P3 — integration author** | Accepted combined P1+P2 and qualified R1–R4/CI0 | `apps/artifact_editor/src/native.rs` common SaveChains plus reassigned process consumers: genuine Store/recording binds current Core, original Save owners and full receipt. Exercise denial, child death, original-only recovery, unrelated-session progress and a fresh Save; run unchanged in-process control and process gate on one candidate. |
+| **P0 — assertion author; complete** | Frozen process/live Save contracts; reviewed shared-core control | `apps/artifact_editor/tests/process_task.rs`, its `process_support/` helpers and specifically assigned private assertion files. All thirty behavior/denial/failure families and actual missing-API RED preceded handlers, including constructor/setup, Read/reopen, consuming owner return, Save-pause panic and uncertain parent-death controls. Independent assertion review released P1/P2. |
+| **P1 — carrier author; implemented** | Accepted P0, fixed private ownership/wire handoff and relevant reliability fixes | Implemented `services/desktop/src/editor_dev/process_editor.rs` and `process_editor/linux.rs`: held executable identity, authenticated bounded control, sole supervisor and exact descriptor/publication ownership. Covers malformed/foreign/stale channels, child failure and parent-death cleanup; uncertainty retains owners/charges/deadlines. |
+| **P2 — child author; implemented** | Accepted P0 and the same frozen P1 handoff; existing pure editor core/wire | Implemented `apps/artifact_editor/src/bin/editor-process.rs`, built with child-only features, edits bounded text and publishes immutable frames. Reuses the accepted pure core. Authored concurrently with P1; complete hosted checks exercise combined Linux runtime and exclude Desktop/Store from the child's active graph. |
+| **P3 — integration author; implemented** | Accepted combined P1+P2 and qualified R1–R4/CI0 | Implemented `apps/artifact_editor/src/native.rs` common SaveChains plus reassigned process consumers: genuine Store/recording binds current Core, original Save owners and full receipt. Complete hosted checks exercise denial, child death, original-only recovery, unrelated-session progress and a fresh Save, with unchanged in-process controls and the process gate on one candidate. |
 
 The coordinator binds literal private-assertion paths and unique outputs before
 P0 dispatch, verifies the actual Linux prerequisites early, and owns shared Cargo
@@ -102,9 +114,12 @@ features, IDL/generated output, source registries, `editor_dev/mod.rs` and
 `editor_dev/host.rs` bridges, gate registration/reader and status. A worker sends
 a bounded shared-file change to that owner instead of editing a sibling's inputs.
 The P1/P2 paths come from the existing process plan. Their normal combined runtime
-has focused Linux acceptance in the delivery record; complete fault coverage and
-fixed-candidate qualification remain open. A PID, record or source inclusion alone
+has complete hosted Linux qualification and independent runtime review in the delivery
+record; archival-successor qualification and authorized integration remain open. A PID, record or source inclusion alone
 does not establish process execution.
+
+The following dispatch and preparation paragraphs describe the historical sequence
+before complete P0 release; the successor above owns current delivery work.
 
 Use the next available author for P0; the other may prepare one ready target or
 recovery prerequisite while the reviewer checks P0 assertions. Once the complete
@@ -128,7 +143,7 @@ replaying the old mutation. Initialization failures have no public close proof
 and intentionally remain quarantined. The consuming-unwind assertion injects a
 faulty test callback, not a Store-internal panic. Fence acquisition preserves its
 original two-second budget; full synchronous reopen IO has no bounded-latency claim.
-This does not complete P0. The remaining
+At that recorded source this did not complete P0. The remaining
 private assertion controls must exercise actual pre-exec/held-ELF barriers,
 authenticated malformed carrier/FD inputs, real map/seal/offer/cap+1 faults,
 native child fault/stall and sole-supervisor uncertainty, and uncertain parent
@@ -142,7 +157,7 @@ inherited helper PID and truncated ancillary descriptor ownership. Its separate
 `foundry-editor-process-linux-prerequisites-ui1-1d` gate and hosted artifact do
 not count these primitives as process D-family coverage. Preparation now gives
 its private Store fixtures an explicit owner-only umask and restores the caller's
-umask afterward. Full P0 still needs the reviewed private carrier/child fault
+umask afterward. At that source full P0 still needed the reviewed private carrier/child fault
 handoff, registered held-ELF barrier and actual parent-death/Save controls above.
 
 ### Independent frontier and target joins

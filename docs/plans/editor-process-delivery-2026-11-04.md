@@ -18,6 +18,24 @@ concurrent P1 carrier/P2 child → combined runtime acceptance → P3 SaveChains
 Save integration → independent review and fixed-source qualification → repository
 delivery and authorized integration.
 
+## Current delivery successor
+
+Implementation commit `f412206e914833b072b61872017bf0de51954c3b` passes all five
+complete hosted CI lanes and the Foundry/merge aggregates in
+[run 42037623174](https://github.com/whole-machine-works/RamenOS/actions/runs/42037623174).
+The [fixed-candidate qualification record](editor-process-delivery-qualification-2026-11-05.md)
+binds the complete runtime, unchanged consumers, independent reviews and retained
+failures. The f412 archive retains build/execution hashes but omits the two selected
+child ELFs and parent library. The delivery successor adds their separate archive;
+complete successor CI and direct hashes of its own three files are required before
+readiness. Independent runtime and fresh hosted preservation reviews accept the
+implementation candidate with that explicit archival limitation. Successor artifact
+review and A3 integration are pending.
+The extra local editor-lane attempt failed in D19's subsequent Save; its cause
+remains unknown and its receipt remains a failure. The earlier sections below
+record their original implementation/qualification steps rather than current
+missing P0 or handler dependencies.
+
 ## Dispatch and resource ownership
 
 | Packet | Owner | Exclusive source responsibility | Dependency/result |
@@ -66,9 +84,10 @@ are compiled; no author changes the tested snapshot.
   rows across four real files, then refused 131073 without count/byte/hash growth.
   This validates recorder capacity, not native process transmissions.
 
-The combined normal P1/P2 Linux path below is accepted for P3 authoring. Full
-fault coverage, P3 runtime acceptance, fixed-candidate qualification and authorized
-integration remain open. Remaining work continues across packet boundaries.
+At that iteration, combined normal P1/P2 Linux acceptance released P3 authoring.
+Full fault coverage, P3 runtime acceptance, fixed-candidate qualification and
+authorized integration were still open; the current successor above records
+subsequent implementation and qualification.
 
 ## P0 release evidence
 
@@ -138,7 +157,7 @@ one-second deadlines, exact consumed-input sequences, and full Save/publication
 assertions. Failed runtime candidates remain retained; no P3 runtime completion is
 claimed from compilation or helper preparation.
 
-Current critical path: finish real finite P1 controls and complete evidence reader;
+At that iteration, the critical path was to finish real finite P1 controls and the evidence reader;
 close genuine P3 Save/recovery/failure runtime checks on an immutable candidate;
 run all thirty families and unchanged consumers; qualify, commit and deliver the
 reviewed implementation. Frozen production authority contracts remain unchanged.
@@ -164,7 +183,7 @@ source/lock/toolchain-bound batch with actual outer and inner command exits and
 reaps, semantic reports, and an exact copied raw-file inventory. Runtime
 acceptance consumes that batch, rather than repeating those eight gates. The
 standalone runtime entry point executes them once when no batch is provided.
-The new runtime gate has not yet qualified the complete implementation.
+At that candidate, the new runtime gate had not yet qualified the complete implementation.
 
 ### Reviewed terminal recovery and capacity successors (2026-11-05)
 
@@ -205,7 +224,8 @@ capture separately; all actual process consumers retain uncaptured diagnostics
 and fail acceptance on an `INCOMPLETE` marker in either stream.
 
 These are accepted focused behaviors across explicitly retained source snapshots,
-not complete qualification of the current candidate. The next fixed shared-branch
-commit must run the canonical57 stages, fresh thirty-family workflow and unchanged
-editor consumers, followed by independent evidence review and PR delivery. Final
+not complete qualification at that iteration. Its next fixed shared-branch commit
+required canonical57 coverage, fresh thirty-family runtime and unchanged consumers,
+followed by independent evidence review and PR delivery. The current successor
+above records complete hosted execution. Final
 integration remains subject to the repository's separate A3 authority.

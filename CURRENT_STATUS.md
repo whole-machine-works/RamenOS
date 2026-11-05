@@ -2,7 +2,7 @@
 
 **Last Updated:** 2026-11-05
 **Status:** Active and authoritative for landed state
-**Current Slice:** UI1.1d reviewed P0 release; process fault coverage and delivery qualification
+**Current Slice:** UI1.1d Linux editor process qualification and repository delivery
 **Physical Lane:** S12.4 HIL appliance observation/actuation awaits setup
 **Software Lane:** SW0 foundations through A2.9; full A2 and comparison pending
 
@@ -19,23 +19,38 @@ The default-off UI1.1c host task reads an approved artifact, processes logical
 keyboard input, edits bounded text, renders offscreen frames, saves through typed
 Store authority and reconciles original outcomes through joined-owner reopen.
 Its eighteen original assertions and complete 93-scenario recording checks passed
-on macOS/Linux. This is a trusted in-process host consumer. An actual editor child,
-authenticated process transport, target execution and target persistence remain
-unfinished. Models are unnecessary for this task.
+on macOS/Linux. That landed result is a trusted in-process host consumer. Models
+are unnecessary for the task. Target execution and target persistence remain
+unfinished.
 
-The working delivery in [PR52](https://github.com/whole-machine-works/RamenOS/pull/52)
-has a reviewed complete P0 handoff and thirty authored assertion families, committed
-as `855f5e6`, with strict source-bound Linux missing-API RED. Its isolated successor
-candidates execute the actual default-off Linux editor child. Focused acceptance
-covers genuine enrollment, child edit/raster, immutable authenticated publication,
-one-use capture, Store Save/full receipt, newer-draft Unsaved, original-only lost-reply
-recovery, and issued writer survival after child death or revoke. Focused evidence also covers native fault and capacity boundaries, independent
-cursor parity, terminal original closure, quarantine, and the unchanged
-eighteen-case native task.
-These are draft-branch implementation and focused validation results; all thirty
-families, affected semantic readers, fixed-source complete qualification and
-repository integration remain pending. The [delivery record](docs/plans/editor-process-delivery-2026-11-04.md)
-owns the exact sources, retained receipts, open faults and continuation path.
+The default-off Linux process implementation is delivered on
+[PR52](https://github.com/whole-machine-works/RamenOS/pull/52). Complete P0 review,
+the private assertion handoff and source-bound Linux missing-API RED closed the
+P1/P2 authoring dependencies before their concurrent implementation. P1/P2 then
+released P3's common Store Save/original-recovery integration. The workflow uses
+genuine approval/Read and enrollment, child-local edit/raster, immutable
+publications and one-use captures. The parent retains Core and Store authority.
+It exercises Save denial, newer-draft Unsaved, lost-reply recovery without mutation
+replay, issued-writer survival after child death/revoke, unrelated-session progress
+and a subsequent successful Save.
+
+Fixed implementation commit `f412206e914833b072b61872017bf0de51954c3b` passes all
+five complete hosted CI lanes and their Foundry/merge aggregates, including the
+thirty public families, private process/Save assertions, strict feature profiles,
+authentic Store closure controls and unchanged editor consumers. Independent
+runtime and fresh hosted preservation audits accept that candidate with the
+archival limitation below. That CI archive retains build/execution hashes but
+omits the two selected child ELFs and parent library. The delivery successor adds
+a separate three-file binary archive; its own complete CI and direct binary-hash
+checks are required before PR readiness. The separate additional local editor-lane
+attempt
+failed in D19's second Save with an Unknown issued operation; its cause remains
+unresolved. Its failed receipt is retained, alongside the independently accepted
+eight local preservation stages. The
+[qualification record](docs/plans/editor-process-delivery-qualification-2026-11-05.md)
+keeps those results and source identities distinct. Authorized A3 integration is
+pending; these are Linux host results, with target, physical durability and
+containment limits unchanged.
 
 The four host reliability packets from external review are implemented and
 independently reviewed. Store requests retain their actual reply data through
@@ -142,14 +157,15 @@ Both trace dispatch entrypoints bind creation to that capability's domain before
 allocating or resetting state. The comprehensive successor below adds caller-bound read/info/destroy checks;
 generic IPC handles still lack protocol-specific rights.
 
-P0 preparation has nine genuine in-process controls, including Read/reopen,
+The following preparation record predates complete P0 release and the implemented
+process successor above. P0 preparation had nine genuine in-process controls, including Read/reopen,
 constructor and Save-chain panic, actual initialization failures and retained
 reopen failure/recovery. Four separate parent-owner policy controls cover
 quarantine, release, an immutable child cleanup deadline and a deliberately
 faulty consuming reopen callback; these do not observe a native child or a
 Store-internal panic. Four authored consumers target the frozen process API.
-The process APIs remain absent: their actual compiler RED is preparation, never
-runtime acceptance or completion of the thirty assertion families. Consuming join
+At that source the process APIs were absent: its actual compiler RED established
+preparation, not runtime acceptance or completion of the thirty assertion families. Consuming join
 must return promptly without unwinding and return the sole child on uncertainty.
 The preparation gate serializes recorder access and runs separately in hosted
 editor CI, retaining its setup, strict Clippy, compiler and source snapshots.
@@ -160,7 +176,8 @@ proof, so its failure controls intentionally quarantine two parent groups; two
 reopen Drop/policy controls also retain their unproved owners. The original
 two-second quiescence deadline bounds fence acquisition, not synchronous reopen
 IO or a full retry lifetime. Private native negative controls and process-mode
-shared app Save ownership remain required before P1/P2 handlers.
+shared app Save ownership were still required before P1/P2 handlers at that source;
+the reviewed P0/private handoff subsequently closed those authoring dependencies.
 Source and validation scope are tracked in the follow-up
 review resolution. Those local results remain source-bound; hosted qualification
 must identify its matching revision.
@@ -225,8 +242,9 @@ and has no v3 kernel carrier. The host Store registry does not implement the
 Domain Manager's target backend. GetBlob still returns a host path; acknowledged
 revocation cannot retract delivered bytes or bypass same-UID filesystem access.
 The default POSIX path remains trusted host development with best-effort rlimits.
-The real editor child, full P0, RUN0, target storage and physical graduation remain
-unfinished.
+At that recorded source the real editor child, full P0, RUN0, target storage and
+physical graduation were unfinished. The process successor above supplies the
+Linux host implementation; the target and physical joins remain separate.
 
 ### Updated-review successor — accepted foundation repairs
 
@@ -272,9 +290,10 @@ exposed two fixture-readiness races; test-only repairs pass the complete suite o
 PR #44 adds bounded timeout evidence and an explicit test recovery scenario;
 PR #45 covers aggregate broker timeouts as well. Their separate qualification and retained failure history are tracked in the plan.
 Production budgets, containment and public error redaction remain unchanged.
-The authenticated process/trace carrier, full process P0 and real editor child,
+At that recorded source, the authenticated process/trace carrier, full process P0 and real editor child,
 RUN0, target grants/storage, SMP page-table synchronization and physical graduation
-remain unfinished. Host paths/bytes and same-UID filesystem access are not revoked;
+were unfinished. The Linux editor successor above does not establish the remaining
+target/trace joins. Host paths/bytes and same-UID filesystem access are not revoked;
 epoch safety depends on external operator pins and exclusive key provisioning.
 
 ## Foundry development and CI execution
