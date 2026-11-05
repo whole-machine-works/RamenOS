@@ -771,20 +771,42 @@ fn attempted_object(e: &Evidence, role: Role) -> &crate::editor_dev::ProcessAsse
     let ids: BTreeSet<_> = e.descriptors()
         [e.before().descriptor_count as usize..e.after().descriptor_count as usize]
         .iter()
-        // A successful replacement also closes the previous accepted pair.
-        // Only the actual aliases received during this attempt identify its
-        // bytes; old owner Unmapped/Closed rows are cleanup, not new input.
         .filter(|r| {
             r.role == role
-                && r.event == DescriptorEvent::Returned
-                && r.disposition == Disposition::Received
+                && match role {
+                    // Selected-input denials occur before fork: the actual
+                    // parent-owned memfd is written, read back and rejected.
+                    // Neither a child receive nor a Bootstrap send occurred.
+                    Role::Selected => {
+                        r.event == DescriptorEvent::Other
+                            && r.disposition == Disposition::Held
+                            && [Operation::Pwrite, Operation::Pread]
+                                .iter()
+                                .all(|operation| {
+                                    attempt_syscalls(e).iter().any(|call| {
+                                        call.operation == *operation
+                                            && call.origin == Origin::Native
+                                            && call.descriptor_id == Some(r.descriptor_id)
+                                            && call.result > 0
+                                    })
+                                })
+                    }
+                    // A successful replacement closes the previous pair too.
+                    // Only new received aliases identify publication input;
+                    // prior owners' Unmapped/Closed rows are cleanup.
+                    Role::TextState | Role::Surface => {
+                        r.event == DescriptorEvent::Returned
+                            && r.disposition == Disposition::Received
+                    }
+                    _ => false,
+                }
         })
         .map(|r| r.descriptor_id)
         .collect();
     e.objects()
         .iter()
         .find(|r| ids.contains(&r.descriptor_id))
-        .expect("actual rejected offered-object capture")
+        .expect("actual attempted object capture with matching native provenance")
 }
 
 fn malformed_pair_was_attempted(e: &Evidence, id: &str) {
