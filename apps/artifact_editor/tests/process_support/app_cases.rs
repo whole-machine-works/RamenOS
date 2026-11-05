@@ -315,8 +315,10 @@ pub(super) fn public_interrupted_save(name: &'static str, mode: SaveInterruption
         }
         release.request_release();
         assert!(ok(pause.wait_until_settled(1000)).settled);
+        // The same post-release deadline covers producer completion, the
+        // Unknown/no-replay check and explicit original reconciliation.
+        let end = Instant::now() + Duration::from_millis(1000);
         if matches!(mode, SaveInterruption::LostCommitReply) {
-            let end = Instant::now() + Duration::from_millis(1000);
             loop {
                 let (_, app) = owner.borrow();
                 let _ = app.step(2);
@@ -329,6 +331,22 @@ pub(super) fn public_interrupted_save(name: &'static str, mode: SaveInterruption
                 );
                 std::thread::yield_now();
             }
+            // Unknown and a released pause do not prove that the real Store
+            // writer has finished. Join its producers before inspecting the
+            // filesystem, without resolving the retained original yet.
+            loop {
+                let (f, _) = owner.borrow();
+                f.join_all();
+                if f.h.native_producer_counts().held == 0 {
+                    break;
+                }
+                assert!(Instant::now() < end, "actual lost-reply producer joins");
+                std::thread::yield_now();
+            }
+            assert_eq!(
+                ok(owner.borrow().1.observe(2)).phase,
+                desktop::NativeEditorPhase::Unknown
+            );
             let counts = owner.fixture().counts(101);
             {
                 let (f, app) = owner.borrow();
@@ -340,10 +358,23 @@ pub(super) fn public_interrupted_save(name: &'static str, mode: SaveInterruption
                 "Unknown cannot replay Allocate/Commit"
             );
         }
-        {
+        loop {
             let (f, app) = owner.borrow();
             f.join_all();
-            ok(app.reconcile_originals(3));
+            match app.reconcile_originals(3) {
+                Ok(()) => {}
+                Err(artifact_editor::NativeEditorError::Desktop(Status::NotReady))
+                | Err(artifact_editor::NativeEditorError::Store(StoreStatus::NotReady)) => {}
+                Err(error) => panic!("same original reconciliation failed: {error:?}"),
+            }
+            if app.assertion_pending_originals() == 0 && f.h.native_producer_counts().held == 0 {
+                break;
+            }
+            assert!(
+                Instant::now() < end,
+                "actual original and producer completion before filesystem evidence"
+            );
+            std::thread::yield_now();
         }
         assert_eq!(
             object(owner.fixture(), 101).operations[0]

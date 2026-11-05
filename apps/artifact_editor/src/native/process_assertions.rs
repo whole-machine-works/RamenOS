@@ -1197,9 +1197,58 @@ fn process_d22_child_death_after_permit_original_writer_survives() {
             assert!(progress_started.elapsed() < Duration::from_millis(1000));
             owner.save_other(2, 2);
             if scenario.id() == "D22DropChildDoesNotDropWriter" {
-                drop(owner.app.as_mut().unwrap().child.take().unwrap());
+                let end = ok(owner.app.as_mut().unwrap().drop_child_for_assertion());
                 assert_original_held(&owner, operation, entered, deadline);
-                let end = Instant::now() + Duration::from_millis(2000);
+                // A genuine unrelated child's proof cannot close A's wrapper.
+                // Keep B and its actual proof staged outside assertion unwinds.
+                ok(owner
+                    .other
+                    .as_mut()
+                    .unwrap()
+                    .retire(ProcessRetireReason::HumanClose, 2));
+                loop {
+                    match owner.other.as_mut().unwrap().join_child() {
+                        Ok(proof) => {
+                            owner.proofs.push(proof);
+                            break;
+                        }
+                        Err(NativeEditorError::Desktop(Status::NotReady)) => {
+                            assert!(Instant::now() < end);
+                            thread::yield_now();
+                        }
+                        Err(error) => panic!("INCOMPLETE: genuine sibling join failed: {error:?}"),
+                    }
+                }
+                assert!(matches!(
+                    owner
+                        .app
+                        .as_mut()
+                        .unwrap()
+                        .accept_dropped_child_exit_for_assertion(owner.proofs.last().unwrap()),
+                    Err(NativeEditorError::Desktop(Status::Denied))
+                ));
+                loop {
+                    owner.fixture.as_mut().unwrap().join_all();
+                    let other = owner.other.as_mut().unwrap();
+                    match other.reconcile_originals(2) {
+                        Ok(()) => {}
+                        Err(NativeEditorError::Desktop(Status::NotReady))
+                        | Err(NativeEditorError::Store(store::StoreStatus::NotReady)) => {}
+                        Err(error) => {
+                            panic!("INCOMPLETE: genuine sibling reconciliation failed: {error:?}")
+                        }
+                    }
+                    if other.assertion_pending_originals() == 0 {
+                        break;
+                    }
+                    assert!(Instant::now() < end);
+                    thread::yield_now();
+                }
+                assert_eq!(
+                    owner.other.as_ref().unwrap().assertion_pending_originals(),
+                    0
+                );
+                owner.other.take();
                 loop {
                     match owner
                         .fixture
@@ -1211,6 +1260,13 @@ fn process_d22_child_death_after_permit_original_writer_survives() {
                         Ok(proof) => {
                             assert!(proof.supervisor_joined());
                             owner.proofs.push(proof);
+                            let proof = owner.proofs.last().unwrap();
+                            let app = owner.app.as_mut().unwrap();
+                            ok(app.accept_dropped_child_exit_for_assertion(proof));
+                            assert!(matches!(
+                                app.accept_dropped_child_exit_for_assertion(proof),
+                                Err(NativeEditorError::Desktop(Status::Denied))
+                            ));
                             break;
                         }
                         Err(error) if error.status() == Status::NotReady => {
@@ -1406,7 +1462,11 @@ fn process_d18_no_save_without_genuine_single_use_capture() {
                     // driven on this same armed child, never on a fresh child.
                     owner.queue_chord(22, 2);
                     let end = Instant::now() + Duration::from_millis(1000);
-                    while owner.fixture.as_ref().unwrap().counts(101).2 != 1 {
+                    // Store evidence walks live filesystem components; it is
+                    // not a polling authority during the writer's publication.
+                    // Wait on the same genuine Core receipt-confirmed revision,
+                    // then check exact Store effects and receipt after joining.
+                    while ok(owner.app.as_ref().unwrap().observe(2)).confirmed_revision != 2 {
                         match step_composed(
                             owner.app.as_mut().unwrap(),
                             &owner.fixture.as_ref().unwrap().drivers[0].s.compositor,

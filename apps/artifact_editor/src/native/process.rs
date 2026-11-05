@@ -16,6 +16,8 @@ pub struct ProcessArtifactEditor {
     cleanup_deadline: Option<Instant>,
     #[cfg(feature = "host_editor_process_assertions_v0_dev")]
     assertion_run: Option<desktop::ProcessAssertionRun>,
+    #[cfg(all(test, feature = "host_editor_process_assertions_v0_dev"))]
+    assertion_dropped_child: Option<desktop::ProcessChildObservation>,
 }
 pub struct ProcessEditorOpenFailure {
     error: NativeEditorError,
@@ -78,6 +80,8 @@ impl ProcessArtifactEditor {
             cleanup_deadline: None,
             #[cfg(feature = "host_editor_process_assertions_v0_dev")]
             assertion_run: None,
+            #[cfg(all(test, feature = "host_editor_process_assertions_v0_dev"))]
+            assertion_dropped_child: None,
         }
     }
     #[allow(
@@ -324,6 +328,55 @@ impl ProcessArtifactEditor {
                 Err(status.into())
             }
         }
+    }
+    #[cfg(all(test, feature = "host_editor_process_assertions_v0_dev"))]
+    pub(super) fn drop_child_for_assertion(&mut self) -> Result<Instant, NativeEditorError> {
+        if !self.spawned || self.joined || self.assertion_dropped_child.is_some() {
+            return Err(Status::Denied.into());
+        }
+        let child = self.child.as_ref().ok_or(Status::Denied)?;
+        // The same Host authenticates this opaque owner before its actual Drop
+        // parks the supervisor. Numeric caller-supplied identity is never used.
+        let observed = self.chains.desktop.observe_process_child(child)?;
+        if observed.process_id() == 0 || observed.birth_ticks() == 0 {
+            return Err(Status::Denied.into());
+        }
+        let deadline = *self
+            .cleanup_deadline
+            .get_or_insert_with(|| Instant::now() + Duration::from_millis(2000));
+        self.assertion_dropped_child = Some(observed);
+        drop(self.child.take());
+        Ok(deadline)
+    }
+    #[cfg(all(test, feature = "host_editor_process_assertions_v0_dev"))]
+    pub(super) fn accept_dropped_child_exit_for_assertion(
+        &mut self,
+        proof: &desktop::OwnedEditorChildExitProof,
+    ) -> Result<(), NativeEditorError> {
+        let expected = self
+            .assertion_dropped_child
+            .as_ref()
+            .ok_or(Status::Denied)?;
+        if !self.spawned
+            || self.joined
+            || self.child.is_some()
+            || !proof.supervisor_joined()
+            || proof.process_id() == 0
+            || proof.birth_ticks() == 0
+            || proof.process_id() != expected.process_id()
+            || proof.birth_ticks() != expected.birth_ticks()
+            || proof.executable_sha256() != expected.executable_sha256()
+        {
+            return Err(Status::Denied.into());
+        }
+        // Only the genuine same-child native wait/supervisor proof changes this
+        // state. A foreign or repeated proof cannot consume the staged binding.
+        self.joined = true;
+        self.assertion_dropped_child.take();
+        // As with join_child, Read cleanup may still be pending. Its real owners
+        // and every original Save group remain for ordinary reconciliation.
+        let _read_cleanup = self.chains.cleanup_startup();
+        Ok(())
     }
     pub fn cleanup_failed_open(
         &mut self,
