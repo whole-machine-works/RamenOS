@@ -73,9 +73,13 @@ impl ReferenceFixture {
             assert_eq!(actual.view_version, expected.view_version);
             let process_frame = ok(process_fixture.compose(0, 2));
             let reference_frame = ok(reference_fixture.compose(0, 2));
-            assert_eq!(
-                volatile::hash(&process_frame.bgra[48 * 2560..528 * 2560]),
-                volatile::hash(&reference_frame.bgra[48 * 2560..528 * 2560])
+            // Both actual full frames and their crop hashes are already
+            // retained by compose's recorder. Compare every application byte
+            // directly here rather than hashing the same two crops again.
+            assert!(
+                process_frame.bgra[48 * 2560..528 * 2560]
+                    == reference_frame.bgra[48 * 2560..528 * 2560],
+                "exact full application pixels differ for usage {usage}"
             );
             saw_selection |= actual.selection.is_some();
             saw_scroll |= actual.first_visible_line > 0;

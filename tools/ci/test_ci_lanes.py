@@ -681,5 +681,16 @@ class FiveLaneTests(unittest.TestCase):
             self.assertNotRegex(body, r"(?m)^\s+run:.*(?:just preflight|just ci-extended|foundry_ci_extended\.sh|foundry_preflight\.sh|foundry_agent_task_suite\.sh)")
 
 
+    def test_editor_artifacts_retain_hidden_recording_ledgers(self):
+        body = workflow_jobs()["editor"]
+        for title in ("Retain editor process runtime evidence", "Retain original editor diagnostics on failure"):
+            marker = "      - name: " + title + "\n"
+            self.assertEqual(body.count(marker), 1)
+            block = body.split(marker, 1)[1].split("\n      - name:", 1)[0]
+            self.assertIn("uses: actions/upload-artifact@v4", block)
+            self.assertRegex(block, r"(?m)^          include-hidden-files: true$")
+
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

@@ -209,6 +209,7 @@ jobs:
     env:
       RAMEN_CI_STRICT: "1"
       RUST_TEST_THREADS: "1"
+      RUST_BACKTRACE: "1"
       CARGO_BUILD_JOBS: "2"
       LINT_ALLOW_WARNINGS: "0"
       SKIP_E2E_ASSERTIONS: "1"
@@ -249,6 +250,7 @@ jobs:
           path: |
             out/foundry/editor-process/
             out/foundry/editor-process-stages/
+          include-hidden-files: true
           if-no-files-found: error
       - name: Retain original editor diagnostics on failure
         if: failure()
@@ -264,6 +266,7 @@ jobs:
             out/desktop/native-task-source.*/
             out/foundry/editor-adapter-migration/
             out/foundry/editor-reliability/
+          include-hidden-files: true
           if-no-files-found: ignore
       - name: Run Linux editor kernel prerequisites
         run: python3 tools/ci/stage_timer.py --directory out/editor-process-linux-prerequisites/timings --label editor-process-linux-prerequisites -- just foundry-editor-process-linux-prerequisites-ui1-1d
