@@ -33,7 +33,12 @@ host_editor_process_assertions_v0_dev = [
   "desktop_service/host_editor_process_assertions_v0_dev",
 ]
 
+# Linux child has no Desktop, Store or schema dependency activation.
+host_editor_process_child_v0_dev = ["dep:desktop_editor_core", "dep:kernel_api", "dep:libc"]
+host_editor_process_child_assertions_v0_dev = ["host_editor_process_child_v0_dev"]
+
 [dependencies]
+desktop_editor_core = { path = "../../services/desktop_editor_core", default-features = false, optional = true }
 desktop_service = { path = "../../services/desktop", default-features = false, optional = true }
 store_service = { path = "../../services/store_service", default-features = false, optional = true }
 kernel_api = { path = "../../kernel_api", optional = true }
@@ -43,6 +48,9 @@ artifact_store_schema = { path = "../../artifact_store_schema", optional = true 
 sha2 = "0.10"
 tempfile = "3"
 serde_json = "1"
+
+[target.'cfg(target_os = "linux")'.dependencies]
+libc = { version = "=0.2.180", optional = true }
 
 [target.'cfg(target_os = "linux")'.dev-dependencies]
 libc = "=0.2.180"
@@ -76,3 +84,8 @@ required-features = ["host_editor_process_v0_dev"]
 name = "process_linux_prerequisites"
 path = "tests/process_support/linux_controls.rs"
 required-features = ["host_editor_process_setup_v0_dev"]
+
+[[bin]]
+name = "editor-process"
+path = "src/bin/editor-process.rs"
+required-features = ["host_editor_process_child_v0_dev"]
