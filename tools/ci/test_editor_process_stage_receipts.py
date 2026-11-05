@@ -94,6 +94,18 @@ class StageReceipts(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, 'structured selected'):
             gate.selected(probe, ['required_case'])
 
+    def test_final_owned_consumer_cannot_pass_with_uncertain_cleanup(self):
+        owner = gate.Gate.__new__(gate.Gate)
+        owner.output, owner.probes = self.repo, []
+        for suffix in ('stdout', 'stderr'):
+            (self.repo / ('FinalConsumer.' + suffix)).write_text('')
+        actual = {'exit_code': 0, 'reaped': True, 'cleanup_error': 'process group remains unknown'}
+        with patch.object(gate.runner, 'run_owned', return_value=actual), patch.object(owner, 'save') as saved:
+            with self.assertRaisesRegex(RuntimeError, 'uncertain cleanup'):
+                owner.run('FinalConsumer', ['required-command'])
+        saved.assert_called_once()
+        self.assertTrue(owner.probes[0]['cleanup_uncertain'], 'failed evidence remains retained')
+
     def test_successful_rust_result_does_not_hide_incomplete_cleanup_on_stderr(self):
         log, diagnostic = self.repo / 'passed.log', self.repo / 'retained.stderr'
         log.write_text('test required_case ... ok\n')

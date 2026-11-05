@@ -94,7 +94,8 @@ class Gate:
                  'artifacts': [], 'gate_reports': []}
         self.probes.append(probe)
         self.save()
-        stages.require(actual['exit_code'] == expected and actual['reaped'], identity + ' unexpected exit')
+        stages.require(actual['exit_code'] == expected and actual['reaped']
+                       and not probe['cleanup_uncertain'], identity + ' unexpected exit or uncertain cleanup')
         return probe
 
     def build(self, identity, feature, target, child=False):
