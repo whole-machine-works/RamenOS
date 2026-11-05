@@ -11,11 +11,12 @@ editor_native_preview_v0_dev = ["editor_native_read_v0_dev"]
 editor_native_save_v0_dev = ["editor_native_preview_v0_dev"]
 # Supplemental preservation assertions only; absent from ordinary host features.
 editor_adapter_assertions_v0_dev = ["editor_native_save_v0_dev"]
-# Process assertion preparation only; no runtime/child exports implemented yet.
+# Default-off Linux editor carrier; assertion recording is a separate feature.
 host_editor_process_v0_dev = ["editor_native_save_v0_dev", "dep:libc"]
-host_editor_process_assertions_v0_dev = ["host_editor_process_v0_dev"]
+host_editor_process_assertions_v0_dev = ["host_editor_process_v0_dev", "dep:serde_json"]
 
 [dependencies]
+serde_json = { version = "1", optional = true }
 desktop_editor_core = { path = "../desktop_editor_core", default-features = false, optional = true }
 kernel_api = { path = "../../kernel_api" }
 artifact_store_schema = { path = "../../artifact_store_schema", optional = true }

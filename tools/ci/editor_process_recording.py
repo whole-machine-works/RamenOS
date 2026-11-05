@@ -90,12 +90,12 @@ def create(path: Path):
     return os.fdopen(fd, "wb", buffering=0)
 
 
-def boundary(directory: Path):
+def boundary(directory: Path, *, scenario_limit=False):
     """Exercise real retained serializer files, without claiming native traffic."""
     import hashlib
     from contextlib import ExitStack
     directory.mkdir(mode=0o700, parents=False, exist_ok=False)
-    paths = [directory / f"controls-{index}.jsonl" for index in range(4)]
+    paths = [directory / f"controls-{index}.jsonl" for index in range(1 if scenario_limit else 4)]
     ledger = ControlLedger()
     record = {"k": "send", "d": 0, "b": base64.b64encode(bytes(88)).decode(),
               "c": None, "o": [], "q": 0, "s": 0, "t": 0, "f": 0, "r": 0}
@@ -116,16 +116,16 @@ def boundary(directory: Path):
                 ledger.append(output, f"boundary-{leaf}", record)
         before = prefix()
         try:
-            ledger.append(outputs[-1], "boundary-next", record)
+            ledger.append(outputs[-1], "boundary-0" if scenario_limit else "boundary-next", record)
         except RecordingLimit as error:
             reason = str(error)
         else:
             raise RuntimeError("aggregate boundary was not enforced")
         after = prefix()
-        if before != after or reason != "aggregate control capacity":
+        if before != after or reason != ("scenario control capacity" if scenario_limit else "aggregate control capacity"):
             raise RuntimeError("aggregate refusal changed retained prefix")
     result = {"scope": "recorder-boundary-not-native", "before": before,
-              "attempt_index": AGGREGATE_CONTROLS + 1, "after": after, "error": reason}
+              "attempt_index": (SCENARIO_CONTROLS if scenario_limit else AGGREGATE_CONTROLS) + 1, "after": after, "error": reason}
     print("PROCESS_RECORDER_BOUNDARY " + json.dumps(result, separators=(",", ":")))
     return result
 
@@ -133,9 +133,11 @@ def boundary(directory: Path):
 def main():
     import argparse
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--boundary-output", type=Path, required=True)
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument("--boundary-output", type=Path)
+    group.add_argument("--scenario-boundary-output", type=Path)
     args = parser.parse_args()
-    boundary(args.boundary_output)
+    boundary(args.scenario_boundary_output or args.boundary_output, scenario_limit=args.scenario_boundary_output is not None)
 
 
 if __name__ == "__main__":

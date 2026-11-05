@@ -28,6 +28,7 @@ PROFILE_SOURCES = {
     "public": ("apps/artifact_editor/tests/process_task.rs", BODY,
                "apps/artifact_editor/tests/process_support/child_owner.rs",
                "apps/artifact_editor/tests/process_support/app_owner.rs",
+               "apps/artifact_editor/tests/process_support/app_cases.rs",
                "apps/artifact_editor/tests/process_support/child_group.rs",
                "apps/artifact_editor/tests/process_support/obligations.rs",
                "apps/artifact_editor/tests/process_support/gate_record.rs",

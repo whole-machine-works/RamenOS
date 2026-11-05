@@ -11,7 +11,17 @@ use store_service::editor_store as store;
 pub fn fixture(name: &'static str, sessions: usize) -> Fixture {
     let recording = recording::CaseRecorder::open(name)
         .unwrap_or_else(|error| panic!("actual process-preparation recorder setup: {error:?}"));
-    Fixture::recorded(&recording, preparation_spec(name), sessions)
+    bind_case(
+        Fixture::recorded(&recording, preparation_spec(name), sessions),
+        name,
+    )
+}
+
+fn bind_case(fixture: Fixture, name: &'static str) -> Fixture {
+    #[cfg(all(target_os = "linux", feature = "host_editor_process_assertions_v0_dev"))]
+    support::ok(fixture.dc.bind_process_recording_case(name));
+    let _ = name;
+    fixture
 }
 
 pub fn preparation_spec(name: &'static str) -> recording::ScenarioSpec {
@@ -137,7 +147,10 @@ pub fn fixture_with_contents(name: &'static str, bodies: &[&[u8]]) -> Fixture {
         assert!(body.len() <= 4096);
         object.bytes = body.to_vec();
     }
-    Fixture::recorded_profile(&recording, preparation_spec(name), profile)
+    bind_case(
+        Fixture::recorded_profile(&recording, preparation_spec(name), profile),
+        name,
+    )
 }
 
 /// Generalized genuine enrollment setup for the empty-body capacity scenario

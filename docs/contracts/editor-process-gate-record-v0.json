@@ -132,6 +132,10 @@
     "D29ForeignNumericPidCannotConstructOwner": {
       "exit_code": 101,
       "expected_diagnostic": "E0599 from_pid on OwnedEditorChild"
+    },
+    "D25Scenario32769RecordingCap": {
+      "exit_code": 0,
+      "scope": "Actual Root recorder one complete32768rowleaf + refusal32769, unchanged count/bytes/hash; syntheticserializer only"
     }
   },
   "rules": [

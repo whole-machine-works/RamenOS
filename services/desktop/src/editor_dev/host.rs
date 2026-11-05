@@ -5919,7 +5919,27 @@ impl HostDesktop {
         if let Err(status) = self.save_authority() {
             return reply(q, chrome.class, status);
         }
-        self.dispatch_store_preview_chrome(chrome, q, now)
+        #[cfg(feature = "host_editor_process_assertions_v0_dev")]
+        let slot = if q.protocol == 352 && matches!(q.msg_type, 9 | 11) {
+            let mut state = self.state.lock().unwrap();
+            if state.exchanges.len() >= state.trace_limit() {
+                state.trace_exhausted = true;
+                return reply(q, chrome.class, Status::Exhausted);
+            }
+            let slot = state.exchanges.len();
+            state
+                .exchanges
+                .push((*q, reply(q, chrome.class, Status::NotReady)));
+            Some(slot)
+        } else {
+            None
+        };
+        let response = self.dispatch_store_preview_chrome(chrome, q, now);
+        #[cfg(feature = "host_editor_process_assertions_v0_dev")]
+        if let Some(slot) = slot {
+            self.state.lock().unwrap().exchanges[slot].1 = response;
+        }
+        response
     }
     pub fn native_join_observation(
         &self,
@@ -6526,6 +6546,10 @@ impl HostDesktop {
             if !Arc::ptr_eq(&doc.life, &editor.life) {
                 return Err(Status::Denied);
             }
+            #[cfg(all(target_os = "linux", feature = "host_editor_process_v0_dev"))]
+            if doc.process.owned {
+                return Err(Status::Denied);
+            }
             let actor = doc.view.actor.clone();
             let p = gate.preview.as_ref().ok_or(Status::Denied)?;
             p.admit_instance(actor.instance_id)?;
@@ -6690,6 +6714,8 @@ impl HostDesktop {
                 }),
             };
             intent = Some(Arc::new(IntentLife {
+                #[cfg(all(target_os = "linux", feature = "host_editor_process_v0_dev"))]
+                capture_input_sequence: 0,
                 id,
                 exposed: std::sync::atomic::AtomicBool::new(false),
                 closed_before_admission: std::sync::atomic::AtomicBool::new(false),
@@ -6869,6 +6895,10 @@ impl HostDesktop {
                 .get(&editor.life.id)
                 .ok_or(Status::Stale)?;
             if !Arc::ptr_eq(&d.life, &editor.life) {
+                return Err(Status::Denied);
+            }
+            #[cfg(all(target_os = "linux", feature = "host_editor_process_v0_dev"))]
+            if d.process.owned {
                 return Err(Status::Denied);
             }
             let actor = &d.view.actor;
@@ -7137,7 +7167,8 @@ impl HostDesktop {
                 return Err(Status::Exhausted);
             }
             let mut gate = a.gate.lock().map_err(|_| Status::Internal)?;
-            let p = gate.preview.as_mut().ok_or(Status::Denied)?;
+            let gate_state = &mut *gate;
+            let p = gate_state.preview.as_mut().ok_or(Status::Denied)?;
             let id = p
                 .attachments
                 .iter()
@@ -7151,14 +7182,53 @@ impl HostDesktop {
                     return Err(Status::Exhausted);
                 }
                 let terminal = row.retired || row.faulted;
+                #[cfg(all(target_os = "linux", feature = "host_editor_process_v0_dev"))]
+                if gate_state.save.as_ref().is_some_and(|save| {
+                    save.documents.values().any(|document| {
+                        document.attachment.id == id && document.process.staged_adoption
+                    })
+                }) {
+                    return Err(Status::NotReady);
+                }
                 let (focus, sequence, source) = if terminal {
                     (0, 0, None)
                 } else {
                     p.admit_instance(id)?;
                     let i = state.instances.get(&id).ok_or(Status::Stale)?;
-                    let (_, sequence, source) =
-                        i.surface.frozen.as_ref().ok_or(Status::NotReady)?;
-                    (state.sessions[&sid].focus, *sequence, Some(source.clone()))
+                    let focus = state.sessions[&sid].focus;
+                    #[cfg(not(all(target_os = "linux", feature = "host_editor_process_v0_dev")))]
+                    let retained = None;
+                    #[cfg(all(target_os = "linux", feature = "host_editor_process_v0_dev"))]
+                    let retained = gate_state
+                        .save
+                        .as_ref()
+                        .and_then(|save| process_retained_surface(save, id, focus, &i.surface));
+                    #[cfg(all(target_os = "linux", feature = "host_editor_process_v0_dev"))]
+                    let process_owned = gate_state.save.as_ref().is_some_and(|save| {
+                        save.documents
+                            .values()
+                            .any(|d| d.attachment.id == id && d.process.owned)
+                    });
+                    #[cfg(not(all(target_os = "linux", feature = "host_editor_process_v0_dev")))]
+                    let process_owned = false;
+                    let (sequence, source) = if process_owned {
+                        let (sequence, source) = retained.ok_or(Status::NotReady)?;
+                        if i.surface.frozen.as_ref().is_some_and(
+                            |(_, actual_sequence, actual_source)| {
+                                *actual_sequence != sequence || !Arc::ptr_eq(actual_source, &source)
+                            },
+                        ) {
+                            return Err(Status::Stale);
+                        }
+                        (sequence, source)
+                    } else {
+                        i.surface
+                            .frozen
+                            .as_ref()
+                            .map(|(_, sequence, source)| (*sequence, source.clone()))
+                            .ok_or(Status::NotReady)?
+                    };
+                    (focus, sequence, Some(source))
                 };
                 let next = p.next_status.checked_add(1).ok_or(Status::Exhausted)?;
                 p.next_status = next;
@@ -7166,8 +7236,8 @@ impl HostDesktop {
                     .get_mut(&id)
                     .ok_or(Status::Stale)?
                     .status_version = next;
-                let observation = gate.save.as_ref().ok_or(Status::Denied)?.chrome(
-                    gate.preview.as_ref().ok_or(Status::Denied)?,
+                let observation = gate_state.save.as_ref().ok_or(Status::Denied)?.chrome(
+                    gate_state.preview.as_ref().ok_or(Status::Denied)?,
                     id,
                     focus,
                     sequence,
@@ -7277,6 +7347,14 @@ impl HostDesktop {
             state.auth(&compositor.peer)?;
             let mut gate = a.gate.lock().map_err(|_| Status::Internal)?;
             if let Some(captured) = observation {
+                #[cfg(all(target_os = "linux", feature = "host_editor_process_v0_dev"))]
+                if captured
+                    .document_id
+                    .and_then(|id| gate.save.as_ref().and_then(|save| save.documents.get(&id)))
+                    .is_some_and(|document| document.process.staged_adoption)
+                {
+                    return Err(Status::NotReady);
+                }
                 let actual = gate.save.as_ref().ok_or(Status::Denied)?.chrome(
                     gate.preview.as_ref().ok_or(Status::Denied)?,
                     id,
@@ -7303,26 +7381,58 @@ impl HostDesktop {
                         .ok_or(Status::Denied)?
                         .admit_instance(id)?;
                     let i = state.instances.get(&id).ok_or(Status::Stale)?;
+                    let frozen = i.surface.frozen.as_ref().is_some_and(
+                        |(_, actual_sequence, actual_source)| {
+                            *actual_sequence == sequence
+                                && source
+                                    .as_ref()
+                                    .is_some_and(|source| Arc::ptr_eq(actual_source, source))
+                        },
+                    );
+                    #[cfg(not(all(target_os = "linux", feature = "host_editor_process_v0_dev")))]
+                    let repeat = false;
+                    #[cfg(all(target_os = "linux", feature = "host_editor_process_v0_dev"))]
+                    let repeat = gate
+                        .save
+                        .as_ref()
+                        .and_then(|save| process_retained_surface(save, id, focus, &i.surface))
+                        .is_some_and(|(actual_sequence, actual_source)| {
+                            actual_sequence == sequence
+                                && source
+                                    .as_ref()
+                                    .is_some_and(|source| Arc::ptr_eq(&actual_source, source))
+                        });
+                    #[cfg(all(target_os = "linux", feature = "host_editor_process_v0_dev"))]
+                    let process_owned = gate.save.as_ref().is_some_and(|save| {
+                        save.documents
+                            .values()
+                            .any(|d| d.attachment.id == id && d.process.owned)
+                    });
+                    #[cfg(not(all(target_os = "linux", feature = "host_editor_process_v0_dev")))]
+                    let process_owned = false;
                     if state.sessions[&sid].focus != focus
                         || state.sessions[&sid].focused != Some(id)
-                        || i.surface.frozen.as_ref().map(|(_, seq, _)| *seq) != Some(sequence)
+                        || (process_owned && !repeat)
+                        || (!process_owned && !frozen)
                     {
                         return Err(Status::Stale);
                     }
-                    let q = kernel_api::generated::desktop_surface_v1::Consume {
-                        request_id: sequence,
-                        surface_id: i.surface.id,
-                        surface_generation: i.surface.generation,
-                        sequence,
+                    if frozen {
+                        let q = kernel_api::generated::desktop_surface_v1::Consume {
+                            request_id: sequence,
+                            surface_id: i.surface.id,
+                            surface_generation: i.surface.generation,
+                            sequence,
+                        }
+                        .encode(compositor.handle)?;
+                        if state.exchanges.len() >= state.trace_limit() {
+                            return Err(Status::Exhausted);
+                        }
+                        state.consume_frozen(id, sequence)?;
+                        let mut r = reply(&q, EndpointClass::Compositor, Status::Ok);
+                        put64(&mut r.payload, 8, sequence);
+                        state.exchanges.push((q, r));
                     }
-                    .encode(compositor.handle)?;
-                    if state.exchanges.len() >= state.trace_limit() {
-                        return Err(Status::Exhausted);
-                    }
-                    state.consume_frozen(id, sequence)?;
-                    let mut r = reply(&q, EndpointClass::Compositor, Status::Ok);
-                    put64(&mut r.payload, 8, sequence);
-                    state.exchanges.push((q, r));
                 }
                 if let Some(docid) = captured.document_id {
                     if let Some(d) = gate
@@ -7333,6 +7443,18 @@ impl HostDesktop {
                         .get_mut(&docid)
                     {
                         d.view.phase = captured.label.clone();
+                    }
+                }
+                #[cfg(all(target_os = "linux", feature = "host_editor_process_v0_dev"))]
+                if let Some(docid) = captured.document_id {
+                    if let Some(document) = gate
+                        .save
+                        .as_mut()
+                        .and_then(|save| save.documents.get_mut(&docid))
+                    {
+                        if document.process.owned {
+                            document.process.composed_pixels = Some(Arc::new(pixels.clone()));
+                        }
                     }
                 }
                 state.save_chrome.insert(sid, captured);
@@ -7509,4 +7631,39 @@ impl FixtureController {
         }
         Ok(out)
     }
+}
+
+#[cfg(all(target_os = "linux", feature = "host_editor_process_v0_dev"))]
+pub(super) mod process_bridge;
+
+// The Surface Arc was actually validated/adopted by process_bridge and remains
+// immutable. Recomposition computes new trusted chrome; this is no child edit,
+// new offered pair, frame lease, or reuse of cached chrome as a current receipt.
+#[cfg(all(target_os = "linux", feature = "host_editor_process_v0_dev"))]
+fn process_retained_surface(
+    save: &super::native_save::SaveGate,
+    id: u64,
+    focus: u64,
+    surface: &Surface,
+) -> Option<(u64, Arc<Vec<u8>>)> {
+    let document = save.documents.values().find(|d| d.attachment.id == id)?;
+    if !document.process.owned || document.process.retired || document.process.staged_adoption {
+        return None;
+    }
+    let frame = document.frame.as_ref()?;
+    if frame.sequence == 0
+        || frame.sequence > surface.sequence
+        || frame.actor != document.view.actor
+        || frame.surface_id != surface.id
+        || frame.surface_generation != surface.generation
+        || frame.focus_epoch != focus
+        || frame.text_generation != document.view.text_generation
+        || frame.view_version != document.view.view_version
+    {
+        return None;
+    }
+    Some((
+        frame.sequence,
+        document.process.app_pixels.as_ref()?.clone(),
+    ))
 }

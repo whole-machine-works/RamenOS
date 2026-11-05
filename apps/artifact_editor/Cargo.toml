@@ -23,7 +23,7 @@ host_editor_adapter_assertions_v0_dev = [
 
 # Genuine owner setup controls; absent from existing task/adapter features.
 host_editor_process_setup_v0_dev = ["host_native_save_v0_dev"]
-# Frozen API consumers intentionally fail to compile until process APIs exist.
+# Default-off Linux process owner and genuine Store Save consumer.
 host_editor_process_v0_dev = [
   "host_native_save_v0_dev",
   "desktop_service/host_editor_process_v0_dev",

@@ -112,6 +112,13 @@ fn until_publication(f: &Fixture, child: &mut OwnedEditorChild, now: u64) {
     loop {
         let step = ok(f.h.pump_process_editor(child, now));
         if step.publication_accepted() {
+            let view = ok(f.h.observe_process_editor(child, now));
+            let session = f
+                .drivers
+                .iter()
+                .position(|d| d.s.session_id == view.actor.session_id)
+                .expect("actual matching session compositor");
+            ok(f.compose(session, now));
             return;
         }
         assert!(

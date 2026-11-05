@@ -21,16 +21,16 @@ fn reliability_expired_intent_does_not_poison_app_chain() {
     let mut app = f.app(0, 101, 1);
     for (usage, phase) in [(224, 1), (22, 1), (22, 2), (224, 2)] {
         f.drivers[0].send(&f.h, usage, phase, 2);
-        ok(app.desktop.step_native_editor(&app.editor, 2));
+        ok(app.chains.desktop.step_native_editor(&app.editor, 2));
     }
-    let intent = ok(app.desktop.take_save_intent(&app.editor));
+    let intent = ok(app.chains.desktop.take_save_intent(&app.editor));
     std::thread::sleep(std::time::Duration::from_millis(1050));
     assert_eq!(
-        app.start_intent(intent, 2),
+        app.chains.start_intent(intent, 2),
         Err(NativeEditorError::Desktop(Status::Timeout))
     );
     assert!(
-        app.pending.is_empty(),
+        app.chains.pending.is_empty(),
         "pre-entry timeout owns no reconciliation chain"
     );
     assert_eq!(
@@ -41,7 +41,7 @@ fn reliability_expired_intent_does_not_poison_app_chain() {
     f.save(0, &mut app, 2);
     assert_eq!(ok(app.observe(2)).bytes, OLD);
     assert_eq!(f.counts(101), (1, 1, 1));
-    assert!(app.pending.is_empty());
+    assert!(app.chains.pending.is_empty());
     drop(app);
     f.finish();
 }

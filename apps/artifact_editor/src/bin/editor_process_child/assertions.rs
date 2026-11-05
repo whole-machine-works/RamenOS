@@ -27,6 +27,7 @@ const CASES: &[&str] = &[
     "D05PublishFdThree",
     "D05PublishFdZero",
     "D05RecordTruncation",
+    "D07ObserverOnlyChildOracleReject",
     "D08Body4097",
     "D08BodyNonAscii",
     "D08BodyNul",
@@ -142,6 +143,9 @@ impl Fixture {
             captured: None,
         }
     }
+    pub fn observer_only(&self) -> bool {
+        self.case == Some("D07ObserverOnlyChildOracleReject")
+    }
     fn notify(&mut self, point: u32) -> Result<()> {
         let case = self.case.ok_or("fixture case missing")?;
         self.occurrence = self
@@ -195,8 +199,11 @@ impl Fixture {
     pub fn mapping_point(&mut self) -> Result<()> {
         Ok(())
     }
-    pub fn reused_inode_case(&self) -> bool {
-        self.case == Some("D16ExistingInodeAsNewCredit")
+    pub fn sealed_return_case(&self) -> bool {
+        matches!(
+            self.case,
+            Some("D16ExistingInodeAsNewCredit" | "D27OldSurfaceGeneration")
+        )
     }
     pub fn foreign_return(&mut self, publication: u64, sealed_reuse: bool) -> bool {
         if publication > 0
@@ -204,12 +211,9 @@ impl Fixture {
             && (matches!(
                 self.case,
                 Some(
-                    "D12ForeignChildText"
-                        | "D12ForeignChildSurface"
-                        | "D12EqualBytesForeignInode"
-                        | "D27OldSurfaceGeneration"
+                    "D12ForeignChildText" | "D12ForeignChildSurface" | "D12EqualBytesForeignInode"
                 )
-            ) || self.reused_inode_case() && sealed_reuse)
+            ) || self.sealed_return_case() && sealed_reuse)
         {
             self.fired = true;
             true
@@ -237,7 +241,7 @@ impl Fixture {
         self.current = input > 0
             && !self.fired
             && self.case.is_some()
-            && !self.reused_inode_case()
+            && !self.sealed_return_case()
             && (self.case != Some("D10ChildSavedImitationClipped") || publication >= 2);
         if !self.current {
             return Ok(());
@@ -428,7 +432,7 @@ impl Fixture {
             return carrier.send_raw(&bytes, &fds);
         }
         let case = self.case.unwrap_or("");
-        if self.reused_inode_case() || case == "D10ChildSavedImitationClipped" && !self.current {
+        if self.sealed_return_case() || case == "D10ChildSavedImitationClipped" && !self.current {
             return carrier.send_raw(&bytes, &fds);
         }
         let mut raw = bytes;

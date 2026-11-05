@@ -24,3 +24,6 @@ mod editor_dev {
 mod native;
 #[cfg(feature = "host_native_save_v0_dev")]
 pub use native::{NativeArtifactEditor, NativeEditorError};
+
+#[cfg(all(target_os = "linux", feature = "host_editor_process_v0_dev"))]
+pub use native::{ProcessArtifactEditor, ProcessEditorOpenFailure, ProcessOpenCleanup};

@@ -44,6 +44,8 @@ pub(crate) fn assert_snapshot_bounds(snapshot: &Snapshot) {
     assert!(owners.lifetime_offers <= 128);
     assert!(owners.lifetime_objects <= 257);
     assert!(owners.lifetime_bytes <= 157_831_232);
+    assert!(snapshot.core_ordinary_queue <= 64);
+    assert!(snapshot.core_reset_queue <= 1);
     assert!(snapshot.app_pixels.is_empty() || snapshot.app_pixels.len() == SURFACE_BYTES);
     assert!(
         snapshot.composed_pixels.is_empty() || snapshot.composed_pixels.len() == COMPOSED_BYTES
@@ -90,9 +92,31 @@ pub(crate) fn assert_integrity(e: &Evidence, expected_id: &str) {
             "complete consecutive control inventory"
         );
         previous = row.sequence;
+        let closed_five_rights_send = expected_id == "D05AncillaryTruncation"
+            && row.received_fds == 5
+            && row.sender.is_none()
+            && row.direction == crate::editor_dev::ProcessAssertionDirection::ChildToParent
+            && e.syscalls()
+                .iter()
+                .filter(|call| {
+                    call.operation == Operation::Sendmsg
+                        && call.origin == Origin::Native
+                        && call.result == 88
+                        && call.ancillary_descriptor_ids.len() == 5
+                        && call
+                            .ancillary_descriptor_ids
+                            .iter()
+                            .all(|id| *id == call.ancillary_descriptor_ids[0])
+                        && e.descriptors().iter().any(|d| {
+                            d.role == Role::Selected
+                                && d.descriptor_id == call.ancillary_descriptor_ids[0]
+                        })
+                })
+                .count()
+                == 1;
         assert!(
-            row.received_fds <= 4,
-            "bounded malformed arity includes Bootstrap four"
+            row.received_fds <= 4 || closed_five_rights_send,
+            "receiver aliases remain bounded4; only the closed actual five-rights send exceeds them"
         );
     }
     let mut descriptor_ids = BTreeSet::new();
@@ -122,7 +146,14 @@ pub(crate) fn assert_integrity(e: &Evidence, expected_id: &str) {
                 rights += payload.len() / 4;
             }
         }
-        assert_eq!(rights, call.ancillary_descriptor_ids.len());
+        if call.origin == Origin::ParserStructural {
+            // A bounded parser input can contain zeroed SCM_RIGHTS integers
+            // without importing a native descriptor. It has no FD authority
+            // or alias/close claim; actual Native calls retain exact joins.
+            assert!(call.ancillary_descriptor_ids.is_empty());
+        } else {
+            assert_eq!(rights, call.ancillary_descriptor_ids.len());
+        }
         for id in &call.ancillary_descriptor_ids {
             assert!(descriptor_ids.contains(id));
         }
@@ -130,7 +161,11 @@ pub(crate) fn assert_integrity(e: &Evidence, expected_id: &str) {
             assert!(descriptor_ids.contains(&id));
         }
         if call.result < 0 {
-            assert!(call.errno.is_some());
+            if call.origin == Origin::ParserStructural {
+                assert_eq!(call.errno, None, "pure parser denial is not native errno");
+            } else {
+                assert!(call.errno.is_some());
+            }
         }
         if call.operation == Operation::Waitpid && call.result > 0 {
             assert_eq!(
@@ -670,7 +705,7 @@ fn malformed_text_or_key_was_attempted(e: &Evidence, id: &str) {
             assert!(u32_at(b, 68) as usize > len || u32_at(b, 72) as usize > len)
         }
         "D09FirstLineBeyondInventory" => {
-            assert!(u32_at(b, 76) as usize >= 1 + b[128..].iter().filter(|v| **v == b'\n').count())
+            assert!(u32_at(b, 76) as usize > b[128..].iter().filter(|v| **v == b'\n').count())
         }
         "D09WrongViewGeneration" => assert!(e.controls().iter().any(|r| r.bytes.len() == 88
             && u32_at(&r.bytes, 4) == 5
@@ -732,14 +767,18 @@ fn malformed_wire_was_attempted(e: &Evidence, id: &str) {
     );
 }
 
-fn attempted_object<'a>(
-    e: &'a Evidence,
-    role: Role,
-) -> &'a crate::editor_dev::ProcessAssertionObject {
+fn attempted_object(e: &Evidence, role: Role) -> &crate::editor_dev::ProcessAssertionObject {
     let ids: BTreeSet<_> = e.descriptors()
         [e.before().descriptor_count as usize..e.after().descriptor_count as usize]
         .iter()
-        .filter(|r| r.role == role)
+        // A successful replacement also closes the previous accepted pair.
+        // Only the actual aliases received during this attempt identify its
+        // bytes; old owner Unmapped/Closed rows are cleanup, not new input.
+        .filter(|r| {
+            r.role == role
+                && r.event == DescriptorEvent::Returned
+                && r.disposition == Disposition::Received
+        })
         .map(|r| r.descriptor_id)
         .collect();
     e.objects()
@@ -1045,9 +1084,15 @@ pub(crate) fn assert_negative(e: &Evidence, id: &str) {
             if id == "D10ChildSavedImitationClipped" {
                 child_saved_imitation_was_attempted(e);
                 assert_eq!(e.before().composed_pixels.len(), COMPOSED_BYTES);
-                assert_eq!(
-                    &e.before().composed_pixels[..640 * 88 * 4],
-                    &e.after().composed_pixels[..640 * 88 * 4]
+                assert!(
+                    e.before().composed_pixels[..48 * 2560]
+                        == e.after().composed_pixels[..48 * 2560],
+                    "exact protected top48 unchanged"
+                );
+                assert!(
+                    e.before().composed_pixels[528 * 2560..]
+                        == e.after().composed_pixels[528 * 2560..],
+                    "exact protected bottom40 unchanged"
                 );
             } else if id == "D10ReservedKeyForwardingReject" {
                 assert_eq!(e.before().delivered_sequence, e.after().delivered_sequence);
@@ -1306,6 +1351,41 @@ pub(crate) fn assert_negative(e: &Evidence, id: &str) {
             assert_eq!(e.after().owners.lifetime_offers, 128);
             assert_eq!(e.before().owners.lifetime_objects, 257);
             assert_eq!(e.before().owners.lifetime_bytes, 157_831_232);
+            if id == "D16CounterResetDoesNotRefund" {
+                assert_eq!(e.before().offer_cursor, 128);
+                assert_eq!(e.after().offer_cursor, 0);
+            }
+            if id == "D16ReseedDoesNotRefund" {
+                assert!(
+                    attempt_syscalls(e)
+                        .iter()
+                        .any(|r| r.operation == Operation::Pread
+                            && r.origin == Origin::Native
+                            && r.result > 0
+                            && r.descriptor_id.is_some_and(|id| e
+                                .descriptors()
+                                .iter()
+                                .any(|d| d.descriptor_id == id && d.role == Role::Selected)))
+                );
+            }
+            if id == "D16DropDoesNotRefund" {
+                assert!(e.after().owners.data < e.before().owners.data);
+                assert!(e.after().owners.maps < e.before().owners.maps);
+                assert!(
+                    attempt_syscalls(e)
+                        .iter()
+                        .any(|r| r.operation == Operation::Munmap
+                            && r.origin == Origin::Native
+                            && r.result == 0)
+                );
+                assert!(
+                    attempt_syscalls(e)
+                        .iter()
+                        .any(|r| r.operation == Operation::Close
+                            && r.origin == Origin::Native
+                            && r.result == 0)
+                );
+            }
             if id == "D16ExistingInodeAsNewCredit" {
                 let old = &e.descriptors()[..e.before().descriptor_count as usize];
                 let attempted = &e.descriptors()
@@ -1419,7 +1499,6 @@ pub(crate) fn assert_negative(e: &Evidence, id: &str) {
         "D23" => match id {
             "D23OldPreviewEnterDenied" => rejected(e, Status::Stale),
             "D23OldBootstrapDenied" => {
-                let earlier = &e.controls()[..e.before().control_count as usize];
                 let attempted = &e.controls()
                     [e.before().control_count as usize..e.after().control_count as usize];
                 assert!(
@@ -1427,7 +1506,13 @@ pub(crate) fn assert_negative(e: &Evidence, id: &str) {
                         && u32_at(&r.bytes, 4) == 1
                         && u64_at(&r.bytes, 28) != e.before().channel_generation
                         && r.received_fds == 3
-                        && earlier.iter().any(|old| old.bytes == r.bytes)),
+                        && e.retired_bootstrap_sources()
+                            .any(|(old, pid, birth, channel)| old.as_slice()
+                                == r.bytes.as_slice()
+                                && pid > 0
+                                && birth > 0
+                                && channel == u64_at(&r.bytes, 28)
+                                && channel != e.before().channel_generation)),
                     "actual byteidentical oldBootstrap replay to freshregistered child"
                 );
                 assert!(
@@ -1586,9 +1671,9 @@ pub(crate) fn assert_negative(e: &Evidence, id: &str) {
             let rows =
                 &e.controls()[e.before().control_count as usize..e.after().control_count as usize];
             if id == "D27OrdinaryOverflowReservedReset" {
-                assert_eq!(e.before().owners.ordinary_queue, 64);
-                assert_eq!(e.after().owners.reset_queue, 1);
-                assert!(e.after().owners.ordinary_queue <= 64);
+                assert_eq!(e.before().core_ordinary_queue, 64);
+                assert_eq!(e.after().core_reset_queue, 1);
+                assert!(e.after().core_ordinary_queue <= 64);
             } else {
                 assert!(
                     rows.iter().any(|r| r.bytes.len() == 88
@@ -1609,7 +1694,14 @@ pub(crate) fn assert_negative(e: &Evidence, id: &str) {
                                         .iter()
                                         .any(|d| d.role == Role::Surface
                                             && d.event == DescriptorEvent::Returned
-                                            && d.offer_id != e.before().pending_offer_id),
+                                            && d.offer_id == e.before().pending_offer_id
+                                            && e.descriptors()
+                                                [..e.before().descriptor_count as usize]
+                                                .iter()
+                                                .any(|offered| offered.role == Role::Surface
+                                                    && offered.offer_id == d.offer_id
+                                                    && offered.device == d.device
+                                                    && offered.inode == d.inode)),
                             "D27StaleResetCapture" =>
                                 u32_at(&r.bytes, 4) == 8
                                     && u32_at(&r.bytes, 68) == 2
@@ -1618,6 +1710,26 @@ pub(crate) fn assert_negative(e: &Evidence, id: &str) {
                         }),
                     "actual stale key/reset/surface/capture tuple"
                 );
+                if id == "D27OldSurfaceGeneration" {
+                    assert!(e.before().frame_surface_id.is_some_and(|v| v > 0));
+                    assert!(e.before().frame_surface_generation.is_some_and(|v| v > 0));
+                    assert_eq!(e.before().frame_surface_live, Some(true));
+                    let epoch = e
+                        .before()
+                        .frame_surface_epoch
+                        .expect("actual retained frame epoch");
+                    assert!(epoch > 0);
+                    assert!(epoch <= e.before().service_epoch);
+                    assert!(epoch < e.after().service_epoch);
+                    // Actual NativeAuthority retirement removes its frame;
+                    // absence is not an invented replacement generation.
+                    assert_eq!(e.after().frame_surface_id, None);
+                    assert_eq!(e.after().frame_surface_generation, None);
+                    assert_eq!(e.after().frame_surface_epoch, None);
+                    assert_eq!(e.after().frame_surface_live, None);
+                    assert!(e.checkpoints().iter().any(|p| p.point()
+                        == crate::editor_dev::ProcessAssertionPoint::PairValidatedBeforeAdopt));
+                }
                 rejected(e, Status::Stale);
             }
         }

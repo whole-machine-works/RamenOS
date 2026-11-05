@@ -36,9 +36,11 @@ fixture success.
 
 ## Ready work front
 
-**Now:** resume the existing full P0 assertion/contract sequence and its dependent
-process packets, preserving the qualified foundations. Advance RUN0/input/storage
-preparation independently within its ready dependencies.
+**Now:** finish the accepted P0 successor through complete P1 finite controls, P3
+Save/recovery acceptance, independent review, fixed-source qualification and repository
+delivery. P0 authoring and the private handoff are reviewed and committed; normal
+combined P1/P2 and focused P3 Linux behavior have executed. Continue across packets
+until the accepted workflow is delivered. See the [live delivery record](docs/plans/editor-process-delivery-2026-11-04.md).
 
 The first product checkpoint remains one keyboard-first human editing task that
 works without a model. Preserve its in-process control, then cross a real process
@@ -74,8 +76,9 @@ subsequent foundation fixes are accepted for their recorded source revisions.
 [Linux56 record](docs/plans/linux56-qualification-2026-10-13.md) retain the evidence.
 Do not redispatch completed repairs or rerun unchanged historical campaigns.
 Preserve original18/Reader93, regression13 and all affected consumers; changed
-inputs require fresh checks and reviewed source-registry successors. P0 remains
-incomplete, so these accepted foundations do not release process handlers.
+inputs require fresh checks and reviewed source-registry successors. Complete P0
+authoring, independent handoff review and actual strict Linux API RED now release
+P1/P2. Their complete runtime qualification remains separate from that release.
 
 ### Process successor: split at real ownership boundaries
 
@@ -98,8 +101,10 @@ P0 dispatch, verifies the actual Linux prerequisites early, and owns shared Carg
 features, IDL/generated output, source registries, `editor_dev/mod.rs` and
 `editor_dev/host.rs` bridges, gate registration/reader and status. A worker sends
 a bounded shared-file change to that owner instead of editing a sibling's inputs.
-The planned P1/P2 paths come from the existing process plan; they do not claim an
-implemented runtime. A PID, record or source inclusion is not process execution.
+The P1/P2 paths come from the existing process plan. Their normal combined runtime
+has focused Linux acceptance in the delivery record; complete fault coverage and
+fixed-candidate qualification remain open. A PID, record or source inclusion alone
+does not establish process execution.
 
 Use the next available author for P0; the other may prepare one ready target or
 recovery prerequisite while the reviewer checks P0 assertions. Once the complete

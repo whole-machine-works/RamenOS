@@ -61,9 +61,9 @@ timeout or establish stable latency or whole-CI speedup. Existing functional and
 timeout/containment assertions remain required on the selected build.
 
 `tools/ci/ci_lanes.py` owns one canonical inventory. `just preflight` executes the
-complete 56-stage serial sequence: proof and compiler-cache input prerequisites,
+complete 57-stage serial sequence: proof and compiler-cache input prerequisites,
 generation before formatting, tooling regressions, IDL lint, target builds,
-baseline and six strict lint tranches, workspace tests, the umbrella and all 40
+baseline and six strict lint tranches, workspace tests, the umbrella and all 41
 extended stages. The supplemental `editor-adapter-migration` host stage is inserted
 immediately after `desktop-editor-task` in the prior 55-stage inventory; removing
 it from that inventory reproduces every original 54-stage name, argument, order
@@ -87,8 +87,17 @@ Regression recordings are diagnostics; the original task and Reader 93 gates
 remain required for their own acceptance. A passed regression stage does not
 establish a child process, target persistence or containment.
 
-The extended runtime bodies partition exactly into15 host,11 editor, one agent
-and13 QEMU stages. The editor lane moves the eleven existing UI bodies to an
+The additive `editor-process-runtime` editor stage follows `editor-reliability`.
+It consumes fresh, source-bound receipts from the eight existing editor stages
+executed earlier in that same lane; standalone invocation executes those stages
+once. It checks the default-off child/parent builds and strict feature profiles,
+all thirty process families, genuine app and Store recovery consumers, and the
+source-bound process/parent recording join. Removing it reproduces the prior
+56-stage/40-extended inventory. Historical qualification does not qualify this
+new workflow.
+
+The extended runtime bodies partition exactly into15 host,12 editor, one agent
+and13 QEMU stages. The editor lane moves the twelve editor bodies to an
 independent runner; canonical stage names, arguments, environments and serial
 ordering remain intact. Its bootstrap checks compiler inputs, installs the pinned
 toolchain and runs codegen; editor gates require no Docker/proof-image bootstrap. QEMU also runs generation and the umbrella; host and agent each run the

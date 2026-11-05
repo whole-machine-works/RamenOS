@@ -73,6 +73,7 @@ EXTENDED_PATHS = (
     "tools/ci/foundry_s13_block_sector_oracle_s13_4.sh",
     "tools/ci/foundry_s13_runtime_block_s13_6.sh",
     "tools/ci/foundry_editor_reliability_ui1_1.sh",
+    "tools/ci/editor_process_gate.py",
 )
 
 
@@ -83,7 +84,7 @@ class LaneTests(unittest.TestCase):
     def test_exact_extended_coverage_order_and_overrides(self):
         stages = self.lanes.extended_plan()
         self.assertEqual(tuple(s.argv[-1] for s in stages), EXTENDED_PATHS)
-        self.assertEqual(len({s.name for s in stages}), 40)
+        self.assertEqual(len({s.name for s in stages}), 41)
         by_path = {s.argv[-1]: s for s in stages}
         self.assertEqual(dict(by_path["tools/ci/foundry_native_runner_s10_1.sh"].env), {"SKIP_E2E_ASSERTIONS": "1"})
         self.assertEqual(dict(by_path["tools/ci/foundry_s11_reference_vault_s11_3.sh"].env), {"REQUIRE_LIVE_ORACLE_TRACE": "1"})
@@ -117,9 +118,9 @@ class LaneTests(unittest.TestCase):
         self.assertEqual(full[0].name, "proof-prerequisites")
         self.assertEqual(full[1].name, "compiler-cache-prerequisites")
         self.assertEqual(full[1].argv, ("python3", "tools/ci/build_cache.py", "--check-inputs"))
-        self.assertEqual(len(full), 56)
+        self.assertEqual(len(full), 57)
         self.assertEqual(full[2:2 + len(self.lanes.quality_plan())], self.lanes.quality_plan())
-        self.assertEqual(full[-40:], self.lanes.extended_plan())
+        self.assertEqual(full[-41:], self.lanes.extended_plan())
         for script, command in (("foundry_preflight.sh", "all"), ("foundry_ci_extended.sh", "extended")):
             source = (ROOT / "tools/ci" / script).read_text()
             self.assertIn(f"ci_lanes.py {command}", source)
@@ -271,9 +272,9 @@ EXPECTED_EXTENDED_NAMES = (
     "host-target", "broker-kernel", "qemu-ipc", "driver-factory", "net-replay",
     "net-vault", "runtime-net", "golden-machine", "gop-probe", "hil-appliance",
     "org-governance", "persistent-storage", "blk-oracle", "block-replay",
-    "sector-oracle", "runtime-block", "editor-reliability",
+    "sector-oracle", "runtime-block", "editor-reliability", "editor-process-runtime",
 )
-EDITOR_EXTENDED_INDICES = (2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 39)
+EDITOR_EXTENDED_INDICES = (2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 39, 40)
 QEMU_EXTENDED_INDICES = (23, 24, 25, 28, 29, 30, 31, 32, 34, 35, 36, 37, 38)
 UMBRELLA_ENVIRONMENT = (
     ("S7_MIN_PROTOCOL_EVENTS", "6"), ("S7_MIN_PROTOCOL_PAIRS", "3"),
@@ -291,7 +292,7 @@ def stage_projection(stages):
 def expected_extended_projection():
     result = []
     for i, (name, path) in enumerate(zip(EXPECTED_EXTENDED_NAMES, EXTENDED_PATHS)):
-        argv = ("python3", path) if i in (8, 9) else (path,) if 14 <= i <= 19 else ("bash", path)
+        argv = ("python3", path) if i in (8, 9, 40) else (path,) if 14 <= i <= 19 else ("bash", path)
         env = (("SKIP_E2E_ASSERTIONS", "1"),) if i == 19 else (("REQUIRE_LIVE_ORACLE_TRACE", "1"),) if i == 28 else ()
         result.append((name, argv, env))
     return tuple(result)
@@ -326,7 +327,7 @@ class FiveLaneTests(unittest.TestCase):
         stage = matching[0]
         self.assertEqual((stage.lane, stage.argv, stage.env), (
             "editor", ("bash", "tools/ci/foundry_editor_reliability_ui1_1.sh"), ()))
-        self.assertEqual(stages[-1], stage)
+        self.assertEqual(stages[-2], stage)
         for lane in ("quality", "agent", "qemu"):
             self.assertNotIn(stage.name, [s.name for s in self.lanes.lane_plan(lane)])
         self.assertEqual([s.name for s in self.lanes.lane_plan("editor")].count(stage.name), 1)
@@ -407,8 +408,8 @@ class FiveLaneTests(unittest.TestCase):
             ("foundry-umbrella", ("tools/ci/foundry_all_s0_s1_s2_s3_s4_s5_s6.sh",), UMBRELLA_ENVIRONMENT),
         ))
         seen = [s.name for body in bodies.values() for s in body]
-        self.assertEqual(len(seen), 40)
-        self.assertEqual(len(set(seen)), 40)
+        self.assertEqual(len(seen), 41)
+        self.assertEqual(len(set(seen)), 41)
         self.assertCountEqual(seen, EXPECTED_EXTENDED_NAMES)
         self.assertIn("desktop-editor-task", seen)
         for lane, body in bodies.items():
@@ -462,7 +463,7 @@ class FiveLaneTests(unittest.TestCase):
             ("proof-prerequisites", ("bash", "tools/ci/foundry_agent_task_suite.sh", "--check"), ()),
             ("compiler-cache-prerequisites", ("python3", "tools/ci/build_cache.py", "--check-inputs"), ()),
         ) + quality + (("foundry-umbrella", ("tools/ci/foundry_all_s0_s1_s2_s3_s4_s5_s6.sh",), UMBRELLA_ENVIRONMENT),) + expected_extended_projection()
-        self.assertEqual(len(full), 56)
+        self.assertEqual(len(full), 57)
         self.assertEqual(stage_projection(self.lanes.preflight_plan()), full)
         for script, mode in (("foundry_preflight.sh", "all"), ("foundry_ci_extended.sh", "extended")):
             source = (ROOT / "tools/ci" / script).read_text()

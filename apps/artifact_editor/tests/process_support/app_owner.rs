@@ -1,6 +1,10 @@
 //! Actual process app and durable-root ownership across assertion failure.
 use crate::support::Fixture;
 #[path = "cleanup_owners.rs"]
+#[allow(
+    clippy::duplicate_mod,
+    reason = "The frozen helper inventory exercises each independently staged owner module; sharing one module would remove named cleanup controls."
+)]
 mod cleanup_owners;
 use artifact_editor::{NativeEditorError, ProcessArtifactEditor};
 use cleanup_owners::ParentOwners;
@@ -92,11 +96,45 @@ impl AppOwner {
             }
         }
     }
+    fn settle_originals(&mut self, now: u64) -> Result<(), NativeEditorError> {
+        let (end, first) = self.parents.as_mut().unwrap().begin_cleanup();
+        assert!(
+            !first,
+            "retire/join must already own the original cleanup deadline"
+        );
+        loop {
+            if self.app.as_ref().unwrap().assertion_pending_originals() == 0 {
+                return Ok(());
+            }
+            if Instant::now() >= end {
+                return Err(NativeEditorError::Desktop(Status::Timeout));
+            }
+            let (fixture, app) = self.borrow();
+            // These are actual nonblocking producer joins and observations of
+            // the same retained originals. Neither call replays a Save.
+            fixture.join_all();
+            match app.reconcile_originals(now) {
+                Ok(()) => {}
+                Err(NativeEditorError::Desktop(Status::NotReady))
+                | Err(NativeEditorError::Store(
+                    store_service::editor_store::StoreStatus::NotReady,
+                )) => {}
+                Err(error) => return Err(error),
+            }
+            std::thread::yield_now();
+        }
+    }
     pub fn release(mut self, now: u64) -> Fixture {
         assert!(
             self.child_joined,
             "actual child proof required before releasing parent root"
         );
+        if let Err(error) = self.settle_originals(now) {
+            panic!(
+                "INCOMPLETE: same original reconciliation failed; app and parent owners retained: {error:?}; pending={}",
+                self.app.as_ref().unwrap().assertion_pending_originals(),
+            );
+        }
         assert_eq!(
             self.app.as_ref().unwrap().assertion_pending_originals(),
             0,

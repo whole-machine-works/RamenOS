@@ -20,8 +20,10 @@ use std::{
 };
 
 #[path = "../../tests/process_support/fixture.rs"]
+#[allow(dead_code)]
 mod fixture;
 #[path = "../../tests/process_support/gate_record.rs"]
+#[allow(dead_code)]
 mod gate_record;
 
 struct OwnedApp {
@@ -187,12 +189,23 @@ impl OwnedApp {
                 }
             },
         );
+        if let Some(run) = self.run.as_mut() {
+            let f = self.fixture.as_ref().unwrap();
+            let sibling = self.other.as_ref().unwrap().child.as_ref().unwrap();
+            ok(f.dc.reference_process_assertion(run, sibling));
+        }
+        let compositor = self.fixture.as_ref().unwrap().drivers[1]
+            .s
+            .compositor
+            .clone();
         let end = Instant::now() + Duration::from_millis(1000);
         loop {
             let app = self.other.as_mut().unwrap();
-            ok(app.step(now));
-            if ok(app.observe(now)).bytes == B {
-                break;
+            ok(step_composed(app, &compositor, now));
+            match app.observe(now) {
+                Ok(observation) if observation.bytes == B => break,
+                Ok(_) | Err(NativeEditorError::Desktop(Status::NotReady | Status::Stale)) => {}
+                Err(error) => panic!("independent process observation denied:{error:?}"),
             }
             assert!(
                 Instant::now() < end,
@@ -223,7 +236,7 @@ impl OwnedApp {
             .request_process_editor_frame(app.child.as_mut().unwrap(), now));
         let end = Instant::now() + Duration::from_millis(1000);
         loop {
-            ok(app.step(now));
+            ok(step_composed(app, &f.drivers[1].s.compositor, now));
             if ok(app.observe(now)).bytes == body {
                 break;
             }
@@ -238,10 +251,14 @@ impl OwnedApp {
 
     fn save_other(&mut self, revision: u64, now: u64) {
         self.other_chord(22, now);
+        let compositor = self.fixture.as_ref().unwrap().drivers[1]
+            .s
+            .compositor
+            .clone();
         let end = Instant::now() + Duration::from_millis(1000);
         loop {
             let app = self.other.as_mut().unwrap();
-            ok(app.step(now));
+            ok(step_composed(app, &compositor, now));
             if ok(app.observe(now)).confirmed_revision == revision {
                 break;
             }
@@ -253,15 +270,50 @@ impl OwnedApp {
     fn until(&mut self, now: u64, predicate: impl Fn(&desktop::NativeEditorObservation) -> bool) {
         let end = Instant::now() + Duration::from_millis(1000);
         loop {
-            let (_, app) = self.parts();
-            match app.step(now) {
+            let (f, app) = self.parts();
+            match step_composed(app, &f.drivers[0].s.compositor, now) {
                 Ok(_) | Err(NativeEditorError::Desktop(Status::Stale | Status::NotReady)) => {}
                 Err(error) => panic!("current process progress denied:{error:?}"),
             }
-            if predicate(&ok(app.observe(now))) {
-                return;
+            match app.observe(now) {
+                Ok(observation) if predicate(&observation) => return,
+                Ok(_) | Err(NativeEditorError::Desktop(Status::NotReady | Status::Stale)) => {}
+                Err(error) => panic!("current process observation denied:{error:?}"),
             }
-            assert!(Instant::now() < end, "original bounded process observation");
+            if Instant::now() >= end {
+                let current = app.observe(now).map(|view| {
+                    (
+                        view.phase,
+                        view.confirmed_revision,
+                        view.text_generation,
+                        view.view_version,
+                        view.bytes.len(),
+                    )
+                });
+                let pending: Vec<_> = app
+                    .chains
+                    .pending
+                    .iter()
+                    .map(|chain| {
+                        (
+                            match chain.stage {
+                                Stage::Allocate => "Allocate",
+                                Stage::Commit => "Commit",
+                                Stage::ObserveAllocation => "ObserveAllocation",
+                                Stage::ObserveCommit => "ObserveCommit",
+                            },
+                            chain.binding.as_ref().map(|b| b.allocation.operation_id),
+                            chain.flight.is_some(),
+                            chain.lookup.is_some(),
+                            chain.continuation_allowed,
+                        )
+                    })
+                    .collect();
+                panic!(
+                    "original bounded process observation: current_phase_revision_text_view_len={current:?} pending_stage_operation_flight_lookup_continuation={pending:?} actual_store_counts={:?}",
+                    f.counts(101)
+                );
+            }
             thread::yield_now();
         }
     }
@@ -304,6 +356,7 @@ impl OwnedApp {
         let chains = &mut app.chains;
         let f = self.fixture.as_mut().unwrap();
         let run = self.run.as_mut().unwrap();
+        let compositor = f.drivers[0].s.compositor.clone();
         let stop = Arc::new(AtomicBool::new(false));
         thread::scope(|scope| {
             let finished = stop.clone();
@@ -311,7 +364,11 @@ impl OwnedApp {
                 let end = Instant::now() + Duration::from_millis(5000);
                 while !finished.load(Ordering::Acquire) {
                     match desktop.pump_process_editor(child, now) {
-                        Ok(_) => {}
+                        Ok(step) => {
+                            if step.publication_accepted() {
+                                ok(desktop.compose_native_save(&compositor, now));
+                            }
+                        }
                         Err(error) => return Some(error.status()),
                     }
                     assert!(Instant::now() < end);
@@ -373,7 +430,11 @@ impl OwnedApp {
                 }
                 Err(error) => assert_eq!(error.status, StoreStatus::Timeout),
             }
-            ok(self.app.as_mut().unwrap().step(now));
+            ok(step_composed(
+                self.app.as_mut().unwrap(),
+                &self.fixture.as_ref().unwrap().drivers[0].s.compositor,
+                now,
+            ));
             assert!(
                 Instant::now() < end,
                 "real Store writer reaches exact pause"
@@ -391,7 +452,11 @@ impl OwnedApp {
                 }
                 Err(error) => assert_eq!(error.status, StoreStatus::Timeout),
             }
-            ok(self.other.as_mut().unwrap().step(now));
+            ok(step_composed(
+                self.other.as_mut().unwrap(),
+                &self.fixture.as_ref().unwrap().drivers[1].s.compositor,
+                now,
+            ));
             assert!(Instant::now() < end);
         }
     }
@@ -409,11 +474,11 @@ impl OwnedApp {
             observation.confirmed_revision == revision
         });
         let (f, app) = self.parts();
+        let frame = ok(f.h.compose_native_save(&f.drivers[0].s.compositor, now));
         assert_eq!(
             ok(app.observe(now)).phase,
             desktop::NativeEditorPhase::Saved
         );
-        let frame = ok(f.h.compose_native_save(&f.drivers[0].s.compositor, now));
         let chrome = ok(f.dc.save_chrome_observation(&f.drivers[0].s.compositor));
         assert_eq!(chrome.label, desktop::NativeEditorPhase::Saved);
         assert_eq!(frame.bgra.len(), 640 * 568 * 4);
@@ -436,13 +501,14 @@ impl OwnedApp {
         let app = self.app.as_mut().unwrap();
         let f = self.fixture.as_mut().unwrap();
         let run = self.run.as_mut().unwrap();
+        let compositor = f.drivers[0].s.compositor.clone();
         let stop = Arc::new(AtomicBool::new(false));
         thread::scope(|scope| {
             let finished = stop.clone();
             let borrower = scope.spawn(move || {
                 let end = Instant::now() + Duration::from_millis(5000);
                 while !finished.load(Ordering::Acquire) {
-                    if let Err(error) = app.step(now) {
+                    if let Err(error) = step_composed(app, &compositor, now) {
                         return Some(error);
                     }
                     assert!(
@@ -495,7 +561,7 @@ impl OwnedApp {
 
     fn reopen_child(&mut self, expected: &[u8], now: u64) {
         self.retire_and_join(ProcessRetireReason::HumanClose, now);
-        let (f, app) = self.parts();
+        let (_, app) = self.parts();
         ok(app.reconcile_originals(now));
         assert!(
             app.chains.pending.is_empty(),
@@ -572,6 +638,18 @@ impl OwnedApp {
     }
 }
 
+fn step_composed(
+    app: &mut ProcessArtifactEditor,
+    compositor: &desktop::Endpoint,
+    now: u64,
+) -> Result<desktop::ProcessEditorStep, NativeEditorError> {
+    let step = app.step(now)?;
+    if step.publication_accepted() {
+        app.chains.desktop.compose_native_save(compositor, now)?;
+    }
+    Ok(step)
+}
+
 fn delivered(
     f: &mut Fixture,
     app: &mut ProcessArtifactEditor,
@@ -584,9 +662,15 @@ fn delivered(
     let sequence = f.drivers[session].next - 1;
     let end = Instant::now() + Duration::from_millis(1000);
     loop {
-        let step = ok(app.step(now));
-        if step.consumed_sequence() == Some(sequence) {
-            break;
+        match step_composed(app, &f.drivers[session].s.compositor, now) {
+            Ok(step) if step.consumed_sequence() == Some(sequence) => break,
+            Ok(_) => {}
+            Err(NativeEditorError::Desktop(Status::Stale)) if app.observe(now).is_ok() => {}
+            Err(error) => panic!(
+                "actual input progress denied: session={session} usage={usage} phase={phase} sequence={sequence} error={error:?} current_observation={:?}",
+                app.observe(now)
+                    .map(|view| (view.phase, view.confirmed_revision))
+            ),
         }
         assert!(
             Instant::now() < end,
@@ -664,7 +748,32 @@ fn assert_original_held(owner: &OwnedApp, operation: u64, entered: Instant, dead
 fn settle_original(owner: &mut OwnedApp, revision: u64, now: u64) {
     let end = Instant::now() + Duration::from_millis(1000);
     loop {
-        ok(owner.app.as_mut().unwrap().reconcile_originals(now));
+        let app = owner.app.as_mut().unwrap();
+        if let Err(error) = app.reconcile_originals(now) {
+            let retained: Vec<_> = app
+                .chains
+                .pending
+                .iter()
+                .map(|chain| {
+                    (
+                        match chain.stage {
+                            Stage::Allocate => "Allocate",
+                            Stage::Commit => "Commit",
+                            Stage::ObserveAllocation => "ObserveAllocation",
+                            Stage::ObserveCommit => "ObserveCommit",
+                        },
+                        chain.flight.is_some(),
+                        chain.flight.as_ref().is_some_and(|f| f.execution.is_some()),
+                        chain.lookup.is_some(),
+                        chain.original.is_some(),
+                    )
+                })
+                .collect();
+            panic!(
+                "actual original reconciliation denied: error={error:?} retained_stage_flight_execution_lookup_original={retained:?} child_retained={}",
+                app.child.is_some()
+            );
+        }
         if owner.app.as_ref().unwrap().chains.pending.is_empty() {
             break;
         }
@@ -908,7 +1017,7 @@ fn process_d20_lost_reply_original_only_recovery_no_replay() {
                 "D20ForeignOriginalOwnerDenied" | "D20NewIntentCannotReconcileOld"
             ) {
                 owner.open_other(3);
-                owner.replace_other(NEW, 3);
+                owner.replace_other(C, 3);
                 let f = owner.fixture.as_mut().unwrap();
                 let app = owner.other.as_ref().unwrap();
                 let p = Arc::new(ok(f.prepared().controller().pause_native_save(
@@ -1235,10 +1344,14 @@ fn assert_no_capture_intent(owner: &mut OwnedApp, retired: bool) {
 }
 
 fn pump_capture_attempt(owner: &mut OwnedApp, now: u64) -> Option<Status> {
+    let compositor = owner.fixture.as_ref().unwrap().drivers[0]
+        .s
+        .compositor
+        .clone();
     let end = Instant::now() + Duration::from_millis(1000);
     loop {
         let app = owner.app.as_mut().unwrap();
-        match app.step(now) {
+        match step_composed(app, &compositor, now) {
             Ok(step) if step.publication_accepted() => return None,
             Ok(_) => {}
             Err(NativeEditorError::Desktop(status)) => return Some(status),
@@ -1282,6 +1395,7 @@ fn process_d18_no_save_without_genuine_single_use_capture() {
                     }
                     assert_eq!(owner.fixture.as_ref().unwrap().counts(101), (0, 0, 0));
                     let f = owner.fixture.as_ref().unwrap();
+                    ok(f.h.compose_native_save(&f.drivers[0].s.compositor, 2));
                     assert_ne!(
                         ok(f.dc.save_chrome_observation(&f.drivers[0].s.compositor)).label,
                         desktop::NativeEditorPhase::Saved
@@ -1293,7 +1407,11 @@ fn process_d18_no_save_without_genuine_single_use_capture() {
                     owner.queue_chord(22, 2);
                     let end = Instant::now() + Duration::from_millis(1000);
                     while owner.fixture.as_ref().unwrap().counts(101).2 != 1 {
-                        match owner.app.as_mut().unwrap().step(2) {
+                        match step_composed(
+                            owner.app.as_mut().unwrap(),
+                            &owner.fixture.as_ref().unwrap().drivers[0].s.compositor,
+                            2,
+                        ) {
                             Ok(_)
                             | Err(NativeEditorError::Desktop(
                                 Status::Stale | Status::NotReady | Status::Disconnected,
@@ -1582,6 +1700,19 @@ fn process_d26_revoke_preserves_genuine_issued_permit() {
             owner.retire_and_join(ProcessRetireReason::Revoked, 3);
             assert_original_held(&owner, operation, entered, deadline);
             assert_eq!(owner.fixture.as_ref().unwrap().counts(101), (1, 1, 0));
+            if scenario.id() == "D26OtherOwnerAndOriginalReceiptProgress" {
+                owner.open_other(3);
+                owner.replace_other(C, 3);
+                owner.save_other(2, 3);
+                let f = owner.fixture.as_ref().unwrap();
+                ok(f.h.compose_native_save(&f.drivers[1].s.compositor, 3));
+                let other = ok(owner.other.as_ref().unwrap().observe(3));
+                assert_eq!(other.bytes, C);
+                assert_eq!(other.phase, desktop::NativeEditorPhase::Saved);
+                assert_eq!(f.counts(102), (1, 1, 1));
+                assert_eq!(f.counts(101), (1, 1, 0));
+                assert_original_held(&owner, operation, entered, deadline);
+            }
             owner.release_pause(&pause);
             settle_original(&mut owner, 2, 3);
             assert_receipt(&owner, operation, NEW);
@@ -1608,7 +1739,39 @@ fn process_d03_receipt_notice_genuine_parent() {
         .remove(0);
     let operation = row.allocation.operation_id;
     assert_receipt(&owner, operation, NEW);
-    let actor = ok(owner.app.as_ref().unwrap().observe(2)).actor;
+    let current = ok(owner.app.as_ref().unwrap().observe(2));
+    let actor = current.actor.clone();
+    // Store progress follows the carrier pump. Drive the next actual control
+    // turn so the genuine receipt notice precedes this fresh ordinary pair.
+    // No new input, Save, source, operation, or capture authority is created.
+    let (f, app) = owner.parts();
+    let previous_publication =
+        ok(f.h.observe_process_child(app.child.as_ref().unwrap())).publication_generation();
+    ok(f.h.request_process_editor_frame(app.child.as_mut().unwrap(), 2));
+    let end = Instant::now() + Duration::from_millis(1000);
+    loop {
+        let step = step_composed(app, &f.drivers[0].s.compositor, 2)
+            .expect("actual postreceipt pair must publish under its original child budget");
+        if step.publication_accepted() {
+            break;
+        }
+        assert!(
+            Instant::now() < end,
+            "bounded genuine postreceipt publication"
+        );
+        thread::yield_now();
+    }
+    let after = ok(app.observe(2));
+    assert_eq!(after.bytes, current.bytes);
+    assert_eq!(after.text_generation, current.text_generation);
+    assert_eq!(after.view_version, current.view_version);
+    assert_eq!(after.confirmed_revision, 2);
+    assert_eq!(after.phase, desktop::NativeEditorPhase::Saved);
+    assert!(
+        ok(f.h.observe_process_child(app.child.as_ref().unwrap())).publication_generation()
+            > previous_publication
+    );
+    assert_eq!(f.counts(101), (1, 1, 1));
     let evidence = owner.finish(2);
     let mut messages = std::collections::BTreeSet::new();
     let mut notices = 0;
@@ -1690,11 +1853,45 @@ fn read_from_launch(
 }
 
 fn store_data_cap(owner: &mut OwnedApp) {
-    let (f, app) = owner.parts();
-    let mut held = PanicOwners::new(Vec::new());
-    for id in 1000..1032 {
-        let triple = read_from_launch(f, &app.chains.launch, id);
-        assert!(triple.2.selected().is_some());
+    let f = owner.fixture.as_mut().unwrap();
+    // This independently approved Read context has not been consumed into
+    // process enrollment. Re-extracting A's ProcessOwned Read is denied.
+    let launch = PanicOwners::new(f.launch(1, 102, 2));
+    // The consumed A Read can leave an unowned registry row until the next
+    // real allocation collects it. Retain one genuine B Read first, so quota
+    // increments are measured from an actually owned, post-collection baseline.
+    let mut held = PanicOwners::new(vec![read_from_launch(f, &launch, 1000)]);
+    assert!(held[0].2.selected().is_some());
+    let mut identities = std::collections::BTreeSet::new();
+    identities.insert(held[0].2.selected().unwrap().descriptor().handle.pack());
+    while ok(f.prepared().controller().evidence())
+        .ledger
+        .shared_objects
+        < 32
+    {
+        let before = ok(f.prepared().controller().evidence())
+            .ledger
+            .shared_objects;
+        let id = 1000 + held.len() as u64;
+        let triple = read_from_launch(f, &launch, id);
+        assert!(
+            triple.2.selected().is_some(),
+            "genuine data fill request{id} denied before actual cap32: reply_status={} shared_before={before} shared_after={}",
+            ok(artifact::ReadSelectedReply::decode(triple.2.wire())).status,
+            ok(f.prepared().controller().evidence())
+                .ledger
+                .shared_objects
+        );
+        assert!(
+            identities.insert(triple.2.selected().unwrap().descriptor().handle.pack()),
+            "each retained selected Read owns a genuinely distinct data descriptor"
+        );
+        assert_eq!(
+            ok(f.prepared().controller().evidence())
+                .ledger
+                .shared_objects,
+            before + 1
+        );
         held.push(triple);
     }
     assert_eq!(
@@ -1703,7 +1900,8 @@ fn store_data_cap(owner: &mut OwnedApp) {
             .shared_objects,
         32
     );
-    let denied = read_from_launch(f, &app.chains.launch, 1032);
+    let id = 1000 + held.len() as u64;
+    let denied = read_from_launch(f, &launch, id);
     assert_eq!(
         ok(artifact::ReadSelectedReply::decode(denied.2.wire())).status,
         StoreStatus::Exhausted as u32
@@ -1715,47 +1913,58 @@ fn store_data_cap(owner: &mut OwnedApp) {
             .shared_objects,
         32
     );
-    drop(held.pop());
-    let fresh = read_from_launch(f, &app.chains.launch, 1033);
+    assert!(!held.is_empty());
+    let released = held.pop().unwrap();
+    let released_descriptor = released.2.selected().unwrap().descriptor().handle.pack();
+    drop(released);
+    assert!(held.iter().all(|triple| {
+        triple.2.selected().unwrap().descriptor().handle.pack() != released_descriptor
+    }));
+    // The readonly registry ledger may still include the unowned row. This
+    // genuine admission performs normal lazy collection and allocates a new
+    // distinct data object; no test-only collection or count mutation occurs.
+    let fresh = read_from_launch(f, &launch, id + 1);
     assert!(fresh.2.selected().is_some());
+    let fresh_descriptor = fresh.2.selected().unwrap().descriptor().handle.pack();
+    assert_ne!(fresh_descriptor, released_descriptor);
+    assert!(identities.insert(fresh_descriptor));
+    assert_eq!(
+        ok(f.prepared().controller().evidence())
+            .ledger
+            .shared_objects,
+        32
+    );
     drop((fresh, denied, held));
 }
 
 fn store_query_cap(owner: &mut OwnedApp) {
-    let (f, app) = owner.parts();
+    let f = owner.fixture.as_mut().unwrap();
+    // This independently approved Read context has not been consumed into
+    // process enrollment. Re-extracting A's ProcessOwned Read is denied.
+    let launch = PanicOwners::new(f.launch(1, 102, 2));
     let mut held = PanicOwners::new(Vec::new());
     while ok(f.h.preview_counts()).query_slots < 64 {
-        let query = selected_request(&app.chains.launch, 1100 + held.len() as u64);
-        let entry = ok(f.h.begin_save_read(
-            app.chains.launch.desktop().bindings().artifact_origin(),
-            &query,
-            2,
-        ));
+        let query = selected_request(&launch, 1100 + held.len() as u64);
+        let entry =
+            ok(f.h.begin_save_read(launch.desktop().bindings().artifact_origin(), &query, 2));
         let registered = ok(f
             .host()
-            .register_native_save(app.chains.launch.endpoint(), ok(entry.wait_once())));
+            .register_native_save(launch.endpoint(), ok(entry.wait_once())));
         for id in entry.producer_ids() {
             join_core(f, &id);
         }
         held.push((entry, registered));
     }
     assert_eq!(ok(f.h.preview_counts()).query_slots, 64);
-    let query = selected_request(&app.chains.launch, 1200);
+    let query = selected_request(&launch, 1200);
     assert!(matches!(
-        f.h.begin_save_read(
-            app.chains.launch.desktop().bindings().artifact_origin(),
-            &query,
-            2
-        ),
+        f.h.begin_save_read(launch.desktop().bindings().artifact_origin(), &query, 2),
         Err(Status::Exhausted)
     ));
     assert_eq!(ok(f.h.preview_counts()).query_slots, 64);
     drop(held.pop());
-    let entry = ok(f.h.begin_save_read(
-        app.chains.launch.desktop().bindings().artifact_origin(),
-        &query,
-        2,
-    ));
+    let entry =
+        ok(f.h.begin_save_read(launch.desktop().bindings().artifact_origin(), &query, 2));
     let call = ok(entry.wait_once());
     for id in entry.producer_ids() {
         f.join(&id);
@@ -1764,27 +1973,24 @@ fn store_query_cap(owner: &mut OwnedApp) {
 }
 
 fn store_producer_cap(owner: &mut OwnedApp) {
-    let (f, app) = owner.parts();
+    let f = owner.fixture.as_mut().unwrap();
+    // This independently approved Read context has not been consumed into
+    // process enrollment. Re-extracting A's ProcessOwned Read is denied.
+    let launch = PanicOwners::new(f.launch(1, 102, 2));
     let mut held = PanicOwners::new(Vec::new());
-    for id in 1300..1332 {
-        let pause = desktop_pause(f, 0, desktop::NativeSavePausePoint::BeforeEntryAdmission);
-        let query = selected_request(&app.chains.launch, id);
-        let entry = ok(f.h.begin_save_read(
-            app.chains.launch.desktop().bindings().artifact_origin(),
-            &query,
-            2,
-        ));
+    while f.h.native_producer_counts().held < 64 {
+        let id = 1300 + held.len() as u64;
+        let pause = desktop_pause(f, 1, desktop::NativeSavePausePoint::BeforeEntryAdmission);
+        let query = selected_request(&launch, id);
+        let entry =
+            ok(f.h.begin_save_read(launch.desktop().bindings().artifact_origin(), &query, 2));
         assert!(ok(pause.wait_until_entered(1000)).entered);
         held.push((entry, pause));
     }
     assert_eq!(f.h.native_producer_counts().held, 64);
-    let query = selected_request(&app.chains.launch, 1332);
+    let query = selected_request(&launch, 1332);
     assert!(matches!(
-        f.h.begin_save_read(
-            app.chains.launch.desktop().bindings().artifact_origin(),
-            &query,
-            2
-        ),
+        f.h.begin_save_read(launch.desktop().bindings().artifact_origin(), &query, 2),
         Err(Status::Exhausted)
     ));
     assert_eq!(f.h.native_producer_counts().held, 64);
@@ -1798,11 +2004,8 @@ fn store_producer_cap(owner: &mut OwnedApp) {
     }
     assert_eq!(f.h.native_producer_counts().held, 0);
     drop(held);
-    let entry = ok(f.h.begin_save_read(
-        app.chains.launch.desktop().bindings().artifact_origin(),
-        &query,
-        2,
-    ));
+    let entry =
+        ok(f.h.begin_save_read(launch.desktop().bindings().artifact_origin(), &query, 2));
     let call = ok(entry.wait_once());
     for id in entry.producer_ids() {
         f.join(&id);
@@ -1834,18 +2037,22 @@ fn store_pin_cap(owner: &mut OwnedApp) {
 }
 
 fn store_pending_cap(owner: &mut OwnedApp) {
+    let retained_child = {
+        let (f, app) = owner.parts();
+        ok(f.h.observe_process_child(app.child.as_ref().unwrap()))
+    };
     let f = owner.fixture.as_mut().unwrap();
     let mut held = PanicOwners::new(Vec::new());
     while ok(f.h.preview_counts()).read_contexts < 16 {
-        let launch = f.launch(0, 101, 2);
+        let launch = f.launch(1, 102, 2);
         let actor = boot(&launch);
         let read = read_from_launch(f, &launch, 1600 + held.len() as u64);
         assert!(read.2.selected().is_some());
         revoke(
             f,
-            0,
+            1,
             &artifact_store_schema::editor_save::EditorActorV0 {
-                owner_id: 1,
+                owner_id: 2,
                 session_id: actor.session_id,
                 session_generation: actor.session_generation,
                 instance_id: actor.instance_id,
@@ -1855,14 +2062,22 @@ fn store_pending_cap(owner: &mut OwnedApp) {
         );
         held.push((launch, read));
     }
-    let (selector, pin, _) = f.prepare(0, 101, 2);
-    let mut approval = f.approval(0, 2);
+    let (selector, pin, _) = f.prepare(1, 102, 2);
+    let mut approval = f.approval(1, 2);
     assert!(matches!(
-        f.h.confirm_save_preview(&f.drivers[0].s.chrome.peer, &mut approval, 2),
+        f.h.confirm_save_preview(&f.drivers[1].s.chrome.peer, &mut approval, 2),
         Err(Status::Exhausted)
     ));
     assert_eq!(ok(f.h.preview_counts()).read_contexts, 16);
     drop((selector, pin, approval, held));
+    let app = owner.app.as_ref().unwrap();
+    let after_child = ok(f.h.observe_process_child(app.child.as_ref().unwrap()));
+    assert_eq!(after_child.process_id(), retained_child.process_id());
+    assert_eq!(after_child.birth_ticks(), retained_child.birth_ticks());
+    assert_eq!(
+        after_child.executable_sha256(),
+        retained_child.executable_sha256()
+    );
 }
 
 fn store_io_cap(owner: &mut OwnedApp) {
@@ -1928,7 +2143,7 @@ fn store_io_cap(owner: &mut OwnedApp) {
     let app = owner.third.as_mut().unwrap();
     let end = Instant::now() + Duration::from_millis(1000);
     loop {
-        ok(app.step(2));
+        ok(step_composed(app, &f.drivers[0].s.compositor, 2));
         match app.observe(2) {
             Ok(view) if view.bytes == C => break,
             Ok(_) | Err(NativeEditorError::Desktop(Status::NotReady)) => {}
@@ -1949,7 +2164,7 @@ fn store_io_cap(owner: &mut OwnedApp) {
         .request_process_editor_frame(app.child.as_mut().unwrap(), 2));
     let end = Instant::now() + Duration::from_millis(1000);
     while ok(app.observe(2)).bytes != NEW {
-        ok(app.step(2));
+        ok(step_composed(app, &f.drivers[0].s.compositor, 2));
         assert!(Instant::now() < end);
     }
     for (usage, phase) in [(224, 1), (22, 1), (22, 2), (224, 2)] {
@@ -1990,7 +2205,7 @@ fn store_io_cap(owner: &mut OwnedApp) {
     }
     let end = Instant::now() + Duration::from_millis(1000);
     while ok(app.observe(3)).confirmed_revision != 2 {
-        ok(app.step(3));
+        ok(step_composed(app, &f.drivers[0].s.compositor, 3));
         assert!(Instant::now() < end);
     }
     assert_eq!(f.counts(103), (1, 1, 1));
@@ -2034,7 +2249,12 @@ fn process_d15_genuine_store_resource_boundaries() {
             }
             if !matches!(scenario.id(), "D15InflightSaveTwo" | "D15StoreIoThree") {
                 assert_eq!(owner.fixture.as_ref().unwrap().counts(101), before);
-                owner.reopen_child(OLD, 3);
+                if scenario.id() != "D15StorePendingSeventeen" {
+                    owner.reopen_child(OLD, 3);
+                }
+                // Pending17 kept this same genuine A process/approval valid
+                // while B filled the context cap. Its actual input and Save
+                // demonstrate progress without a 34th diagnostic grant row.
                 owner.replace(NEW, 3);
                 owner.save(2, 3);
             }
@@ -2332,7 +2552,7 @@ fn owned_parent_death_outer_worker() {
     .unwrap();
     assert!(root.is_dir());
     std::mem::forget(held_root);
-    println!("D29_ACTUAL_QUARANTINE {}", evidence);
+    println!("\nD29_ACTUAL_QUARANTINE {}", evidence);
 }
 
 #[cfg(target_os = "linux")]

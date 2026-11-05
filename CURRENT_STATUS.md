@@ -1,8 +1,8 @@
 # Current Status
 
-**Last Updated:** 2026-11-04
+**Last Updated:** 2026-11-05
 **Status:** Active and authoritative for landed state
-**Current Slice:** UI1.1d P0/process sequence after qualified foundation follow-ups
+**Current Slice:** UI1.1d reviewed P0 release; process fault coverage and delivery qualification
 **Physical Lane:** S12.4 HIL appliance observation/actuation awaits setup
 **Software Lane:** SW0 foundations through A2.9; full A2 and comparison pending
 
@@ -22,6 +22,20 @@ Its eighteen original assertions and complete 93-scenario recording checks passe
 on macOS/Linux. This is a trusted in-process host consumer. An actual editor child,
 authenticated process transport, target execution and target persistence remain
 unfinished. Models are unnecessary for this task.
+
+The working delivery in [PR52](https://github.com/whole-machine-works/RamenOS/pull/52)
+has a reviewed complete P0 handoff and thirty authored assertion families, committed
+as `855f5e6`, with strict source-bound Linux missing-API RED. Its isolated successor
+candidates execute the actual default-off Linux editor child. Focused acceptance
+covers genuine enrollment, child edit/raster, immutable authenticated publication,
+one-use capture, Store Save/full receipt, newer-draft Unsaved, original-only lost-reply
+recovery, and issued writer survival after child death or revoke. Focused evidence also covers native fault and capacity boundaries, independent
+cursor parity, terminal original closure, quarantine, and the unchanged
+eighteen-case native task.
+These are draft-branch implementation and focused validation results; all thirty
+families, affected semantic readers, fixed-source complete qualification and
+repository integration remain pending. The [delivery record](docs/plans/editor-process-delivery-2026-11-04.md)
+owns the exact sources, retained receipts, open faults and continuation path.
 
 The four host reliability packets from external review are implemented and
 independently reviewed. Store requests retain their actual reply data through
@@ -58,8 +72,8 @@ The [November 4 Linux prerequisite packet](docs/plans/editor-process-linux-prere
 adds six independently reviewed kernel witnesses and a separate default-off gate:
 real shared mappings and sealing, received descriptor ownership, unprivileged
 credential rejection and inherited-endpoint sender identity. These are primitive
-prerequisites; the actual editor carrier, held registered executable, full thirty
-P0 families and P1–P3 remain incomplete. The existing thirteen setup controls and
+prerequisites. At that recorded source, the actual editor carrier and full P0/P1–P3
+were incomplete; the reviewed working successor above now advances that path. The existing thirteen setup controls and
 four missing-process-API consumers retain their separate preparation scope.
 
 Both `EditorClient` and `NativeTextEditor` use `desktop_editor_core` for pure
@@ -68,9 +82,9 @@ legacy/native policies and detached-scratch owner admission remain distinct.
 The core has no Desktop, Store, Focus or Save authority. Its 26 pure assertions
 and four explicit required-feature adapter assertions passed on macOS/Linux;
 strict Linux55 preserves original13/18, strict3 and Reader93 requirements.
-Protocol384/version1 and the process contracts are preparation. Private process
-smoke/cleanup experiments do not establish child execution, authenticated channels,
-sealed publication or retained Save ownership after child death. Re-freeze current
+Protocol384/version1 and the process contracts alone establish no runtime result.
+The successor above supplies bounded Linux evidence; historical private smoke and
+cleanup experiments do not substitute for its remaining complete qualification. Re-freeze current
 source before reusing historical evidence; the old 217-row task closure is not a
 permanent count requirement after legitimate dependency additions.
 

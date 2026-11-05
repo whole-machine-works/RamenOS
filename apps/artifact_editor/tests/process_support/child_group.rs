@@ -2,6 +2,10 @@
 //! becomes an empty-slot cleanup proof. Parent Store/root owners are released
 //! only after every actual child proof and its supervisor join are retained.
 use crate::support::Fixture;
+#[allow(
+    clippy::duplicate_mod,
+    reason = "Each independently staged owner module retains its own three named cleanup controls in the frozen executable inventory."
+)]
 #[path = "cleanup_owners.rs"]
 mod cleanup_owners;
 use cleanup_owners::ParentOwners;
@@ -97,6 +101,10 @@ impl ChildGroup {
             }
         }
     }
+    #[allow(
+        clippy::result_large_err,
+        reason = "Failed cleanup must return this same inline sole owner, preserving its original deadline, children and parent roots for retry or quarantine."
+    )]
     pub fn finish(mut self, now: u64) -> Result<(Fixture, Vec<OwnedEditorChildExitProof>), Self> {
         if self.consuming_owner_unreturned {
             return Err(self);

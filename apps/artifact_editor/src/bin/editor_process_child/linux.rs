@@ -443,7 +443,11 @@ impl Engine {
         self.last_request = request;
         Ok(())
     }
-    fn input(&mut self, value: p::DeliverInput) -> Result<Message> {
+    fn input(
+        &mut self,
+        value: p::DeliverInput,
+        #[cfg(feature = "host_editor_process_child_assertions_v0_dev")] observer_only: bool,
+    ) -> Result<Message> {
         self.parent_request(value.request_id, value.channel_generation)?;
         need(
             self.pending.is_none() && !self.frozen && self.deliveries < 128 && self.downs < 64,
@@ -455,7 +459,14 @@ impl Engine {
                 && value.focus_service_epoch > 0,
             "input lineage",
         )?;
-        let effect = if value.flags == 1 || value.phase == 3 {
+        #[cfg(not(feature = "host_editor_process_child_assertions_v0_dev"))]
+        let observer_only = false;
+        // This closed assertion child deliberately acknowledges ordinary keys
+        // without editing. Reset and genuine CtrlS retain their normal rules.
+        // Production has no selector or runtime argument enabling this branch.
+        let effect = if observer_only && value.flags == 0 && matches!(value.phase, 1 | 2) {
+            self.model.reset_navigation(ResetPolicy::PreserveNavigation)
+        } else if value.flags == 1 || value.phase == 3 {
             self.model
                 .reset_navigation(ResetPolicy::ClearPreferredColumn)
         } else if value.phase == 1 {
@@ -627,7 +638,11 @@ pub(super) fn run() -> Result<()> {
             Message::DeliverInput(value) => {
                 #[cfg(feature = "host_editor_process_child_assertions_v0_dev")]
                 fixture.input_point()?;
-                let ack = match engine.input(value) {
+                let ack = match engine.input(
+                    value,
+                    #[cfg(feature = "host_editor_process_child_assertions_v0_dev")]
+                    fixture.observer_only(),
+                ) {
                     Ok(ack) => ack,
                     Err(error) => {
                         let ack = Message::InputAck(p::InputAck {
@@ -713,7 +728,7 @@ fn publish(
 ) -> Result<()> {
     need(engine.pending.is_none(), "publication already pending")?;
     #[cfg(feature = "host_editor_process_child_assertions_v0_dev")]
-    let sealed_reuse = if fixture.reused_inode_case() && engine.publication > 0 {
+    let sealed_reuse = if fixture.sealed_return_case() && engine.publication > 0 {
         let mut immutable = true;
         for fd in &pair {
             let seals = sys(

@@ -634,6 +634,11 @@ struct OriginalState {
     closed: bool,
     commit_dispatched: bool,
     allocation_delivered: bool,
+    // Set only by the original allocation deadline closure path. A published
+    // witness additionally requires a successful disk-backed q9 lookup.
+    allocation_deadline_closed: bool,
+    allocation_terminal_noncommit_closed: bool,
+    commit_original: Option<std::sync::Weak<SaveOriginal>>,
     dispatcher_id: Option<u64>,
     installed: Vec<u64>,
     joined: Vec<JoinedProducerProof>,
@@ -805,8 +810,20 @@ pub struct NativeOriginalReply {
     allocation: Option<NativeAllocatedOperation>,
     observation: NativeOriginalObservation,
     producers: Vec<ProducerId>,
+    allocation_closed: bool,
+    unpermitted_commit_closed: bool,
 }
 impl NativeOriginalReply {
+    /// Native uncommitted allocation authority closure, not NoAllocation or a receipt.
+    /// The caller must still join this lookup's own producers before retiring its owner.
+    pub fn allocation_closed(&self) -> bool {
+        self.allocation_closed
+    }
+    /// Authentic bound Commit closure after original claims, disk readback
+    /// and complete joins. Neither NoAllocation nor receipt/Saved authority.
+    pub fn unpermitted_commit_closed(&self) -> bool {
+        self.unpermitted_commit_closed
+    }
     pub fn wire(&self) -> &Envelope {
         &self.wire
     }
@@ -1076,6 +1093,9 @@ impl StoreHost {
                     closed: false,
                     commit_dispatched: false,
                     allocation_delivered: false,
+                    allocation_deadline_closed: false,
+                    allocation_terminal_noncommit_closed: false,
+                    commit_original: None,
                     dispatcher_id: None,
                     installed: vec![],
                     joined: vec![],
@@ -1202,7 +1222,7 @@ impl StoreHost {
                         && original.view.intent_id == allocation.original.view.intent_id
                 });
                 if no_source && no_commit {
-                    close_late_allocation(&mut state, &allocation.original, &mut gate)?;
+                    close_late_allocation(&mut state, &allocation.original, &mut gate, None)?;
                     let row = &state.journal.operations.as_slice()
                         [record_index(&state, allocation.allocation.operation_id)?];
                     if checked_lock(&allocation.original.state)?.closed
@@ -1483,10 +1503,20 @@ impl NativeRequest {
         Ok(())
     }
     pub(super) fn mark_dispatch(&self) -> Result<(), StoreStatus> {
-        lock(&self.original.state).commit_dispatched = true;
         if let Some(source) = lock(&self.source).as_ref() {
-            lock(&source.allocation.state).commit_dispatched = true;
+            let mut allocation = checked_lock(&source.allocation.state)?;
+            if allocation
+                .commit_original
+                .as_ref()
+                .and_then(std::sync::Weak::upgrade)
+                .is_some_and(|actual| !Arc::ptr_eq(&actual, &self.original))
+            {
+                return Err(StoreStatus::Denied);
+            }
+            allocation.commit_original = Some(Arc::downgrade(&self.original));
+            allocation.commit_dispatched = true;
         }
+        lock(&self.original.state).commit_dispatched = true;
         Ok(())
     }
     pub(super) fn seal(
@@ -2013,8 +2043,11 @@ fn respond(
         state.wire = Some(reply.wire);
         if reply.wire.msg_type == 6
             && u32::from_le_bytes(reply.wire.payload[32..36].try_into().unwrap())
-                != StoreStatus::Unknown as u32
+                == StoreStatus::Ok as u32
         {
+            // A terminal denial can still own a known unpermitted allocation.
+            // Preserve authentic IO joins already completed before this reply;
+            // the original-only closure verifier needs the complete proof set.
             state.joined.clear();
             state.joined_tokens.clear();
         }
@@ -2096,7 +2129,7 @@ fn timeout_request(core: &Arc<Core>, request: &Arc<Request>) -> Envelope {
     if request.wire.msg_type == 3 {
         if let Some(original) = &request.native_save {
             if let Ok(mut gate) = original.gate() {
-                let _ = close_late_allocation(&mut state, &original.original, &mut gate);
+                let _ = close_late_allocation(&mut state, &original.original, &mut gate, None);
             }
         }
         return save_reply(&request.wire, StoreStatus::Timeout);
@@ -2167,41 +2200,217 @@ fn timeout_request(core: &Arc<Core>, request: &Arc<Request>) -> Envelope {
     save_reply(&request.wire, status)
 }
 
+// Only the authenticated exact original can explain a historical Commit
+// dispatch. Complete actual producer joins prove no later permit can be issued.
+fn terminal_unpermitted_commit(
+    allocation_original: &SaveOriginal,
+    commit: &Arc<SaveOriginal>,
+    state: &ObjectState,
+    allocation: &EditorSaveAllocationV0,
+    closed: bool,
+) -> Result<bool, StoreStatus> {
+    if commit.request.msg_type != 5
+        || !Arc::ptr_eq(&commit.grant, &allocation_original.grant)
+        || commit.view.actor != allocation_original.view.actor
+        || commit.view.object_id != allocation_original.view.object_id
+        || commit.view.object_generation != allocation_original.view.object_generation
+        || commit.view.intent_id != allocation_original.view.intent_id
+        || commit.view.deadline != allocation_original.view.deadline
+        || Instant::now() < commit.view.deadline
+        || op_of(&commit.request) != allocation.operation_id
+    {
+        return Ok(false);
+    }
+    let binding = {
+        let actual = checked_lock(&commit.state)?;
+        let Some(wire) = actual.wire.as_ref() else {
+            return Ok(false);
+        };
+        let reply = a::CommitReply::decode(wire)?;
+        if reply.request_id != u64_at(&commit.request.payload, 0)
+            || !matches!(reply.status, 1 | 2 | 3 | 4 | 5 | 7 | 11)
+            || reply.receipt_shm != 0
+            || reply.receipt_len != 0
+        {
+            return Ok(false);
+        }
+        let Some(binding) = actual.binding.clone() else {
+            return Ok(false);
+        };
+        if binding.allocation != *allocation
+            || binding.source.source_object_id != u64_at(&commit.request.payload, 40)
+            || actual
+                .bound
+                .as_ref()
+                .is_none_or(|bound| bound.binding() != &binding)
+        {
+            return Ok(false);
+        }
+        binding
+    };
+    let core = allocation_original
+        .core
+        .upgrade()
+        .ok_or(StoreStatus::Stale)?;
+    let attachment = allocation_original
+        .attachment
+        .upgrade()
+        .ok_or(StoreStatus::Stale)?;
+    if !Arc::ptr_eq(
+        &attachment,
+        &commit.attachment.upgrade().ok_or(StoreStatus::Stale)?,
+    ) || !Arc::ptr_eq(&core, &commit.core.upgrade().ok_or(StoreStatus::Stale)?)
+    {
+        return Err(StoreStatus::Denied);
+    }
+    original_execution_joins_checked(&core, &attachment, commit, false)?;
+    let row = &state.journal.operations.as_slice()[record_index(state, allocation.operation_id)?];
+    let Some(runtime) = state.runtime.get(&allocation.operation_id) else {
+        return Ok(false);
+    };
+    Ok(row.allocation == *allocation
+        && row.binding.as_ref() == Some(&binding)
+        && row.permit.is_none()
+        && row.successor.is_none()
+        && (if closed {
+            row.closure != EditorClosureV0::None
+                && row.receipt.as_ref().is_some_and(|receipt| {
+                    receipt.outcome == artifact_store_schema::editor_save::EditorReceiptOutcomeV0::DefinitiveNoncommit
+                        && receipt.backend_service_epoch == commit.grant.epoch
+                        && row.submitted_service_epoch == Some(commit.grant.epoch)
+                        && receipt.validate_binding(&binding).is_ok()
+                })
+                && native(attachment.issuer.lock())?
+                    .unpermitted_source_closed(&commit.claim, &binding).map_err(desktop_status)?
+        } else {
+            row.receipt.is_none() || row.closure != EditorClosureV0::None
+                && row.receipt.as_ref().is_some_and(|receipt| {
+                    receipt.outcome == artifact_store_schema::editor_save::EditorReceiptOutcomeV0::DefinitiveNoncommit
+                        && receipt.result_revision == 0 && receipt.committed_at_ms == 0
+                        && receipt.backend_service_epoch == commit.grant.epoch
+                        && row.submitted_service_epoch == Some(commit.grant.epoch)
+                        && receipt.validate_binding(&binding).is_ok() && receipt.encode_le().is_ok()
+                })
+        })
+        && runtime.permitted.is_none()
+        && runtime
+            .original
+            .as_ref()
+            .and_then(|r| r.native_save.as_ref())
+            .is_some_and(|native| Arc::ptr_eq(&native.original, commit)))
+}
+
 fn close_late_allocation(
     state: &mut ObjectState,
     original: &SaveOriginal,
     gate: &mut desktop_service::editor_dev::SaveGateGuard<'_>,
+    disk: Option<&EditorSelectionJournalV0>,
 ) -> Result<(), StoreStatus> {
     if original.request.msg_type != 3 || Instant::now() < original.view.deadline {
         return Ok(());
     }
-    let mut actual = checked_lock(&original.state)?;
-    let Some(allocation) = &actual.allocation else {
-        return Ok(());
+    let (allocation, commit) = {
+        let actual = checked_lock(&original.state)?;
+        let Some(allocation) = actual.allocation.clone() else {
+            return Ok(());
+        };
+        let commit = if actual.commit_dispatched {
+            let Some(commit) = actual
+                .commit_original
+                .as_ref()
+                .and_then(std::sync::Weak::upgrade)
+            else {
+                return Ok(());
+            };
+            Some(commit)
+        } else {
+            None
+        };
+        (allocation, commit)
     };
-    if actual.commit_dispatched {
-        return Ok(());
+    if let Some(commit) = &commit {
+        let Some(disk) = disk else {
+            return Ok(());
+        };
+        let Some(row) = disk
+            .operations
+            .as_slice()
+            .iter()
+            .find(|row| row.allocation == allocation)
+        else {
+            return Ok(());
+        };
+        let current =
+            &state.journal.operations.as_slice()[record_index(state, allocation.operation_id)?];
+        if disk.current != state.journal.current
+            || row.binding != current.binding
+            || row.permit.is_some()
+            || row.receipt.as_ref().is_some_and(|receipt| {
+                row.closure == EditorClosureV0::None || row.binding.as_ref().is_none_or(|binding| {
+                    receipt.outcome != artifact_store_schema::editor_save::EditorReceiptOutcomeV0::DefinitiveNoncommit
+                        || receipt.backend_service_epoch != original.grant.epoch
+                        || row.submitted_service_epoch != Some(original.grant.epoch)
+                        || receipt.result_revision != 0 || receipt.committed_at_ms != 0
+                        || receipt.validate_binding(binding).is_err() || receipt.encode_le().is_err()
+                })
+            })
+            || row.successor.is_some()
+            || !terminal_unpermitted_commit(original, commit, state, &allocation, false)?
+        {
+            return Ok(());
+        }
     }
     let operation = allocation.operation_id;
-    let index = record_index(state, operation)?;
-    let row = &state.journal.operations.as_slice()[index];
-    if row.allocation != *allocation {
+    let row = &state.journal.operations.as_slice()[record_index(state, operation)?];
+    if row.allocation != allocation {
         return Err(StoreStatus::Denied);
     }
-    if row.binding.is_some()
-        || row.permit.is_some()
-        || row.receipt.is_some()
+    if row.permit.is_some()
+        || row.receipt.is_some() && commit.is_none()
         || row.successor.is_some()
-        || state
-            .runtime
-            .get(&operation)
-            .is_some_and(|runtime| runtime.dispatched || runtime.permitted.is_some())
+        || state.runtime.get(&operation).is_some_and(|runtime| {
+            runtime.permitted.is_some() || runtime.dispatched && commit.is_none()
+        })
+        || row.binding.is_some() && commit.is_none()
     {
         return Ok(());
     }
-    native(gate.close_deadline(&original.claim))?;
+    if let Some(commit) = &commit {
+        if native(gate.close_deadline(&commit.claim))?
+            != desktop_service::editor_dev::NativeCloseOutcome::UnpermittedSourceRetired
+        {
+            return Ok(());
+        }
+    }
+    if native(gate.close_deadline(&original.claim))?
+        != desktop_service::editor_dev::NativeCloseOutcome::QueryClosed
+    {
+        return Ok(());
+    }
+    let mut actual = checked_lock(&original.state)?;
+    if actual.allocation.as_ref() != Some(&allocation)
+        || match (
+            &commit,
+            actual
+                .commit_original
+                .as_ref()
+                .and_then(std::sync::Weak::upgrade),
+        ) {
+            (Some(expected), Some(current)) => !Arc::ptr_eq(expected, &current),
+            (None, None) => actual.commit_dispatched,
+            _ => true,
+        }
+    {
+        return Err(StoreStatus::Denied);
+    }
     close_operation(state, operation, EditorClosureV0::Deadline);
     actual.closed = true;
+    actual.allocation_deadline_closed = commit.is_none();
+    actual.allocation_terminal_noncommit_closed = commit.is_some();
+    drop(actual);
+    if let Some(commit) = commit {
+        checked_lock(&commit.state)?.closed = true;
+    }
     Ok(())
 }
 pub(super) fn close_unpermitted(
@@ -3049,13 +3258,20 @@ impl StoreHost {
         // never from a child-set bool, returned reply or an elapsed deadline.
         for original in checked_lock(&attachment.originals)?.iter() {
             let mut state = checked_lock(&original.state)?;
-            if state.installed.contains(&id.producer_id())
-                && original.request.msg_type == 3
-                && state.allocation.is_none()
-            {
-                if state.joined.len() >= 64 {
+            if state.installed.contains(&id.producer_id()) && original.request.msg_type == 3 {
+                if observation.origin_id != original.view.origin_id
+                    || observation.producer_generation != 1
+                    || state.joined.len() >= 64
+                    || state
+                        .joined_tokens
+                        .iter()
+                        .any(|token| token.producer_id() == id.producer_id())
+                {
                     return Err(StoreStatus::Internal);
                 }
+                let reference = live_reference.take().ok_or(StoreStatus::Internal)?;
+                native(attachment.witness.verify_join_for(&reference, &proof))?;
+                state.joined_tokens.push(reference);
                 state
                     .joined
                     .push(native(attachment.issuer.retain_joined_proof(&proof))?);
@@ -3067,7 +3283,12 @@ impl StoreHost {
             });
             if original.request.msg_type == 5
                 && state.installed.contains(&id.producer_id())
-                && !terminal_reply
+                && (!terminal_reply
+                    || state.wire.as_ref().is_some_and(|wire| {
+                        wire.msg_type == 6
+                            && u32::from_le_bytes(wire.payload[32..36].try_into().unwrap())
+                                != StoreStatus::Ok as u32
+                    }))
             {
                 if observation.origin_id != original.view.origin_id
                     || observation.producer_generation != 1
@@ -3111,6 +3332,26 @@ fn original_commit_joins(
     attachment: &SaveCore,
     target: &SaveOriginal,
 ) -> Result<Vec<NativeJoinObservation>, StoreStatus> {
+    if target.request.msg_type != 5 {
+        return Err(StoreStatus::Denied);
+    }
+    original_execution_joins(core, attachment, target)
+}
+
+fn original_execution_joins(
+    core: &Core,
+    attachment: &SaveCore,
+    target: &SaveOriginal,
+) -> Result<Vec<NativeJoinObservation>, StoreStatus> {
+    original_execution_joins_checked(core, attachment, target, true)
+}
+
+fn original_execution_joins_checked(
+    core: &Core,
+    attachment: &SaveCore,
+    target: &SaveOriginal,
+    require_io: bool,
+) -> Result<Vec<NativeJoinObservation>, StoreStatus> {
     let actual = checked_lock(&target.state)?;
     if actual.completion != OriginalTicketCompletion::JoinedReturned
         || actual.installed.is_empty()
@@ -3139,8 +3380,8 @@ fn original_commit_joins(
     {
         return Err(StoreStatus::NotReady);
     }
-    // A first permitted Commit genuinely installed the original Desktop entry
-    // pair, Store execution pair, and IO worker. Missing entry ownership cannot
+    // A genuine Allocate or permitted Commit installed its original Desktop
+    // entry pair, Store execution pair, and actual IO worker. Missing entry ownership cannot
     // be replaced by an otherwise complete subset of numeric installed IDs.
     for kind in [
         NativeProducerKind::DesktopDispatch,
@@ -3157,9 +3398,10 @@ fn original_commit_joins(
             return Err(StoreStatus::NotReady);
         }
     }
-    if !observations
-        .values()
-        .any(|view| view.kind == NativeProducerKind::StoreIo)
+    if require_io
+        && !observations
+            .values()
+            .any(|view| view.kind == NativeProducerKind::StoreIo)
     {
         return Err(StoreStatus::NotReady);
     }
@@ -3546,7 +3788,7 @@ fn lookup_wire_once(
         {
             return Err(StoreStatus::Unknown);
         }
-        close_late_allocation(&mut state, target, &mut gate)?;
+        close_late_allocation(&mut state, target, &mut gate, Some(&disk))?;
         let mut actual = checked_lock(&target.state)?;
         let allocation = actual.allocation.as_ref().and_then(|a| {
             disk.operations
@@ -3578,6 +3820,7 @@ fn lookup_wire_once(
                 },
             ))?;
             actual.joined.clear();
+            actual.joined_tokens.clear();
             actual.no_allocation = true;
             0
         } else {
@@ -3754,6 +3997,9 @@ impl StoreHost {
                     closed: false,
                     commit_dispatched: false,
                     allocation_delivered: false,
+                    allocation_deadline_closed: false,
+                    allocation_terminal_noncommit_closed: false,
+                    commit_original: None,
                     dispatcher_id: None,
                     installed: vec![],
                     joined: vec![],
@@ -3875,6 +4121,10 @@ impl StoreHost {
             (NativeOriginalObservation::AllocationPending, None)
         };
         drop(actual);
+        let allocation_closed =
+            allocation_closure_witness(&self.core, target, registered, &wire).unwrap_or(false);
+        let unpermitted_commit_closed =
+            terminal_commit_closure_witness(&self.core, target, registered, &wire).unwrap_or(false);
         if allocation.is_some() {
             lock(&target.state).allocation_delivered = true;
         }
@@ -3884,6 +4134,8 @@ impl StoreHost {
             allocation,
             observation,
             producers,
+            allocation_closed,
+            unpermitted_commit_closed,
         })
     }
 }
@@ -4147,7 +4399,7 @@ impl NativeRequest {
         }
         checked_lock(&self.original.state)?.allocation = Some(row.allocation.clone());
         let mut gate = self.gate()?;
-        close_late_allocation(state, &self.original, &mut gate)?;
+        close_late_allocation(state, &self.original, &mut gate, None)?;
         let mut canonical = *wire;
         canonical.handle = Handle::INVALID;
         native(gate.publish_allocation(&self.original.claim, &canonical))
@@ -4511,5 +4763,143 @@ impl NativeRequest {
         }
         lock(&self.original.state).allocation = Some(row.allocation.clone());
         Ok(())
+    }
+}
+
+// Native authority closure, never synthetic NoAllocation/receipt or mutation.
+// The genuine q9 lookup performed disk readback and close_late_allocation.
+fn allocation_closure_witness(
+    core: &Core,
+    target: &Arc<SaveOriginal>,
+    registered: &RegisteredNativeSave,
+    wire: &Envelope,
+) -> Result<bool, StoreStatus> {
+    if target.request.msg_type != 3
+        || registered.call.request().msg_type != 9
+        || registered
+            .observed
+            .as_ref()
+            .is_none_or(|actual| !Arc::ptr_eq(actual, target))
+        || Instant::now() < target.view.deadline
+    {
+        return Ok(false);
+    }
+    let request = a::ObserveAllocation::decode(registered.call.request())?;
+    let reply = a::ObserveAllocationReply::decode(wire)?;
+    if request.session_id != target.view.actor.session_id
+        || request.session_generation != target.view.actor.session_generation
+        || request.original_allocate_request_id != u64_at(&target.request.payload, 0)
+        || reply.request_id != request.request_id
+        || reply.original_allocate_request_id != request.original_allocate_request_id
+        || reply.status != 0
+        || reply.reserved != 0
+        || reply.operation_id == 0
+    {
+        return Ok(false);
+    }
+    let attachment = core.save_attachment()?;
+    // Verify every authentic pre-join token/proof, including supervisors and IO.
+    original_execution_joins(core, &attachment, target)?;
+    let object = core.object(target.grant.object)?;
+    let state = checked_lock(&object.state)?;
+    let actual = checked_lock(&target.state)?;
+    let Some(allocation) = actual.allocation.as_ref() else {
+        return Ok(false);
+    };
+    if allocation.operation_id != reply.operation_id
+        || allocation.selected_object_id != object.id
+        || !actual.closed
+        || !actual.allocation_deadline_closed
+        || actual.commit_dispatched
+        || actual.binding.is_some()
+        || actual.completion != OriginalTicketCompletion::JoinedReturned
+    {
+        return Ok(false);
+    }
+    let row = &state.journal.operations.as_slice()[record_index(&state, allocation.operation_id)?];
+    Ok(row.allocation == *allocation
+        && row.closure != EditorClosureV0::None
+        && row.binding.is_none()
+        && row.permit.is_none()
+        && row.receipt.is_none()
+        && row.successor.is_none()
+        && state
+            .runtime
+            .get(&allocation.operation_id)
+            .is_none_or(|runtime| !runtime.dispatched && runtime.permitted.is_none()))
+}
+
+fn terminal_commit_closure_witness(
+    core: &Core,
+    target: &Arc<SaveOriginal>,
+    registered: &RegisteredNativeSave,
+    wire: &Envelope,
+) -> Result<bool, StoreStatus> {
+    if target.request.msg_type != 3
+        || registered.call.request().msg_type != 9
+        || registered
+            .observed
+            .as_ref()
+            .is_none_or(|actual| !Arc::ptr_eq(actual, target))
+        || Instant::now() < target.view.deadline
+    {
+        return Ok(false);
+    }
+    let request = a::ObserveAllocation::decode(registered.call.request())?;
+    let reply = a::ObserveAllocationReply::decode(wire)?;
+    if request.session_id != target.view.actor.session_id
+        || request.session_generation != target.view.actor.session_generation
+        || request.original_allocate_request_id != u64_at(&target.request.payload, 0)
+        || reply.request_id != request.request_id
+        || reply.original_allocate_request_id != request.original_allocate_request_id
+        || reply.status != 0
+        || reply.reserved != 0
+        || reply.operation_id == 0
+    {
+        return Ok(false);
+    }
+    let (allocation, commit) = {
+        let actual = checked_lock(&target.state)?;
+        if !actual.closed
+            || !actual.allocation_terminal_noncommit_closed
+            || !actual.commit_dispatched
+        {
+            return Ok(false);
+        }
+        let Some(allocation) = actual.allocation.clone() else {
+            return Ok(false);
+        };
+        let Some(commit) = actual
+            .commit_original
+            .as_ref()
+            .and_then(std::sync::Weak::upgrade)
+        else {
+            return Ok(false);
+        };
+        (allocation, commit)
+    };
+    if allocation.operation_id != reply.operation_id || !checked_lock(&commit.state)?.closed {
+        return Ok(false);
+    }
+    let attachment = core.save_attachment()?;
+    original_execution_joins(core, &attachment, target)?;
+    let object = core.object(target.grant.object)?;
+    let state = checked_lock(&object.state)?;
+    terminal_unpermitted_commit(target, &commit, &state, &allocation, true)
+}
+
+impl StoreHost {
+    /// Read only authentic completion of this issuer's opaque producer.
+    /// Never infers a join from an absent live row and never performs a join.
+    pub fn native_save_producer_joined(&self, id: &ProducerId) -> Result<bool, StoreStatus> {
+        let attachment = self.core.save_attachment()?;
+        if checked_lock(&attachment.fence_joins)?
+            .proofs
+            .iter()
+            .any(|(_, proof)| attachment.witness.verify_join_for(id, proof).is_ok())
+        {
+            return Ok(true);
+        }
+        native(attachment.witness.save_producer_joined(id))
     }
 }

@@ -209,7 +209,58 @@ pub fn assert_api_absent(id: &str, symbol: &str, receiver: &str) {
     let error = &errors[0];
     assert_eq!(error["code"]["code"], "E0599");
     let text = error["message"].as_str().unwrap();
-    assert!(text.contains(symbol) && text.contains(receiver));
+    // Rust pretty-prints imported receiver types without their module path.
+    // Bind that diagnostic to the exact independently retained typed probe,
+    // rather than depending on the compiler's optional path qualification.
+    let short = receiver.rsplit("::").next().unwrap();
+    assert!(text.contains(symbol) && text.contains(short));
+    let expected = match id {
+        "D17ChildReceiptSetterApiAbsent" => {
+            "use desktop_service::editor_dev::OwnedEditorChild; fn probe(c: &mut OwnedEditorChild) { c.set_receipt(); }\n"
+        }
+        "D17CopiedAllocationCannotMintIntent" => {
+            "use desktop_service::editor_dev::NativeSaveIntent; fn probe() { NativeSaveIntent::from_allocation(); }\n"
+        }
+        "D10ProtectedChromeFdNotExported" => {
+            "use desktop_service::editor_dev::HostDesktop; fn probe(h: &HostDesktop) { h.export_process_chrome_fd(); }\n"
+        }
+        "D29ForeignNumericPidCannotConstructOwner" => {
+            "use desktop_service::editor_dev::OwnedEditorChild; fn probe() { OwnedEditorChild::from_pid(1); }\n"
+        }
+        _ => panic!("unreviewed API absence probe"),
+    };
+    assert!(expected.contains(&format!("::{short};")));
+    let sources: Vec<_> = probe["artifacts"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|row| row["kind"] == "api_probe_source")
+        .collect();
+    assert_eq!(sources.len(), 1);
+    let path = retained(sources[0]);
+    assert_eq!(fs::read_to_string(&path).unwrap(), expected);
+    let manifests: Vec<_> = probe["artifacts"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|row| row["kind"] == "api_probe_manifest")
+        .collect();
+    assert_eq!(manifests.len(), 1);
+    let manifest = retained(manifests[0]);
+    assert_eq!(path, manifest.parent().unwrap().join("src/lib.rs"));
+    assert!(
+        probe["argv"]
+            .as_array()
+            .unwrap()
+            .windows(2)
+            .any(|args| args[0] == "--manifest-path" && args[1].as_str() == manifest.to_str())
+    );
+    assert!(error["spans"].as_array().unwrap().iter().any(|span| {
+        let name = Path::new(span["file_name"].as_str().unwrap());
+        span["is_primary"] == true
+            && (name == path
+                || name == Path::new("src/lib.rs") && manifest.parent().unwrap().join(name) == path)
+    }));
 }
 pub fn default_off_and_child_graph() {
     let binary = assert_probe("D01DefaultBinaryAbsent", 101);
@@ -464,7 +515,21 @@ pub fn source_substitute_rejected(id: &str) {
 }
 
 pub fn aggregate_recording_cap() {
-    let probe = assert_probe("D25Aggregate131073RecordingCap", 0);
+    recording_cap(false);
+}
+pub fn scenario_recording_cap() {
+    recording_cap(true);
+}
+fn recording_cap(scenario: bool) {
+    let count = if scenario { 32768 } else { 131072 };
+    let probe = assert_probe(
+        if scenario {
+            "D25Scenario32769RecordingCap"
+        } else {
+            "D25Aggregate131073RecordingCap"
+        },
+        0,
+    );
     let output = fs::read_to_string(retained(&probe["stdout"])).unwrap();
     let rows: Vec<_> = output
         .lines()
@@ -473,22 +538,33 @@ pub fn aggregate_recording_cap() {
     assert_eq!(rows.len(), 1);
     let row: Value = serde_json::from_str(rows[0]).unwrap();
     assert_eq!(row["scope"], "recorder-boundary-not-native");
-    assert_eq!(row["before"]["count"], 131072);
-    assert_eq!(row["attempt_index"], 131073);
+    assert_eq!(row["before"]["count"], count);
+    assert_eq!(row["attempt_index"], count + 1);
     assert_eq!(row["before"], row["after"]);
-    assert_eq!(row["error"], "aggregate control capacity");
+    assert_eq!(
+        row["error"],
+        if scenario {
+            "scenario control capacity"
+        } else {
+            "aggregate control capacity"
+        }
+    );
     let leaves: Vec<_> = probe["artifacts"]
         .as_array()
         .unwrap()
         .iter()
         .filter(|a| a["kind"] == "control_leaf")
         .collect();
-    assert_eq!(leaves.len(), 4);
+    assert_eq!(leaves.len(), if scenario { 1 } else { 4 });
     let parent = retained(leaves[0]).parent().unwrap().to_owned();
     exact_python_probe(
         probe,
         "tools/ci/editor_process_recording.py",
-        "--boundary-output",
+        if scenario {
+            "--scenario-boundary-output"
+        } else {
+            "--boundary-output"
+        },
         &parent,
     );
     let mut hash = Sha256::new();

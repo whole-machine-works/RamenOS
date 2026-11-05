@@ -472,3 +472,7 @@ compiler-cache-inspect scope="acceptance":
 
 compiler-cache-retire key context scope="acceptance":
 	python3 tools/ci/compiler_cache_control.py retire --scope {{quote(scope)}} --key {{quote(key)}} --expected-context-sha256 {{quote(context)}}
+
+# Full runtime acceptance, including the unchanged editor gates once.
+foundry-editor-process-runtime-ui1-1d:
+	python3 tools/ci/editor_process_gate.py

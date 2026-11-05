@@ -29,6 +29,7 @@
     "D05PublishFdThree",
     "D05PublishFdZero",
     "D05RecordTruncation",
+    "D07ObserverOnlyChildOracleReject",
     "D08Body4097",
     "D08BodyNonAscii",
     "D08BodyNul",

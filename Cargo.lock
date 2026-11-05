@@ -577,6 +577,7 @@ dependencies = [
  "desktop_editor_core",
  "kernel_api",
  "libc",
+ "serde_json",
  "sha2",
 ]
 

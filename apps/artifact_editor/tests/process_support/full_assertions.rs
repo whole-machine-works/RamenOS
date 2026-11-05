@@ -1,18 +1,29 @@
 //! Full process consumers. Each family drives actual owners and independently
 //! checks the recorded attempted fault, rejection, and a subsequent authorized
 //! operation. No scenario's own success flag is accepted as an oracle.
+use super::fixture;
 use super::support::*;
-use super::{fixture, support};
 use crate::{desktop_owner_assertions as oracle, editor_dev as desktop};
-#[path = "app_owner.rs"]
-mod app_owner;
+#[cfg(feature = "host_editor_process_assertions_v0_dev")]
+#[path = "app_cases.rs"]
+mod app_cases;
+#[cfg(feature = "host_editor_process_assertions_v0_dev")]
+use app_cases::{SaveInterruption, public_interrupted_save, public_save_lifecycle};
 #[path = "child_group.rs"]
 mod child_group;
+#[path = "cursor_cases.rs"]
+mod cursor_cases;
 #[path = "gate_record.rs"]
 mod gate_record;
+#[path = "lifecycle_cases.rs"]
+mod lifecycle_cases;
 #[path = "obligations.rs"]
 mod obligations;
 use child_group::ChildGroup;
+#[allow(
+    clippy::duplicate_mod,
+    reason = "Each independently staged owner module retains its own three named cleanup controls in the frozen executable inventory."
+)]
 #[path = "cleanup_owners.rs"]
 mod parent_owners;
 use desktop_service::dev::Status;
@@ -155,6 +166,36 @@ fn prepare(
     prepare_at(group, session, object, body, 1)
 }
 fn pump_publication(group: &mut ChildGroup, index: usize, now: u64) -> Result<(), Status> {
+    pump_publication_with_export(group, index, now, true)
+}
+fn pump_publication_with_export(
+    group: &mut ChildGroup,
+    index: usize,
+    now: u64,
+    export_frame: bool,
+) -> Result<(), Status> {
+    pump_publication_mode(
+        group,
+        index,
+        now,
+        if export_frame {
+            PublicationFrame::Export
+        } else {
+            PublicationFrame::Consume
+        },
+    )
+}
+enum PublicationFrame {
+    Export,
+    Consume,
+    CallerComposes,
+}
+fn pump_publication_mode(
+    group: &mut ChildGroup,
+    index: usize,
+    now: u64,
+    mode: PublicationFrame,
+) -> Result<(), Status> {
     let end = Instant::now() + Duration::from_millis(1000);
     loop {
         let (f, child) = group.borrow(index);
@@ -162,6 +203,65 @@ fn pump_publication(group: &mut ChildGroup, index: usize, now: u64) -> Result<()
             f.h.pump_process_editor(child, now)
                 .map_err(|e| e.status())?;
         if step.publication_accepted() {
+            let view = f.h.observe_process_editor(child, now)?;
+            let session = f
+                .drivers
+                .iter()
+                .position(|d| d.s.session_id == view.actor.session_id)
+                .ok_or(Status::Denied)?;
+            if matches!(mode, PublicationFrame::Export) {
+                f.compose(session, now)?;
+            } else if matches!(mode, PublicationFrame::Consume) {
+                // Consume the actual accepted Core frame through the genuine
+                // compositor Portal. Present validation still occurs on every
+                // pair; only first/final quota frames need full composition.
+                use kernel_api::generated::desktop_surface_v1 as surface;
+                let endpoint = &f.drivers[session].s.compositor;
+                let core = f.dc.evidence()?;
+                let present = core
+                    .exchanges
+                    .iter()
+                    .rev()
+                    .find_map(|(q, r)| {
+                        if q.protocol != surface::DESKTOP_SURFACE_V1_PROTOCOL_ID
+                            || q.msg_type != surface::MSG_DESKTOP_SURFACE_V1_PRESENT
+                        {
+                            return None;
+                        }
+                        let actual = surface::Present::decode(q).ok()?;
+                        let reply = surface::PresentReply::decode(r).ok()?;
+                        (reply.status == 0 && reply.sequence == actual.sequence).then_some(actual)
+                    })
+                    .ok_or(Status::NotReady)?;
+                let request_id = 0xd160_0000_u64
+                    .checked_add(present.sequence)
+                    .ok_or(Status::Exhausted)?;
+                let request = surface::Consume {
+                    request_id,
+                    surface_id: present.surface_id,
+                    surface_generation: present.surface_generation,
+                    sequence: present.sequence,
+                }
+                .encode(endpoint.handle)?;
+                let prior_chrome = f.dc.save_chrome_observation(endpoint)?;
+                let consumed =
+                    surface::ConsumeReply::decode(&f.h.dispatch(&endpoint.peer, &request, now))?;
+                assert_eq!(consumed.request_id, request_id);
+                assert_eq!(consumed.status, Status::Ok as u32);
+                assert_eq!(consumed.sequence, present.sequence);
+                let chrome =
+                    f.dc.save_chrome_observation(&f.drivers[session].s.compositor)?;
+                assert_eq!(chrome.current_frame_actor, view.actor);
+                assert_eq!(chrome.document_id, Some(view.document_id));
+                assert_eq!(chrome.text_generation, Some(view.text_generation));
+                assert_eq!(chrome.view_version, Some(view.view_version));
+                // Consume acknowledges the latest presented surface; it does
+                // not compose a new scene or replace its protected chrome.
+                // The getter therefore still describes the last real compose.
+                assert_eq!(chrome, prior_chrome);
+                assert!(chrome.frame_sequence > 0 && chrome.frame_sequence <= present.sequence);
+                assert!(!matches!(chrome.label, desktop::NativeEditorPhase::Saved));
+            }
             return Ok(());
         }
         if step.child_exit_observed() {
@@ -204,10 +304,24 @@ fn deliver(
     }
 }
 fn request(group: &mut ChildGroup, index: usize, now: u64) -> Result<(), Status> {
+    request_with_export(group, index, now, true)
+}
+fn request_without_compose(group: &mut ChildGroup, index: usize, now: u64) -> Result<(), Status> {
     let (f, child) = group.borrow(index);
     f.h.request_process_editor_frame(child, now)
         .map_err(|e| e.status())?;
-    pump_publication(group, index, now)
+    pump_publication_mode(group, index, now, PublicationFrame::CallerComposes)
+}
+fn request_with_export(
+    group: &mut ChildGroup,
+    index: usize,
+    now: u64,
+    export_frame: bool,
+) -> Result<(), Status> {
+    let (f, child) = group.borrow(index);
+    f.h.request_process_editor_frame(child, now)
+        .map_err(|e| e.status())?;
+    pump_publication_with_export(group, index, now, export_frame)
 }
 fn ordinary_edit_at(
     group: &mut ChildGroup,
@@ -262,7 +376,7 @@ fn fresh_desktop_witness(
     body: &[u8],
     prior: Option<(u32, u64, desktop::NativeEditorObservation, u64)>,
 ) {
-    fixture.drivers[0].send(&fixture.h, 0, 3, 3);
+    fixture.reattach_input(0, 3);
     let mut group = ChildGroup::new(fixture);
     let enrollment = prepare_at(&mut group, 0, 101, body, 4);
     let run = prior.as_ref().map(|_| {
@@ -317,7 +431,7 @@ fn fresh_desktop_witness(
             };
             oracle::assert_integrity(&evidence, "D23FreshPreviewApprovalNewBirth");
             assert_ne!(
-                evidence.after().channel_generation,
+                evidence.active_channel_generation(),
                 prior.as_ref().unwrap().3
             );
             oracle::assert_positive(&evidence, "D23FreshPreviewApprovalNewBirth");
@@ -337,6 +451,19 @@ fn fresh_desktop_witness(
 
 fn sibling_progress(group: &mut ChildGroup, index: usize, usage: u32, expected: &[u8]) {
     let before_frame = ok(group.fixture().compose(1, 2));
+    let before_chrome = {
+        let f = group.fixture();
+        ok(f.dc.save_chrome_observation(&f.drivers[1].s.compositor))
+    };
+    protected_golden(
+        &before_frame,
+        match before_chrome.label {
+            desktop::NativeEditorPhase::Loaded => "LOADED",
+            desktop::NativeEditorPhase::Unsaved => "UNSAVED",
+            other => panic!("unexpected independent B chrome {other:?}"),
+        },
+        "",
+    );
     let entered = Instant::now();
     ok(deliver(group, index, 1, usage, 1, 2));
     ok(deliver(group, index, 1, usage, 2, 2));
@@ -346,68 +473,22 @@ fn sibling_progress(group: &mut ChildGroup, index: usize, usage: u32, expected: 
     assert_eq!(ok(f.h.observe_process_editor(child, 2)).bytes, expected);
     let after_frame = ok(f.compose(1, 2));
     assert_ne!(
-        &before_frame.bgra[640 * 88 * 4..],
-        &after_frame.bgra[640 * 88 * 4..]
+        volatile::hash(&before_frame.bgra[48 * 2560..528 * 2560]),
+        volatile::hash(&after_frame.bgra[48 * 2560..528 * 2560])
     );
     assert_eq!(
-        &before_frame.bgra[..640 * 88 * 4],
-        &after_frame.bgra[..640 * 88 * 4]
+        volatile::hash(&before_frame.bgra[..48 * 2560]),
+        volatile::hash(&after_frame.bgra[..48 * 2560])
     );
-}
-
-fn cursor_selection_scroll_corpus(
-    group: &mut ChildGroup,
-    index: usize,
-    reference: &mut artifact_editor::NativeArtifactEditor,
-) {
-    // Genuine identical approved documents, one process-owned and one legacy
-    // reference. Every operation goes through each session's real Focus route.
-    let mut corpus = vec![74, 79, 225, 79, 79, 225, 42, 77, 82, 74];
-    corpus.extend(std::iter::repeat_n(81, 50));
-    corpus.extend([77, 225, 80, 80, 225, 4]);
-    let mut shift_down = false;
-    let mut saw_selection = false;
-    let mut saw_scroll = false;
-    for usage in corpus {
-        let events: Vec<(u32, u32)> = if usage == 225 {
-            shift_down = !shift_down;
-            vec![(225, if shift_down { 1 } else { 2 })]
-        } else {
-            vec![(usage, 1), (usage, 2)]
-        };
-        for (usage, phase) in events {
-            ok(deliver(group, index, 0, usage, phase, 2));
-            let f = group.fixture();
-            f.drivers[1].send(&f.h, usage, phase, 2);
-            ok(reference.step(2));
-        }
-        ok(request(group, index, 2));
-        ok(reference.render(2));
-        let (f, child) = group.borrow(index);
-        let actual = ok(f.h.observe_process_editor(child, 2));
-        let expected = ok(reference.observe(2));
-        assert_eq!(actual.bytes, expected.bytes);
-        assert_eq!(actual.cursor, expected.cursor);
-        assert_eq!(actual.selection, expected.selection);
-        assert_eq!(actual.first_visible_line, expected.first_visible_line);
-        assert_eq!(actual.text_generation, expected.text_generation);
-        assert_eq!(actual.view_version, expected.view_version);
-        let process_frame = ok(f.compose(0, 2));
-        let reference_frame = ok(f.compose(1, 2));
-        assert_eq!(
-            &process_frame.bgra[640 * 88 * 4..],
-            &reference_frame.bgra[640 * 88 * 4..]
-        );
-        saw_selection |= actual.selection.is_some();
-        saw_scroll |= actual.first_visible_line > 0;
-    }
-    assert!(!shift_down);
-    assert!(
-        saw_selection && saw_scroll,
-        "corpus must actually select and scroll"
+    let chrome = ok(f.dc.save_chrome_observation(&f.drivers[1].s.compositor));
+    assert_eq!(chrome.label, desktop::NativeEditorPhase::Unsaved);
+    assert_eq!(
+        chrome.current_document_phase,
+        desktop::NativeEditorPhase::Unsaved
     );
-    assert_eq!(group.fixture().counts(101), (0, 0, 0));
-    assert_eq!(group.fixture().counts(102), (0, 0, 0));
+    assert_eq!(chrome.outstanding_original_count, 0);
+    assert!(chrome.pending_originals.is_empty());
+    protected_golden(&after_frame, "UNSAVED", "");
 }
 
 fn genuine_alias_denials() {
@@ -515,6 +596,7 @@ fn fault_previous_bootstrap_owner(fixture: Fixture) -> (Fixture, (u32, u64)) {
 }
 
 fn actual_core_route(f: &mut Fixture, id: &str) {
+    lifecycle_cases::assert_core_route(f, id);
     use kernel_api::generated::{desktop_editor_session_v1 as session, input_v1 as input};
     let evidence = ok(f.dc.evidence());
     if id.starts_with("D26") {
@@ -563,23 +645,51 @@ fn actual_core_route(f: &mut Fixture, id: &str) {
                 .iter()
                 .filter(|(q, r)| q.protocol == input::INPUT_V1_PROTOCOL_ID
                     && q.msg_type == input::MSG_INPUT_V1_PRODUCE_KEY
-                    && input::ProduceKey::decode(q).is_ok_and(|v| v.phase == 1)
+                    && input::ProduceKey::decode(q).is_ok_and(|v| matches!(v.phase, 1 | 2))
                     && input::ProduceKeyReply::decode(r).is_ok_and(|v| v.status == 0))
                 .count()
                 >= 65,
             "actual overflow attempt after sixtyfour accepted queued keys"
         );
     }
-    if id == "D23OldPreviewEnterDenied" {
-        assert!(
-            evidence.exchanges.iter().any(|(q, r)| q.protocol
-                == session::DESKTOP_EDITOR_SESSION_V1_PROTOCOL_ID
-                && q.msg_type == session::MSG_DESKTOP_EDITOR_SESSION_V1_CONFIRM_LAUNCH
-                && session::ConfirmLaunchReply::decode(r)
-                    .is_ok_and(|v| v.status == Status::Stale as u32)),
-            "actual old preview ConfirmLaunch rejected"
-        );
+}
+fn assert_quota_presents(f: &Fixture, evidence: &desktop::ProcessAssertionEvidence, id: &str) {
+    if !id.starts_with("D16") {
+        return;
     }
+    use kernel_api::generated::desktop_surface_v1 as surface;
+    let surface_id = evidence
+        .before()
+        .frame_surface_id
+        .expect("actual accepted quota surface");
+    let generation = evidence
+        .before()
+        .frame_surface_generation
+        .expect("actual accepted quota generation");
+    let core = ok(f.dc.evidence());
+    let sequences: Vec<_> = core
+        .exchanges
+        .iter()
+        .filter_map(|(q, r)| {
+            if q.protocol != surface::DESKTOP_SURFACE_V1_PROTOCOL_ID
+                || q.msg_type != surface::MSG_DESKTOP_SURFACE_V1_PRESENT
+            {
+                return None;
+            }
+            let present = surface::Present::decode(q).ok()?;
+            let reply = surface::PresentReply::decode(r).ok()?;
+            (present.surface_id == surface_id
+                && present.surface_generation == generation
+                && reply.status == 0
+                && reply.sequence == present.sequence)
+                .then_some(present.sequence)
+        })
+        .collect();
+    assert_eq!(
+        sequences,
+        (1..=128).collect::<Vec<u64>>(),
+        "all128 real Core Presents remain validated, independently of composition/export frequency"
+    );
 }
 
 fn run_native(
@@ -589,9 +699,12 @@ fn run_native(
     let id = scenario.id();
     let case_name: &'static str = Box::leak(id.to_ascii_lowercase().into_boxed_str());
     let sibling_needed = id.starts_with("D12")
+        || id == "D14ForeignDocumentBinding"
         || id.starts_with("D24")
+        || id == "D26OtherOwnerAndOriginalReceiptProgress"
         || matches!(id, "D15LiveEditorThree" | "D15SupervisorThree");
     let maximum_selected = id.starts_with("D16");
+    let third_attempt = matches!(id, "D15LiveEditorThree" | "D15SupervisorThree");
     let cursor_golden = id == "D09FrozenCursorSelectionScrollGolden";
     let lines = b"abcd\nx\nabcdef\n".repeat(20);
     let capacity = id == "D08EmptyBase4096PressReleaseAndCtrlS";
@@ -606,7 +719,9 @@ fn run_native(
         OLD
     };
     let fixture = if cursor_golden {
-        fixture::fixture_with_contents(case_name, &[body, body])
+        fixture::fixture_with_contents(case_name, &[body])
+    } else if third_attempt {
+        fixture::fixture(case_name, 3)
     } else if sibling_needed {
         fixture::fixture_with_contents(case_name, &[body, B, C])
     } else {
@@ -621,7 +736,7 @@ fn run_native(
     let admission_now = if prior_bootstrap.is_some() { 2 } else { 1 };
     let mut group = Some(ChildGroup::new(fixture));
     let mut reference = if cursor_golden {
-        Some(group.as_mut().unwrap().fixture().app(1, 102, 1))
+        Some(cursor_cases::ReferenceFixture::new(body))
     } else {
         None
     };
@@ -636,7 +751,6 @@ fn run_native(
         ok(pump_publication(group.as_mut().unwrap(), index, 1));
         sibling = Some(index);
     }
-    let third_attempt = matches!(id, "D15LiveEditorThree" | "D15SupervisorThree");
     if third_attempt {
         let enrollment = prepare(group.as_mut().unwrap(), 0, 101, body);
         let index = ok(group.as_mut().unwrap().spawn(
@@ -647,7 +761,10 @@ fn run_native(
         ok(pump_publication(group.as_mut().unwrap(), index, 1));
     }
     let enrollment = if third_attempt {
-        prepare(group.as_mut().unwrap(), 2, 103, C)
+        // Core intentionally has two sessions. A new genuine approval on the
+        // existing session yields a distinct document while both old native
+        // child/supervisor owners remain retained for cap admission.
+        prepare(group.as_mut().unwrap(), 0, 101, OLD)
     } else {
         prepare_at(group.as_mut().unwrap(), 0, 101, body, admission_now)
     };
@@ -669,7 +786,7 @@ fn run_native(
     let unrelated_barrier = AtomicU32::new(0);
     let mut primary_observation = None;
     let mut primary_spawn_instant = None;
-    let (asserted, (fixture, proofs)) = std::thread::scope(|scope| {
+    let (asserted, (mut fixture, proofs)) = std::thread::scope(|scope| {
         let controller = scope.spawn(|| {
             release_reached(
                 &mut run,
@@ -680,11 +797,11 @@ fn run_native(
             )
         });
         let asserted = catch_unwind(AssertUnwindSafe(|| {
-            let budget = if id == "D24NoRegistryLockAcrossSignalWait" {
+            let budget = if let Some(budget) = lifecycle_cases::budget(id, positive) {
+                budget
+            } else if id == "D24NoRegistryLockAcrossSignalWait" {
                 200
-            } else if id.starts_with("D24") {
-                1000
-            } else if id == "D28WithinOriginalBudgetAndActualExpiry" {
+            } else if id.starts_with("D24") || id == "D28WithinOriginalBudgetAndActualExpiry" {
                 1000
             } else if id.starts_with("D28") && !positive {
                 80
@@ -777,18 +894,22 @@ fn run_native(
                 let protected = ok(f.compose(0, 2));
                 assert_eq!(protected.bgra.len(), 640 * 568 * 4);
                 let actual: surface::CreateReply = volatile::latest(&ok(f.dc.evidence()));
-                let reply: surface::AcquireReply = volatile::call(
-                    &f.h,
-                    &f.drivers[0].s.compositor,
-                    surface::Acquire {
-                        request_id: 1901,
-                        surface_id: actual.surface_id,
-                        surface_generation: actual.surface_generation,
-                        buffer_index: 0,
-                        reserved: 0,
-                    },
+                let request = ok(surface::Acquire {
+                    request_id: 1901,
+                    surface_id: actual.surface_id,
+                    surface_generation: actual.surface_generation,
+                    buffer_index: 0,
+                    reserved: 0,
+                }
+                .encode(f.drivers[0].s.compositor.handle));
+                // The genuine Input peer cannot act through the genuine
+                // compositor handle. Using the compositor peer itself would
+                // test its current buffer state, not cross-peer authority.
+                let reply = ok(surface::AcquireReply::decode(&f.h.dispatch(
+                    &f.drivers[0].s.input.peer,
+                    &request,
                     2,
-                );
+                )));
                 assert_eq!(reply.status, Status::Denied as u32);
                 assert_eq!(
                     (reply.mapping_generation, reply.buffer_shm, reply.byte_len),
@@ -823,12 +944,21 @@ fn run_native(
                         .assert_live_join_returns_owner(index);
                 }
             }
-            if cursor_golden {
-                cursor_selection_scroll_corpus(
-                    group.as_mut().unwrap(),
-                    index,
-                    reference.as_mut().unwrap(),
-                );
+            if lifecycle_cases::drive(
+                group.as_mut().unwrap(),
+                index,
+                id,
+                positive,
+                admission_now,
+                spawn_entered,
+            ) {
+                // Actions only; all independent oracles, cleanup, Store counts
+                // and the fresh authorized recovery witness still run below.
+            } else if cursor_golden {
+                reference
+                    .as_mut()
+                    .unwrap()
+                    .drive(group.as_mut().unwrap(), index);
             } else if capacity {
                 for _ in 0..4096 {
                     ok(deliver(group.as_mut().unwrap(), index, 0, 4, 1, 2));
@@ -836,14 +966,23 @@ fn run_native(
                 }
                 ok(ctrl_s_capture(group.as_mut().unwrap(), index, 0));
             } else if maximum_selected {
-                for _ in 1..128 {
-                    ok(request(group.as_mut().unwrap(), index, 2));
+                for offer in 1..128 {
+                    ok(request_with_export(
+                        group.as_mut().unwrap(),
+                        index,
+                        2,
+                        offer == 127,
+                    ));
                 }
                 if !positive {
                     let _ = request(group.as_mut().unwrap(), index, 2);
                 }
             } else {
-                let _ = ordinary_edit(group.as_mut().unwrap(), index, 0);
+                let _ = if id == "D28BackdatedCoreClock" {
+                    ordinary_edit_at(group.as_mut().unwrap(), index, 0, 0)
+                } else {
+                    ordinary_edit(group.as_mut().unwrap(), index, 0)
+                };
                 if id == "D18OrdinaryPublishSaveClaim" {
                     let (f, child) = group.as_mut().unwrap().borrow(index);
                     for _ in 0..3 {
@@ -940,7 +1079,6 @@ fn run_native(
             }
         }));
         unrelated_progress.store(u32::MAX, Ordering::Release);
-        drop(reference.take());
         let mut cleanup = group.take().unwrap().finish(2);
         if matches!(
             id,
@@ -989,6 +1127,8 @@ fn run_native(
                 panic!("INCOMPLETE: recording retains original owner: {status:?}");
             }
         };
+        lifecycle_cases::assert_owner_confirm(fixture.borrow(), &evidence, id);
+        assert_quota_presents(fixture.borrow(), &evidence, id);
         for proof in &proofs {
             assert!(proof.supervisor_joined());
         }
@@ -996,7 +1136,11 @@ fn run_native(
             // Registration and the actual held ELF are joined to Root's
             // separately built production artifact on the same source snapshot.
             gate_record::assert_registered_executable(
-                executable.registered_sha256,
+                if id == "D02WrongRegisteredDigest" {
+                    executable.source_before_sha256
+                } else {
+                    executable.registered_sha256
+                },
                 positive && !id.starts_with("D24"),
             );
         }
@@ -1054,11 +1198,14 @@ fn run_native(
                         .as_ref()
                         .expect("actual olddocument")
                         .clone(),
-                    evidence.before().channel_generation,
+                    evidence.active_channel_generation(),
                 ))
             } else {
                 None
             };
+            if let Some(reference) = reference.take() {
+                reference.finish();
+            }
             let fixture = fixture.release_after_join();
             if !positive
                 || matches!(
@@ -1091,6 +1238,10 @@ fn native_family(id: &str) {
                 "D07ParentEditedDraftSourceReject" | "D07ParentRasterWithReportedPidSourceReject"
             ) {
                 gate_record::source_substitute_rejected(expected);
+                continue;
+            }
+            if *expected == "D25ScenarioControlRow32769" {
+                gate_record::scenario_recording_cap();
                 continue;
             }
             if *expected == "D25AggregateControlRow131073" {
@@ -1140,306 +1291,6 @@ fn native_family(id: &str) {
             family.positive
         );
     }
-}
-
-fn app_until_at(
-    app: &mut artifact_editor::ProcessArtifactEditor,
-    expected: &[u8],
-    saved: bool,
-    now: u64,
-) {
-    let end = Instant::now() + Duration::from_millis(1000);
-    loop {
-        let _ = app.step(now);
-        if let Ok(view) = app.observe(now) {
-            if view.bytes == expected && (!saved || view.phase == desktop::NativeEditorPhase::Saved)
-            {
-                return;
-            }
-        }
-        assert!(
-            Instant::now() < end,
-            "original one-second public process task"
-        );
-        std::thread::yield_now();
-    }
-}
-fn app_until(app: &mut artifact_editor::ProcessArtifactEditor, expected: &[u8], saved: bool) {
-    app_until_at(app, expected, saved, 2)
-}
-fn app_event_at(
-    f: &mut Fixture,
-    app: &mut artifact_editor::ProcessArtifactEditor,
-    usage: u32,
-    phase: u32,
-    now: u64,
-) {
-    f.drivers[0].send(&f.h, usage, phase, now);
-    let _ = app.step(now);
-}
-fn app_replace_at(
-    f: &mut Fixture,
-    app: &mut artifact_editor::ProcessArtifactEditor,
-    body: &[u8],
-    now: u64,
-) {
-    for (u, p) in [(224, 1), (4, 1), (4, 2), (224, 2)] {
-        app_event_at(f, app, u, p, now);
-    }
-    for &byte in body {
-        app_event_at(f, app, usage(byte), 1, now);
-        app_event_at(f, app, usage(byte), 2, now);
-    }
-    app_until_at(app, body, false, now);
-}
-fn app_replace(f: &mut Fixture, app: &mut artifact_editor::ProcessArtifactEditor, body: &[u8]) {
-    app_replace_at(f, app, body, 2)
-}
-fn app_chord_at(f: &mut Fixture, app: &mut artifact_editor::ProcessArtifactEditor, now: u64) {
-    for (u, p) in [(224, 1), (22, 1), (22, 2), (224, 2)] {
-        app_event_at(f, app, u, p, now);
-    }
-}
-fn app_chord(f: &mut Fixture, app: &mut artifact_editor::ProcessArtifactEditor) {
-    app_chord_at(f, app, 2)
-}
-fn app_save_at(
-    f: &mut Fixture,
-    app: &mut artifact_editor::ProcessArtifactEditor,
-    body: &[u8],
-    now: u64,
-) {
-    app_chord_at(f, app, now);
-    app_until_at(app, body, true, now);
-}
-fn app_save(f: &mut Fixture, app: &mut artifact_editor::ProcessArtifactEditor, body: &[u8]) {
-    app_save_at(f, app, body, 2)
-}
-fn finish_app_at(mut owner: app_owner::AppOwner, now: u64) -> Fixture {
-    ok(owner.join(now));
-    {
-        let (f, app) = owner.borrow();
-        f.join_all();
-        ok(app.reconcile_originals(now));
-        assert_eq!(f.h.native_producer_counts().held, 0);
-    }
-    owner.release(now)
-}
-fn finish_app(owner: app_owner::AppOwner) -> Fixture {
-    finish_app_at(owner, 3)
-}
-fn fresh_save_after_reopen(mut f: Fixture, body: &[u8]) {
-    f.reopen();
-    let mut owner = app_owner::AppOwner::new(f);
-    ok(owner.open(0, 101, 4));
-    let result = catch_unwind(AssertUnwindSafe(|| {
-        let (f, app) = owner.borrow();
-        app_until_at(app, body, false, 5);
-        let before = ok(app.observe(5)).confirmed_revision;
-        app_replace_at(f, app, b"note=next\n", 5);
-        app_save_at(f, app, b"note=next\n", 5);
-        assert_eq!(ok(app.observe(5)).confirmed_revision, before + 1);
-        assert_eq!(selected_blob(f, 101), b"note=next\n");
-    }));
-    let f = finish_app_at(owner, 6);
-    if let Err(payload) = result {
-        std::mem::forget(f);
-        resume_unwind(payload);
-    }
-    f.finish();
-}
-fn public_save_lifecycle(name: &'static str) {
-    let mut owner = app_owner::AppOwner::new(fixture::fixture(name, 1));
-    ok(owner.open(0, 101, 1));
-    let result = catch_unwind(AssertUnwindSafe(|| {
-        let (f, app) = owner.borrow();
-        app_until(app, OLD, false);
-        app_replace(f, app, NEW);
-        app_save(f, app, NEW);
-        assert_eq!(f.counts(101), (1, 1, 1));
-        assert_eq!(ok(app.observe(2)).confirmed_revision, 2);
-        assert_eq!(selected_blob(f, 101), NEW);
-    }));
-    let f = finish_app(owner);
-    if let Err(payload) = result {
-        std::mem::forget(f);
-        resume_unwind(payload);
-    }
-    fresh_save_after_reopen(f, NEW);
-}
-#[derive(Clone, Copy)]
-enum SaveInterruption {
-    NewerDraft,
-    LostCommitReply,
-    DeathBeforePermit,
-    DeathAfterPermit,
-}
-fn public_interrupted_save(name: &'static str, mode: SaveInterruption) {
-    use store_service::editor_store::{PausePoint, StoreStatus};
-    let mut owner = app_owner::AppOwner::new(fixture::fixture(name, 1));
-    ok(owner.open(0, 101, 1));
-    let endpoint = store_service::editor_store::EditorEndpoint {
-        peer: owner.endpoint().peer.clone(),
-        handle: owner.endpoint().handle,
-    };
-    let store = owner.fixture().prepared.as_ref().unwrap().clone();
-    let point = if matches!(mode, SaveInterruption::DeathBeforePermit) {
-        PausePoint::BeforeCommitPermit
-    } else {
-        PausePoint::AfterCommitPermit
-    };
-    let pause = std::sync::Arc::new(ok(store.controller().pause_native_save(&endpoint, point)));
-    owner
-        .fixture()
-        .store_pauses
-        .push((store.clone(), pause.clone()));
-    // Both release guard and actual app/Store/root owners outlive every borrower assertion.
-    let release = fixture::ReleaseStorePause {
-        owner: store.clone(),
-        pause: pause.clone(),
-    };
-    let result = catch_unwind(AssertUnwindSafe(|| {
-        {
-            let (f, app) = owner.borrow();
-            app_until(app, OLD, false);
-            app_replace(f, app, NEW);
-            app_chord(f, app);
-        }
-        let end = Instant::now() + Duration::from_millis(1000);
-        loop {
-            {
-                let (_, app) = owner.borrow();
-                let _ = app.step(2);
-            }
-            match pause.wait_until_entered(1) {
-                Ok(snapshot) => {
-                    assert!(snapshot.entered);
-                    break;
-                }
-                Err(error) if error.status == StoreStatus::Timeout => {}
-                Err(error) => panic!("actual Store pause: {:?}", error.status),
-            }
-            assert!(Instant::now() < end);
-        }
-        let original = object(owner.fixture(), 101).operations[0]
-            .allocation
-            .operation_id;
-        let before = owner.fixture().counts(101);
-        match mode {
-            SaveInterruption::NewerDraft => {
-                let (f, app) = owner.borrow();
-                app_replace(f, app, b"note=later\n");
-                app_chord(f, app);
-                assert_eq!(
-                    f.counts(101),
-                    before,
-                    "Saving cannot mint a second mutation"
-                );
-            }
-            SaveInterruption::LostCommitReply => {
-                ok(store.controller().drop_next_native_reply(&endpoint))
-            }
-            SaveInterruption::DeathBeforePermit | SaveInterruption::DeathAfterPermit => {
-                ok(owner.retire(desktop::ProcessRetireReason::ChildFault, 2));
-                ok(owner.join(2));
-                let (f, app) = owner.borrow();
-                assert!(app.observe(2).is_err());
-                assert!(
-                    f.h.native_producer_counts().held > 0,
-                    "child reap is not a Rust Store producer join"
-                );
-                assert_eq!(f.counts(101), before);
-            }
-        }
-        ok(store.controller().release(&pause));
-        assert!(ok(pause.wait_until_settled(1000)).settled);
-        if matches!(mode, SaveInterruption::LostCommitReply) {
-            let end = Instant::now() + Duration::from_millis(1000);
-            loop {
-                let (_, app) = owner.borrow();
-                let _ = app.step(2);
-                if ok(app.observe(2)).phase == desktop::NativeEditorPhase::Unknown {
-                    break;
-                }
-                assert!(
-                    Instant::now() < end,
-                    "lost post-dispatch reply must remain Unknown before original lookup"
-                );
-                std::thread::yield_now();
-            }
-            let counts = owner.fixture().counts(101);
-            {
-                let (f, app) = owner.borrow();
-                app_chord(f, app);
-            }
-            assert_eq!(
-                owner.fixture().counts(101),
-                counts,
-                "Unknown cannot replay Allocate/Commit"
-            );
-        }
-        {
-            let (f, app) = owner.borrow();
-            f.join_all();
-            ok(app.reconcile_originals(3));
-        }
-        assert_eq!(
-            object(owner.fixture(), 101).operations[0]
-                .allocation
-                .operation_id,
-            original
-        );
-        if matches!(mode, SaveInterruption::DeathBeforePermit) {
-            assert_eq!(
-                owner.fixture().counts(101).1,
-                0,
-                "no private permit after death"
-            );
-            assert_eq!(selected_blob(owner.fixture(), 101), OLD);
-        } else {
-            assert_eq!(owner.fixture().counts(101), (1, 1, 1));
-            assert_eq!(selected_blob(owner.fixture(), 101), NEW);
-        }
-        if matches!(mode, SaveInterruption::NewerDraft) {
-            let (f, app) = owner.borrow();
-            app_until(app, b"note=later\n", false);
-            assert_eq!(
-                ok(app.observe(3)).phase,
-                desktop::NativeEditorPhase::Unsaved
-            );
-            assert_eq!(ok(app.observe(3)).confirmed_revision, 2);
-            app_save(f, app, b"note=later\n");
-            assert_eq!(f.counts(101), (2, 2, 2));
-        }
-    }));
-    drop(release);
-    let f = if matches!(
-        mode,
-        SaveInterruption::DeathBeforePermit | SaveInterruption::DeathAfterPermit
-    ) {
-        {
-            let (f, app) = owner.borrow();
-            f.join_all();
-            ok(app.reconcile_originals(3));
-        }
-        owner.release(3)
-    } else {
-        finish_app(owner)
-    };
-    if let Err(payload) = result {
-        std::mem::forget(f);
-        resume_unwind(payload);
-    }
-    fresh_save_after_reopen(
-        f,
-        if matches!(mode, SaveInterruption::DeathBeforePermit) {
-            OLD
-        } else if matches!(mode, SaveInterruption::NewerDraft) {
-            b"note=later\n"
-        } else {
-            NEW
-        },
-    );
 }
 
 #[test]
@@ -1512,6 +1363,7 @@ fn process_d15_live_owner_pending_queue_and_save_caps() {
 fn process_d16_lifetime_offer_ledger_bytes_and_no_alias_reuse() {
     native_family("D16");
 }
+#[cfg(feature = "host_editor_process_assertions_v0_dev")]
 #[test]
 fn process_d17_genuine_ctrl_s_full_receipt_and_reopen() {
     public_save_lifecycle("process_d17_genuine_ctrl_s_full_receipt_and_reopen");
@@ -1520,6 +1372,7 @@ fn process_d17_genuine_ctrl_s_full_receipt_and_reopen() {
 fn process_d18_no_save_without_genuine_single_use_capture() {
     native_family("D18");
 }
+#[cfg(feature = "host_editor_process_assertions_v0_dev")]
 #[test]
 fn process_d19_newer_draft_keeps_unsaved_after_older_commit() {
     public_interrupted_save(
@@ -1527,6 +1380,7 @@ fn process_d19_newer_draft_keeps_unsaved_after_older_commit() {
         SaveInterruption::NewerDraft,
     );
 }
+#[cfg(feature = "host_editor_process_assertions_v0_dev")]
 #[test]
 fn process_d20_lost_reply_original_only_recovery_no_replay() {
     public_interrupted_save(
@@ -1534,6 +1388,7 @@ fn process_d20_lost_reply_original_only_recovery_no_replay() {
         SaveInterruption::LostCommitReply,
     );
 }
+#[cfg(feature = "host_editor_process_assertions_v0_dev")]
 #[test]
 fn process_d21_child_death_before_permit_retains_known_allocation() {
     public_interrupted_save(
@@ -1541,6 +1396,7 @@ fn process_d21_child_death_before_permit_retains_known_allocation() {
         SaveInterruption::DeathBeforePermit,
     );
 }
+#[cfg(feature = "host_editor_process_assertions_v0_dev")]
 #[test]
 fn process_d22_child_death_after_permit_original_writer_survives() {
     public_interrupted_save(
@@ -1574,6 +1430,7 @@ fn process_d28_absolute_expiry_death_deadline_no_reset() {
 }
 #[test]
 fn process_d29_real_reap_uncertainty_and_charge_retention() {
+    #[cfg(feature = "host_editor_process_assertions_v0_dev")]
     gate_record::parent_death_and_drop();
     native_family("D29");
 }
