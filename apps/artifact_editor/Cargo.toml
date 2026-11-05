@@ -40,6 +40,9 @@ sha2 = "0.10"
 tempfile = "3"
 serde_json = "1"
 
+[target.'cfg(target_os = "linux")'.dev-dependencies]
+libc = "=0.2.180"
+
 [[test]]
 name = "native_task"
 path = "tests/native_task.rs"
@@ -64,3 +67,8 @@ required-features = ["host_editor_process_setup_v0_dev"]
 name = "process_task"
 path = "tests/process_task.rs"
 required-features = ["host_editor_process_v0_dev"]
+
+[[test]]
+name = "process_linux_prerequisites"
+path = "tests/process_support/linux_controls.rs"
+required-features = ["host_editor_process_setup_v0_dev"]

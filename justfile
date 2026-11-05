@@ -442,6 +442,10 @@ foundry-editor-native-preview-read-ui1-1c:
 foundry-editor-process-preparation-ui1-1d:
 	python3 tools/ci/editor_process_preparation.py
 
+# Actual Linux sealing controls; separate from the missing process implementation.
+foundry-editor-process-linux-prerequisites-ui1-1d:
+	python3 tools/ci/editor_process_linux_prerequisites.py
+
 # Original eighteen-case task with complete source-bound native recordings.
 foundry-desktop-editor-task-ui1-1c:
 	bash ./tools/ci/foundry_desktop_editor_task_ui1_1c.sh

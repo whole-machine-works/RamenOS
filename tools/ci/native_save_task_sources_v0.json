@@ -18,6 +18,7 @@
     "apps/artifact_editor/tests/process_support/cleanup_owners.rs",
     "apps/artifact_editor/tests/process_support/failure_control.rs",
     "apps/artifact_editor/tests/process_support/fixture.rs",
+    "apps/artifact_editor/tests/process_support/linux_controls.rs",
     "apps/artifact_editor/tests/process_support/reopen_drop_control.rs",
     "apps/artifact_editor/tests/process_support/setup_control.rs",
     "apps/artifact_editor/tests/process_task.rs",

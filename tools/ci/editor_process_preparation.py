@@ -291,12 +291,20 @@ def execute(args):
         result["source_manifest_sha256"] = hashlib.sha256((output / "source-before.json").read_bytes()).hexdigest()
         result["authored_not_executed"] = authored_cases(ROOT)
         os.environ.update(env_names)
-        setup = runner.run_owned([
-            sys.executable, str(ROOT / "tools/ci/selected_test_runner.py"),
-            "--package", "artifact_editor", "--test", "process_setup_control",
-            "--features", "host_editor_process_setup_v0_dev", "--filter", "process_preparation_",
-            "--output", str(output / "setup"),
-        ], output, "setup-selection", work_seconds=600)
+        # Rust tempfile directories inherit the process umask on Linux. These
+        # controls require private Store roots even on a permissive shell.
+        # Limit the override to this fixture command; later compilation
+        # and other suites retain the caller's permissions policy.
+        previous_umask = os.umask(0o077)
+        try:
+            setup = runner.run_owned([
+                sys.executable, str(ROOT / "tools/ci/selected_test_runner.py"),
+                "--package", "artifact_editor", "--test", "process_setup_control",
+                "--features", "host_editor_process_setup_v0_dev", "--filter", "process_preparation_",
+                "--output", str(output / "setup"),
+            ], output, "setup-selection", work_seconds=600)
+        finally:
+            os.umask(previous_umask)
         result["commands"].append(setup)
         require(setup["exit_code"] == 0 and setup["reaped"] is True
                 and setup["group_stop_before_reap"] is True, "setup selection did not exit and reap successfully")

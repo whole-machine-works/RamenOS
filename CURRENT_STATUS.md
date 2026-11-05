@@ -1,6 +1,6 @@
 # Current Status
 
-**Last Updated:** 2026-10-15
+**Last Updated:** 2026-11-04
 **Status:** Active and authoritative for landed state
 **Current Slice:** UI1.1d P0/process sequence after qualified foundation follow-ups
 **Physical Lane:** S12.4 HIL appliance observation/actuation awaits setup
@@ -53,6 +53,14 @@ The streamlining successor below records fresh checks and reviewed registry
 successors. Complete Linux56 and the fresh five-lane hosted qualification now pass.
 
 ### UI1.1d shared adapter migration — accepted host preservation
+
+The [November 4 Linux prerequisite packet](docs/plans/editor-process-linux-prerequisites-2026-11-04.md)
+adds six independently reviewed kernel witnesses and a separate default-off gate:
+real shared mappings and sealing, received descriptor ownership, unprivileged
+credential rejection and inherited-endpoint sender identity. These are primitive
+prerequisites; the actual editor carrier, held registered executable, full thirty
+P0 families and P1–P3 remain incomplete. The existing thirteen setup controls and
+four missing-process-API consumers retain their separate preparation scope.
 
 Both `EditorClient` and `NativeTextEditor` use `desktop_editor_core` for pure
 editing/navigation/scroll/raster. Checked snapshots transfer seven fields;

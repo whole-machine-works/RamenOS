@@ -117,6 +117,7 @@ dependencies = [
  "artifact_store_schema",
  "desktop_service",
  "kernel_api",
+ "libc",
  "serde_json",
  "sha2",
  "store_service",

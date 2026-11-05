@@ -252,6 +252,15 @@ jobs:
           name: editor-process-preparation-${{ github.run_id }}-${{ github.run_attempt }}
           path: out/editor-process-preparation/
           if-no-files-found: error
+      - name: Run Linux editor kernel prerequisites
+        run: python3 tools/ci/stage_timer.py --directory out/editor-process-linux-prerequisites/timings --label editor-process-linux-prerequisites -- just foundry-editor-process-linux-prerequisites-ui1-1d
+      - name: Retain Linux editor kernel prerequisite evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: editor-process-linux-prerequisites-${{ github.run_id }}-${{ github.run_attempt }}
+          path: out/editor-process-linux-prerequisites/
+          if-no-files-found: error
       - name: Retain actual editor stage timings
         if: always()
         uses: actions/upload-artifact@v4

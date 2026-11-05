@@ -131,6 +131,15 @@ death. Reuse the existing app SaveChains owner for process-mode original Save
 operations; a test-only Save surrogate is not acceptance. Keep the thirty-family
 requirement and P1/P2 prerequisites closed until these assertions are reviewed.
 
+The [November 4 prerequisite packet](docs/plans/editor-process-linux-prerequisites-2026-11-04.md)
+adds six actual Linux kernel witnesses for seals/mappings, kernel credentials,
+inherited helper PID and truncated ancillary descriptor ownership. Its separate
+`foundry-editor-process-linux-prerequisites-ui1-1d` gate and hosted artifact do
+not count these primitives as process D-family coverage. Preparation now gives
+its private Store fixtures an explicit owner-only umask and restores the caller's
+umask afterward. Full P0 still needs the reviewed private carrier/child fault
+handoff, registered held-ELF barrier and actual parent-death/Save controls above.
+
 ### Independent frontier and target joins
 
 Use spare capacity only when it does not delay review/integration of the human task.
