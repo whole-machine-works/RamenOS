@@ -250,6 +250,21 @@ jobs:
             out/foundry/editor-process/
             out/foundry/editor-process-stages/
           if-no-files-found: error
+      - name: Retain original editor diagnostics on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: editor-process-failure-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            out/desktop/ui1-0/
+            out/desktop/ui1-1a/
+            out/desktop/ui1-1b.*/
+            out/desktop/native-read-*/
+            out/desktop/native-preview-read-*/
+            out/desktop/native-task-source.*/
+            out/foundry/editor-adapter-migration/
+            out/foundry/editor-reliability/
+          if-no-files-found: ignore
       - name: Run Linux editor kernel prerequisites
         run: python3 tools/ci/stage_timer.py --directory out/editor-process-linux-prerequisites/timings --label editor-process-linux-prerequisites -- just foundry-editor-process-linux-prerequisites-ui1-1d
       - name: Retain Linux editor kernel prerequisite evidence

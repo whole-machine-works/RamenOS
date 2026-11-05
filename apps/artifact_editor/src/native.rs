@@ -59,6 +59,7 @@ struct ReadStartup {
     registered: Option<store::RegisteredNativeSave>,
     reply: Option<store::NativeSaveReply>,
     producers: Vec<desktop::ProducerId>,
+    #[cfg(all(target_os = "linux", feature = "host_editor_process_v0_dev"))]
     joined: Vec<desktop::JoinedProducerProof>,
     execution: Option<store::NativeSaveExecution>,
     deadline: Option<Instant>,
@@ -211,6 +212,7 @@ impl SaveChains {
             registered: None,
             reply: None,
             producers: Vec::new(),
+            #[cfg(all(target_os = "linux", feature = "host_editor_process_v0_dev"))]
             joined: Vec::new(),
             execution: None,
             deadline: None,
@@ -317,6 +319,7 @@ impl SaveChains {
         }
         Ok(editor)
     }
+    #[cfg(all(target_os = "linux", feature = "host_editor_process_v0_dev"))]
     fn cleanup_startup(&mut self) -> Result<bool, NativeEditorError> {
         let Some(stage) = self.startup.as_mut() else {
             return Ok(true);
@@ -375,6 +378,7 @@ impl SaveChains {
         }
         Ok(complete)
     }
+    #[cfg(all(target_os = "linux", feature = "host_editor_process_v0_dev"))]
     fn pending_groups(&self) -> usize {
         self.pending.len()
             + usize::from(self.registration_failure.is_some())
