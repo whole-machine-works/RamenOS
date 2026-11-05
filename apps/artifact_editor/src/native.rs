@@ -615,3 +615,7 @@ fn status(value: u32) -> Result<StoreStatus, NativeEditorError> {
 #[cfg(test)]
 #[path = "native_tests.rs"]
 mod tests;
+
+#[cfg(all(test, target_os = "linux", feature = "host_editor_process_assertions_v0_dev"))]
+#[path = "native/process_assertions.rs"]
+mod process_assertions;

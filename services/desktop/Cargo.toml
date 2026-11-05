@@ -12,13 +12,17 @@ editor_native_save_v0_dev = ["editor_native_preview_v0_dev"]
 # Supplemental preservation assertions only; absent from ordinary host features.
 editor_adapter_assertions_v0_dev = ["editor_native_save_v0_dev"]
 # Process assertion preparation only; no runtime/child exports implemented yet.
-host_editor_process_v0_dev = ["editor_native_save_v0_dev"]
+host_editor_process_v0_dev = ["editor_native_save_v0_dev", "dep:libc"]
+host_editor_process_assertions_v0_dev = ["host_editor_process_v0_dev"]
 
 [dependencies]
 desktop_editor_core = { path = "../desktop_editor_core", default-features = false, optional = true }
 kernel_api = { path = "../../kernel_api" }
 artifact_store_schema = { path = "../../artifact_store_schema", optional = true }
 sha2 = { version = "0.10", optional = true }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+libc = { version = "=0.2.180", optional = true }
 
 [[bin]]
 name = "desktop-launch-witness"

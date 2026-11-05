@@ -1,0 +1,1767 @@
+{
+  "schema_version": 1,
+  "status": "FROZEN_FOR_P0_ASSERTION_AUTHORING_ONLY",
+  "contract_path": "docs/contracts/editor-process-v0.json",
+  "contract_sha256": "0d68962c99a15858592d45771f930e2e6a5830679765f26c084095635926b142",
+  "scope": "Closed fixture-control obligations; every grouped control must enumerate actual subcases before complete P0 review. No runtime acceptance.",
+  "private_desktop_assertions": "services/desktop/src/editor_dev/process_editor/assertions.rs",
+  "private_app_assertions": "apps/artifact_editor/src/native/process_assertions.rs",
+  "public_consumers": "apps/artifact_editor/tests/process_task.rs",
+  "cases": [
+    {
+      "case": "D01C01",
+      "family": "D01",
+      "control": "defaultbinaryselection",
+      "expanded_scenarios": [
+        "D01DefaultBinaryAbsent"
+      ]
+    },
+    {
+      "case": "D01C02",
+      "family": "D01",
+      "control": "defaultparentAPI",
+      "expanded_scenarios": [
+        "D01DefaultParentApiAbsent"
+      ]
+    },
+    {
+      "case": "D01C03",
+      "family": "D01",
+      "control": "servicefeatureexclusion",
+      "expanded_scenarios": [
+        "D01ChildGraphExcludesDesktopStore"
+      ]
+    },
+    {
+      "case": "D02C01",
+      "family": "D02",
+      "control": "wrong registered digest before snapshot",
+      "expanded_scenarios": [
+        "D02WrongRegisteredDigest"
+      ]
+    },
+    {
+      "case": "D02C02",
+      "family": "D02",
+      "control": "source symlink or nonregular source",
+      "expanded_scenarios": [
+        "D02SourceSymlink",
+        "D02SourceNonregular"
+      ]
+    },
+    {
+      "case": "D02C03",
+      "family": "D02",
+      "control": "script or invalid ELF",
+      "expanded_scenarios": [
+        "D02ScriptExecutable",
+        "D02InvalidElf"
+      ]
+    },
+    {
+      "case": "D02C04",
+      "family": "D02",
+      "control": "source replacement before verified snapshot causing digest mismatch",
+      "expanded_scenarios": [
+        "D02PreSnapshotSourceReplacement"
+      ]
+    },
+    {
+      "case": "D02C05",
+      "family": "D02",
+      "control": "barrier-controlled source path replacement after final held verification before exec",
+      "expanded_scenarios": [
+        "D02PostHeldPathReplacement"
+      ]
+    },
+    {
+      "case": "D02C06",
+      "family": "D02",
+      "control": "barrier-controlled original inode mutation after held verification before exec",
+      "expanded_scenarios": [
+        "D02PostHeldInodeMutation"
+      ]
+    },
+    {
+      "case": "D02C07",
+      "family": "D02",
+      "control": "write/grow/shrink attempts on held sealed executable",
+      "expanded_scenarios": [
+        "D02HeldWriteDenied",
+        "D02HeldGrowDenied",
+        "D02HeldShrinkDenied"
+      ]
+    },
+    {
+      "case": "D02C08",
+      "family": "D02",
+      "control": "executable memfd or execveat unavailable",
+      "expanded_scenarios": [
+        "D02MemfdUnavailable",
+        "D02ExecveatUnavailable"
+      ]
+    },
+    {
+      "case": "D02C09",
+      "family": "D02",
+      "control": "birth/pidfd/supervisor installation failure",
+      "expanded_scenarios": [
+        "D02BirthInstallFailure",
+        "D02PidfdInstallFailure",
+        "D02SupervisorInstallFailure"
+      ]
+    },
+    {
+      "case": "D03C01",
+      "family": "D03",
+      "control": "length87",
+      "expanded_scenarios": [
+        "D03Frame87Bytes"
+      ]
+    },
+    {
+      "case": "D03C02",
+      "family": "D03",
+      "control": "length89",
+      "expanded_scenarios": [
+        "D03Frame89Bytes"
+      ]
+    },
+    {
+      "case": "D03C03",
+      "family": "D03",
+      "control": "protocol0",
+      "expanded_scenarios": [
+        "D03ProtocolZero"
+      ]
+    },
+    {
+      "case": "D03C04",
+      "family": "D03",
+      "control": "wrongversionprotocol",
+      "expanded_scenarios": [
+        "D03ForeignProtocolVersion"
+      ]
+    },
+    {
+      "case": "D03C05",
+      "family": "D03",
+      "control": "msgtype0",
+      "expanded_scenarios": [
+        "D03MessageTypeZero"
+      ]
+    },
+    {
+      "case": "D03C06",
+      "family": "D03",
+      "control": "msgtype9",
+      "expanded_scenarios": [
+        "D03MessageTypeNine"
+      ]
+    },
+    {
+      "case": "D03C07",
+      "family": "D03",
+      "control": "nonzerotail84..87",
+      "expanded_scenarios": [
+        "D03NonzeroTail84",
+        "D03NonzeroTail85",
+        "D03NonzeroTail86",
+        "D03NonzeroTail87"
+      ]
+    },
+    {
+      "case": "D03C08",
+      "family": "D03",
+      "control": "wrongpayloadlen",
+      "expanded_scenarios": [
+        "D03WrongPayloadLength"
+      ]
+    },
+    {
+      "case": "D03C09",
+      "family": "D03",
+      "control": "reservedbytes",
+      "expanded_scenarios": [
+        "D03NonzeroReservedField"
+      ]
+    },
+    {
+      "case": "D03C10",
+      "family": "D03",
+      "control": "unknownflags",
+      "expanded_scenarios": [
+        "D03UnknownFlags"
+      ]
+    },
+    {
+      "case": "D03C11",
+      "family": "D03",
+      "control": "wrongdirection",
+      "expanded_scenarios": [
+        "D03WrongMessageDirection"
+      ]
+    },
+    {
+      "case": "D04C01",
+      "family": "D04",
+      "control": "unprivileged sendmsg with unauthorized forged PID/UID/GID returns actual kernel rejection",
+      "expanded_scenarios": [
+        "D04ForgedPidKernelReject",
+        "D04ForgedUidKernelReject",
+        "D04ForgedGidKernelReject"
+      ]
+    },
+    {
+      "case": "D04C02",
+      "family": "D04",
+      "control": "actual inherited-endpoint helper sends kernel-issued wrong PID credentials",
+      "expanded_scenarios": [
+        "D04InheritedEndpointForeignPid"
+      ]
+    },
+    {
+      "case": "D04C03",
+      "family": "D04",
+      "control": "missing or duplicate credentials where actually constructible",
+      "expanded_scenarios": [
+        "D04MissingCredentials",
+        "D04DuplicateCredentials"
+      ]
+    },
+    {
+      "case": "D04C04",
+      "family": "D04",
+      "control": "SO_PEERCRED creation-time creator used as child identity",
+      "expanded_scenarios": [
+        "D04CreationPeercredIsNotSender"
+      ]
+    },
+    {
+      "case": "D04C05",
+      "family": "D04",
+      "control": "payload PID/Actor copied from approved bootstrap",
+      "expanded_scenarios": [
+        "D04CopiedBootstrapPidActor"
+      ]
+    },
+    {
+      "case": "D05C01",
+      "family": "D05",
+      "control": "Bootstrap 0/1/2/4 FDs",
+      "expanded_scenarios": [
+        "D05BootstrapFdZero",
+        "D05BootstrapFdOne",
+        "D05BootstrapFdTwo",
+        "D05BootstrapFdFour"
+      ]
+    },
+    {
+      "case": "D05C02",
+      "family": "D05",
+      "control": "DeliverInput any FD",
+      "expanded_scenarios": [
+        "D05DeliverInputFdOne"
+      ]
+    },
+    {
+      "case": "D05C03",
+      "family": "D05",
+      "control": "RequestPublication 0/1/3 FDs",
+      "expanded_scenarios": [
+        "D05RequestPublicationFdZero",
+        "D05RequestPublicationFdOne",
+        "D05RequestPublicationFdThree"
+      ]
+    },
+    {
+      "case": "D05C04",
+      "family": "D05",
+      "control": "Publish 0/1/3 FDs",
+      "expanded_scenarios": [
+        "D05PublishFdZero",
+        "D05PublishFdOne",
+        "D05PublishFdThree"
+      ]
+    },
+    {
+      "case": "D05C05",
+      "family": "D05",
+      "control": "InputAck/Stop/PublishAck/ReceiptNotice any FD",
+      "expanded_scenarios": [
+        "D05InputAckFdOne",
+        "D05StopFdOne",
+        "D05PublishAckFdOne",
+        "D05ReceiptNoticeFdOne"
+      ]
+    },
+    {
+      "case": "D05C06",
+      "family": "D05",
+      "control": "unknown ancillary type",
+      "expanded_scenarios": [
+        "D05UnknownAncillary"
+      ]
+    },
+    {
+      "case": "D05C07",
+      "family": "D05",
+      "control": "duplicate SCM_RIGHTS",
+      "expanded_scenarios": [
+        "D05DuplicateRights"
+      ]
+    },
+    {
+      "case": "D05C08",
+      "family": "D05",
+      "control": "MSG_CTRUNC",
+      "expanded_scenarios": [
+        "D05AncillaryTruncation"
+      ]
+    },
+    {
+      "case": "D05C09",
+      "family": "D05",
+      "control": "MSG_TRUNC",
+      "expanded_scenarios": [
+        "D05RecordTruncation"
+      ]
+    },
+    {
+      "case": "D06C01",
+      "family": "D06",
+      "control": "wrongselectedhash",
+      "expanded_scenarios": [
+        "D06SelectedHashMismatch"
+      ]
+    },
+    {
+      "case": "D06C02",
+      "family": "D06",
+      "control": "wrongselectedrevision",
+      "expanded_scenarios": [
+        "D06SelectedRevisionMismatch"
+      ]
+    },
+    {
+      "case": "D06C03",
+      "family": "D06",
+      "control": "wrongobject",
+      "expanded_scenarios": [
+        "D06SelectedObjectMismatch"
+      ]
+    },
+    {
+      "case": "D06C04",
+      "family": "D06",
+      "control": "initialunsealedFD",
+      "expanded_scenarios": [
+        "D06SelectedInputUnsealed"
+      ]
+    },
+    {
+      "case": "D06C05",
+      "family": "D06",
+      "control": "focusbeforevalidframe",
+      "expanded_scenarios": [
+        "D06FocusBeforeFirstFrame"
+      ]
+    },
+    {
+      "case": "D07C01",
+      "family": "D07",
+      "control": "observeronlychild",
+      "expanded_scenarios": [
+        "D07ObserverOnlyChildOracleReject"
+      ]
+    },
+    {
+      "case": "D07C02",
+      "family": "D07",
+      "control": "parentediteddraftsubstitute",
+      "expanded_scenarios": [
+        "D07ParentEditedDraftSourceReject"
+      ]
+    },
+    {
+      "case": "D07C03",
+      "family": "D07",
+      "control": "parentrenderedframewithchildreportedPID",
+      "expanded_scenarios": [
+        "D07ParentRasterWithReportedPidSourceReject"
+      ]
+    },
+    {
+      "case": "D08C01",
+      "family": "D08",
+      "control": "body4097",
+      "expanded_scenarios": [
+        "D08Body4097"
+      ]
+    },
+    {
+      "case": "D08C02",
+      "family": "D08",
+      "control": "nonASCII",
+      "expanded_scenarios": [
+        "D08BodyNonAscii"
+      ]
+    },
+    {
+      "case": "D08C03",
+      "family": "D08",
+      "control": "NUL",
+      "expanded_scenarios": [
+        "D08BodyNul"
+      ]
+    },
+    {
+      "case": "D08C04",
+      "family": "D08",
+      "control": "unsupportedusage",
+      "expanded_scenarios": [
+        "D08UnsupportedKeyUsage"
+      ]
+    },
+    {
+      "case": "D08C05",
+      "family": "D08",
+      "control": "contradictorymodifiers",
+      "expanded_scenarios": [
+        "D08ContradictoryModifiers"
+      ]
+    },
+    {
+      "case": "D08C06",
+      "family": "D08",
+      "control": "invalidphase",
+      "expanded_scenarios": [
+        "D08InvalidKeyPhase"
+      ]
+    },
+    {
+      "case": "D09C01",
+      "family": "D09",
+      "control": "cursor>len",
+      "expanded_scenarios": [
+        "D09CursorBeyondBody"
+      ]
+    },
+    {
+      "case": "D09C02",
+      "family": "D09",
+      "control": "halfselection-sentinel",
+      "expanded_scenarios": [
+        "D09HalfSelectionSentinel"
+      ]
+    },
+    {
+      "case": "D09C03",
+      "family": "D09",
+      "control": "end<start",
+      "expanded_scenarios": [
+        "D09SelectionReversed"
+      ]
+    },
+    {
+      "case": "D09C04",
+      "family": "D09",
+      "control": "selection>len",
+      "expanded_scenarios": [
+        "D09SelectionBeyondBody"
+      ]
+    },
+    {
+      "case": "D09C05",
+      "family": "D09",
+      "control": "line>actualinventory",
+      "expanded_scenarios": [
+        "D09FirstLineBeyondInventory"
+      ]
+    },
+    {
+      "case": "D09C06",
+      "family": "D09",
+      "control": "wrongviewgeneration",
+      "expanded_scenarios": [
+        "D09WrongViewGeneration"
+      ]
+    },
+    {
+      "case": "D10C01",
+      "family": "D10",
+      "control": "oversizedsurface",
+      "expanded_scenarios": [
+        "D10OversizedSurface"
+      ]
+    },
+    {
+      "case": "D10C02",
+      "family": "D10",
+      "control": "chromeobjectFD",
+      "expanded_scenarios": [
+        "D10ProtectedChromeObjectAsSurface"
+      ]
+    },
+    {
+      "case": "D10C03",
+      "family": "D10",
+      "control": "reservedkeyforwarded",
+      "expanded_scenarios": [
+        "D10ReservedKeyForwardingReject"
+      ]
+    },
+    {
+      "case": "D10C04",
+      "family": "D10",
+      "control": "childSavedclaim",
+      "expanded_scenarios": [
+        "D10ChildSavedImitationClipped"
+      ]
+    },
+    {
+      "case": "D11C01",
+      "family": "D11",
+      "control": "keptwritablealias",
+      "expanded_scenarios": [
+        "D11RetainedWritableMapping"
+      ]
+    },
+    {
+      "case": "D11C02",
+      "family": "D11",
+      "control": "F_SEAL_FUTURE_WRITEonly",
+      "expanded_scenarios": [
+        "D11FutureWriteOnly"
+      ]
+    },
+    {
+      "case": "D11C03",
+      "family": "D11",
+      "control": "mprotectonly",
+      "expanded_scenarios": [
+        "D11MprotectOnly"
+      ]
+    },
+    {
+      "case": "D11C04",
+      "family": "D11",
+      "control": "missingGROW",
+      "expanded_scenarios": [
+        "D11MissingGrowSeal"
+      ]
+    },
+    {
+      "case": "D11C05",
+      "family": "D11",
+      "control": "missingSHRINK",
+      "expanded_scenarios": [
+        "D11MissingShrinkSeal"
+      ]
+    },
+    {
+      "case": "D11C06",
+      "family": "D11",
+      "control": "missingSEAL",
+      "expanded_scenarios": [
+        "D11MissingFinalSeal"
+      ]
+    },
+    {
+      "case": "D11C07",
+      "family": "D11",
+      "control": "writeafterseal",
+      "expanded_scenarios": [
+        "D11WriteAfterSeal"
+      ]
+    },
+    {
+      "case": "D11C08",
+      "family": "D11",
+      "control": "growafterseal",
+      "expanded_scenarios": [
+        "D11GrowAfterSeal"
+      ]
+    },
+    {
+      "case": "D11C09",
+      "family": "D11",
+      "control": "shrinkafterseal",
+      "expanded_scenarios": [
+        "D11ShrinkAfterSeal"
+      ]
+    },
+    {
+      "case": "D12C01",
+      "family": "D12",
+      "control": "foreignchildtext",
+      "expanded_scenarios": [
+        "D12ForeignChildText"
+      ]
+    },
+    {
+      "case": "D12C02",
+      "family": "D12",
+      "control": "foreignchildframe",
+      "expanded_scenarios": [
+        "D12ForeignChildSurface"
+      ]
+    },
+    {
+      "case": "D12C03",
+      "family": "D12",
+      "control": "swappedroles",
+      "expanded_scenarios": [
+        "D12SwappedOfferedRoles"
+      ]
+    },
+    {
+      "case": "D12C04",
+      "family": "D12",
+      "control": "duplicateoneFDtwiceroles",
+      "expanded_scenarios": [
+        "D12DuplicateOfferedFdRoles"
+      ]
+    },
+    {
+      "case": "D12C05",
+      "family": "D12",
+      "control": "samecontentdifferentinode",
+      "expanded_scenarios": [
+        "D12EqualBytesForeignInode"
+      ]
+    },
+    {
+      "case": "D12C06",
+      "family": "D12",
+      "control": "staleofferID",
+      "expanded_scenarios": [
+        "D12StaleOfferId"
+      ]
+    },
+    {
+      "case": "D13C01",
+      "family": "D13",
+      "control": "textlen127",
+      "expanded_scenarios": [
+        "D13TextLength127"
+      ]
+    },
+    {
+      "case": "D13C02",
+      "family": "D13",
+      "control": "textlen4225",
+      "expanded_scenarios": [
+        "D13TextLength4225"
+      ]
+    },
+    {
+      "case": "D13C03",
+      "family": "D13",
+      "control": "controlsize!=fstat",
+      "expanded_scenarios": [
+        "D13ControlLengthVsFstat"
+      ]
+    },
+    {
+      "case": "D13C04",
+      "family": "D13",
+      "control": "frame1228799",
+      "expanded_scenarios": [
+        "D13SurfaceLength1228799"
+      ]
+    },
+    {
+      "case": "D13C05",
+      "family": "D13",
+      "control": "frame1228801",
+      "expanded_scenarios": [
+        "D13SurfaceLength1228801"
+      ]
+    },
+    {
+      "case": "D13C06",
+      "family": "D13",
+      "control": "badText64version/reserved/hash",
+      "expanded_scenarios": [
+        "D13TextHeaderVersion",
+        "D13TextHeaderReserved",
+        "D13TextBodyHash"
+      ]
+    },
+    {
+      "case": "D13C07",
+      "family": "D13",
+      "control": "wrongbase/object",
+      "expanded_scenarios": [
+        "D13BaseRevisionMismatch",
+        "D13TextObjectMismatch"
+      ]
+    },
+    {
+      "case": "D13C08",
+      "family": "D13",
+      "control": "state/controlgenmismatch",
+      "expanded_scenarios": [
+        "D13StateControlGenerationMismatch"
+      ]
+    },
+    {
+      "case": "D13C09",
+      "family": "D13",
+      "control": "companionframehashmismatch",
+      "expanded_scenarios": [
+        "D13SurfaceCompanionHashMismatch"
+      ]
+    },
+    {
+      "case": "D13C10",
+      "family": "D13",
+      "control": "alpha/formatviolation",
+      "expanded_scenarios": [
+        "D13SurfaceAlphaMismatch",
+        "D13SurfaceFormatMismatch"
+      ]
+    },
+    {
+      "case": "D14C01",
+      "family": "D14",
+      "control": "oldrequest",
+      "expanded_scenarios": [
+        "D14OldRequest"
+      ]
+    },
+    {
+      "case": "D14C02",
+      "family": "D14",
+      "control": "futureinput",
+      "expanded_scenarios": [
+        "D14FutureInput"
+      ]
+    },
+    {
+      "case": "D14C03",
+      "family": "D14",
+      "control": "duplicatePublish",
+      "expanded_scenarios": [
+        "D14DuplicatePublish"
+      ]
+    },
+    {
+      "case": "D14C04",
+      "family": "D14",
+      "control": "duplicateAck",
+      "expanded_scenarios": [
+        "D14DuplicateAck"
+      ]
+    },
+    {
+      "case": "D14C05",
+      "family": "D14",
+      "control": "wrongchannelgen",
+      "expanded_scenarios": [
+        "D14WrongChannelGeneration"
+      ]
+    },
+    {
+      "case": "D14C06",
+      "family": "D14",
+      "control": "oldfocus",
+      "expanded_scenarios": [
+        "D14OldFocusEpoch"
+      ]
+    },
+    {
+      "case": "D14C07",
+      "family": "D14",
+      "control": "oldserviceepoch",
+      "expanded_scenarios": [
+        "D14OldServiceEpoch"
+      ]
+    },
+    {
+      "case": "D14C08",
+      "family": "D14",
+      "control": "forgeddocumentbinding",
+      "expanded_scenarios": [
+        "D14ForeignDocumentBinding"
+      ]
+    },
+    {
+      "case": "D14C09",
+      "family": "D14",
+      "control": "counterwraprequest/publication/text/view/channel",
+      "expanded_scenarios": [
+        "D14RequestCounterMax",
+        "D14PublicationCounterMax",
+        "D14TextCounterMax",
+        "D14ViewCounterMax",
+        "D14ChannelCounterMax"
+      ]
+    },
+    {
+      "case": "D15C01",
+      "family": "D15",
+      "control": "13th data FD/map owner",
+      "expanded_scenarios": [
+        "D15DataOwnerThirteen"
+      ]
+    },
+    {
+      "case": "D15C02",
+      "family": "D15",
+      "control": "17th fixed-process FD owner",
+      "expanded_scenarios": [
+        "D15FixedOwnerSeventeen"
+      ]
+    },
+    {
+      "case": "D15C03",
+      "family": "D15",
+      "control": "29th combined process parent owner",
+      "expanded_scenarios": [
+        "D15CombinedOwnerTwentyNine"
+      ]
+    },
+    {
+      "case": "D15C04",
+      "family": "D15",
+      "control": "second pending input",
+      "expanded_scenarios": [
+        "D15PendingInputTwo"
+      ]
+    },
+    {
+      "case": "D15C05",
+      "family": "D15",
+      "control": "65th queued ordinary key",
+      "expanded_scenarios": [
+        "D15OrdinaryQueueSixtyFive"
+      ]
+    },
+    {
+      "case": "D15C06",
+      "family": "D15",
+      "control": "second reserved reset while first occupies reserved slot",
+      "expanded_scenarios": [
+        "D15ReservedResetTwo"
+      ]
+    },
+    {
+      "case": "D15C07",
+      "family": "D15",
+      "control": "66th total queued event",
+      "expanded_scenarios": [
+        "D15TotalQueueSixtySix"
+      ]
+    },
+    {
+      "case": "D15C08",
+      "family": "D15",
+      "control": "second inflight Save per child",
+      "expanded_scenarios": [
+        "D15InflightSaveTwo"
+      ]
+    },
+    {
+      "case": "D15C09",
+      "family": "D15",
+      "control": "third live editor",
+      "expanded_scenarios": [
+        "D15LiveEditorThree"
+      ]
+    },
+    {
+      "case": "D15C10",
+      "family": "D15",
+      "control": "third actual ProcessSupervisor handle",
+      "expanded_scenarios": [
+        "D15SupervisorThree"
+      ]
+    },
+    {
+      "case": "D15C11",
+      "family": "D15",
+      "control": "existing Store32 data/16 pin/16 pending/64 query/64 producer/IO2 caps",
+      "expanded_scenarios": [
+        "D15StoreDataThirtyThree",
+        "D15StorePinSeventeen",
+        "D15StorePendingSeventeen",
+        "D15StoreQuerySixtyFive",
+        "D15StoreProducerSixtyFive",
+        "D15StoreIoThree"
+      ]
+    },
+    {
+      "case": "D16C01",
+      "family": "D16",
+      "control": "129thoffer",
+      "expanded_scenarios": [
+        "D16LifetimeOffer129"
+      ]
+    },
+    {
+      "case": "D16C02",
+      "family": "D16",
+      "control": "258thobject",
+      "expanded_scenarios": [
+        "D16LifetimeObject258"
+      ]
+    },
+    {
+      "case": "D16C03",
+      "family": "D16",
+      "control": "bytecap+1",
+      "expanded_scenarios": [
+        "D16LifetimeByteCapPlusOne"
+      ]
+    },
+    {
+      "case": "D16C04",
+      "family": "D16",
+      "control": "sameinodealiaspresentedasnewcredit",
+      "expanded_scenarios": [
+        "D16ExistingInodeAsNewCredit"
+      ]
+    },
+    {
+      "case": "D16C05",
+      "family": "D16",
+      "control": "drop/reseed/counterresetreopenscredit",
+      "expanded_scenarios": [
+        "D16DropDoesNotRefund",
+        "D16ReseedDoesNotRefund",
+        "D16CounterResetDoesNotRefund"
+      ]
+    },
+    {
+      "case": "D17C01",
+      "family": "D17",
+      "control": "shortreceipt",
+      "expanded_scenarios": [
+        "D17ShortReceipt"
+      ]
+    },
+    {
+      "case": "D17C02",
+      "family": "D17",
+      "control": "wrongreceiptbinding/hash/revision",
+      "expanded_scenarios": [
+        "D17ForeignReceiptBinding",
+        "D17ReceiptHashMismatch",
+        "D17ReceiptRevisionMismatch"
+      ]
+    },
+    {
+      "case": "D17C03",
+      "family": "D17",
+      "control": "childreceiptsetter",
+      "expanded_scenarios": [
+        "D17ChildReceiptSetterApiAbsent"
+      ]
+    },
+    {
+      "case": "D17C04",
+      "family": "D17",
+      "control": "copiedallocationclaim",
+      "expanded_scenarios": [
+        "D17CopiedAllocationClaim"
+      ]
+    },
+    {
+      "case": "D18C01",
+      "family": "D18",
+      "control": "ordinaryPublishSaveclaim",
+      "expanded_scenarios": [
+        "D18OrdinaryPublishSaveClaim"
+      ]
+    },
+    {
+      "case": "D18C02",
+      "family": "D18",
+      "control": "unsolicitedcapture",
+      "expanded_scenarios": [
+        "D18UnsolicitedCapture"
+      ]
+    },
+    {
+      "case": "D18C03",
+      "family": "D18",
+      "control": "oldCtrlScopiedrequest",
+      "expanded_scenarios": [
+        "D18CopiedOldCaptureRequest"
+      ]
+    },
+    {
+      "case": "D18C04",
+      "family": "D18",
+      "control": "samecapturetwice",
+      "expanded_scenarios": [
+        "D18CaptureConsumedTwice"
+      ]
+    },
+    {
+      "case": "D18C05",
+      "family": "D18",
+      "control": "latecapture>1000ms",
+      "expanded_scenarios": [
+        "D18CaptureAfter1000Ms"
+      ]
+    },
+    {
+      "case": "D18C06",
+      "family": "D18",
+      "control": "capturedeadline resetbyroundtrip",
+      "expanded_scenarios": [
+        "D18RoundTripCannotRenewCapture"
+      ]
+    },
+    {
+      "case": "D19C01",
+      "family": "D19",
+      "control": "repeatCtrlSwhileSaving",
+      "expanded_scenarios": [
+        "D19RepeatSaveWhileSaving"
+      ]
+    },
+    {
+      "case": "D19C02",
+      "family": "D19",
+      "control": "repeatCtrlSwhileUnknown",
+      "expanded_scenarios": [
+        "D19RepeatSaveWhileUnknown"
+      ]
+    },
+    {
+      "case": "D19C03",
+      "family": "D19",
+      "control": "olderreceiptmarksnewerdraftSaved",
+      "expanded_scenarios": [
+        "D19OldReceiptNewDraftUnsaved"
+      ]
+    },
+    {
+      "case": "D20C01",
+      "family": "D20",
+      "control": "ordinaryretiredlookup",
+      "expanded_scenarios": [
+        "D20OrdinaryRetiredLookupDenied"
+      ]
+    },
+    {
+      "case": "D20C02",
+      "family": "D20",
+      "control": "forgedoriginalowner",
+      "expanded_scenarios": [
+        "D20ForeignOriginalOwnerDenied"
+      ]
+    },
+    {
+      "case": "D20C03",
+      "family": "D20",
+      "control": "newintentusedasreconcile",
+      "expanded_scenarios": [
+        "D20NewIntentCannotReconcileOld"
+      ]
+    },
+    {
+      "case": "D20C04",
+      "family": "D20",
+      "control": "resetallocationcount",
+      "expanded_scenarios": [
+        "D20OriginalAllocationCountPreserved"
+      ]
+    },
+    {
+      "case": "D21C01",
+      "family": "D21",
+      "control": "deathbeforeacceptedcapture",
+      "expanded_scenarios": [
+        "D21DeathBeforeCapture"
+      ]
+    },
+    {
+      "case": "D21C02",
+      "family": "D21",
+      "control": "deathafterAllocatebeforepermit",
+      "expanded_scenarios": [
+        "D21DeathAfterAllocateBeforePermit"
+      ]
+    },
+    {
+      "case": "D21C03",
+      "family": "D21",
+      "control": "latequeuedpublicationafterdeath",
+      "expanded_scenarios": [
+        "D21PublicationAfterDeath"
+      ]
+    },
+    {
+      "case": "D22C01",
+      "family": "D22",
+      "control": "dropchildowner",
+      "expanded_scenarios": [
+        "D22DropChildDoesNotDropWriter"
+      ]
+    },
+    {
+      "case": "D22C02",
+      "family": "D22",
+      "control": "killsignalrequestedonly",
+      "expanded_scenarios": [
+        "D22SignalRequestIsNotReap"
+      ]
+    },
+    {
+      "case": "D22C03",
+      "family": "D22",
+      "control": "childreapmistakenforStorejoin",
+      "expanded_scenarios": [
+        "D22ChildReapIsNotStoreJoin"
+      ]
+    },
+    {
+      "case": "D22C04",
+      "family": "D22",
+      "control": "ordinarygrantrevival",
+      "expanded_scenarios": [
+        "D22NoOrdinaryGrantRevival"
+      ]
+    },
+    {
+      "case": "D23C01",
+      "family": "D23",
+      "control": "oldpreviewEnter",
+      "expanded_scenarios": [
+        "D23OldPreviewEnterDenied"
+      ]
+    },
+    {
+      "case": "D23C02",
+      "family": "D23",
+      "control": "oldbootstrap",
+      "expanded_scenarios": [
+        "D23OldBootstrapDenied"
+      ]
+    },
+    {
+      "case": "D23C03",
+      "family": "D23",
+      "control": "automaticrespawn",
+      "expanded_scenarios": [
+        "D23NoAutomaticRespawn"
+      ]
+    },
+    {
+      "case": "D23C04",
+      "family": "D23",
+      "control": "Unknownreopenold/newguess",
+      "expanded_scenarios": [
+        "D23UnknownCannotChooseOldOrNewBase"
+      ]
+    },
+    {
+      "case": "D24C01",
+      "family": "D24",
+      "control": "globalGateheldacrossrecv",
+      "expanded_scenarios": [
+        "D24NoRegistryLockAcrossReceive"
+      ]
+    },
+    {
+      "case": "D24C02",
+      "family": "D24",
+      "control": "wait/killunderregistrylock",
+      "expanded_scenarios": [
+        "D24NoRegistryLockAcrossSignalWait"
+      ]
+    },
+    {
+      "case": "D24C03",
+      "family": "D24",
+      "control": "pollrequiredtoretireA",
+      "expanded_scenarios": [
+        "D24WatchdogWithoutPump"
+      ]
+    },
+    {
+      "case": "D24C04",
+      "family": "D24",
+      "control": "deadlineextendedbyB",
+      "expanded_scenarios": [
+        "D24OtherSessionCannotRenewDeadline"
+      ]
+    },
+    {
+      "case": "D25C01",
+      "family": "D25",
+      "control": "32769th scenario control row or131073rd aggregate control row; append denied before growth",
+      "expanded_scenarios": [
+        "D25ScenarioControlRow32769",
+        "D25AggregateControlRow131073"
+      ]
+    },
+    {
+      "case": "D25C02",
+      "family": "D25",
+      "control": "stdoutcap+1",
+      "expanded_scenarios": [
+        "D25StdoutCapPlusOne"
+      ]
+    },
+    {
+      "case": "D25C03",
+      "family": "D25",
+      "control": "stderr cap+1",
+      "expanded_scenarios": [
+        "D25StderrCapPlusOne"
+      ]
+    },
+    {
+      "case": "D25C04",
+      "family": "D25",
+      "control": "EOFpendingoffer",
+      "expanded_scenarios": [
+        "D25EofWithPendingOffer"
+      ]
+    },
+    {
+      "case": "D25C05",
+      "family": "D25",
+      "control": "shortrecord",
+      "expanded_scenarios": [
+        "D25ShortRecord"
+      ]
+    },
+    {
+      "case": "D25C06",
+      "family": "D25",
+      "control": "sendEAGAIN",
+      "expanded_scenarios": [
+        "D25ActualSendBackpressure"
+      ]
+    },
+    {
+      "case": "D25C07",
+      "family": "D25",
+      "control": "recvEINTR",
+      "expanded_scenarios": [
+        "D25ReceiveInterrupted"
+      ]
+    },
+    {
+      "case": "D25C08",
+      "family": "D25",
+      "control": "sendEINTR",
+      "expanded_scenarios": [
+        "D25SendInterrupted"
+      ]
+    },
+    {
+      "case": "D26C01",
+      "family": "D26",
+      "control": "lateframeafterrevoke",
+      "expanded_scenarios": [
+        "D26FrameAfterRevoke"
+      ]
+    },
+    {
+      "case": "D26C02",
+      "family": "D26",
+      "control": "latecaptureafterrevoke",
+      "expanded_scenarios": [
+        "D26CaptureAfterRevoke"
+      ]
+    },
+    {
+      "case": "D26C03",
+      "family": "D26",
+      "control": "reviveoldgeneration",
+      "expanded_scenarios": [
+        "D26OldGenerationCannotRevive"
+      ]
+    },
+    {
+      "case": "D26C04",
+      "family": "D26",
+      "control": "cancelissuedpermit",
+      "expanded_scenarios": [
+        "D26IssuedPermitCannotCancel"
+      ]
+    },
+    {
+      "case": "D27C01",
+      "family": "D27",
+      "control": "queued65overflowreset",
+      "expanded_scenarios": [
+        "D27OrdinaryOverflowReservedReset"
+      ]
+    },
+    {
+      "case": "D27C02",
+      "family": "D27",
+      "control": "oldkeypressrelease",
+      "expanded_scenarios": [
+        "D27OldKeyPressRelease"
+      ]
+    },
+    {
+      "case": "D27C03",
+      "family": "D27",
+      "control": "oldserviceepoch",
+      "expanded_scenarios": [
+        "D27OldResetServiceEpoch"
+      ]
+    },
+    {
+      "case": "D27C04",
+      "family": "D27",
+      "control": "oldsurfacegeneration",
+      "expanded_scenarios": [
+        "D27OldSurfaceGeneration"
+      ]
+    },
+    {
+      "case": "D27C05",
+      "family": "D27",
+      "control": "staleCtrlScapture",
+      "expanded_scenarios": [
+        "D27StaleResetCapture"
+      ]
+    },
+    {
+      "case": "D28C01",
+      "family": "D28",
+      "control": "TTL0",
+      "expanded_scenarios": [
+        "D28BudgetZero"
+      ]
+    },
+    {
+      "case": "D28C02",
+      "family": "D28",
+      "control": "TTL5001",
+      "expanded_scenarios": [
+        "D28Budget5001"
+      ]
+    },
+    {
+      "case": "D28C03",
+      "family": "D28",
+      "control": "spawnwaitreset",
+      "expanded_scenarios": [
+        "D28SpawnPauseCannotRenew"
+      ]
+    },
+    {
+      "case": "D28C04",
+      "family": "D28",
+      "control": "bootstrapreset",
+      "expanded_scenarios": [
+        "D28BootstrapPauseCannotRenew"
+      ]
+    },
+    {
+      "case": "D28C05",
+      "family": "D28",
+      "control": "roundtripreset",
+      "expanded_scenarios": [
+        "D28RoundTripCannotRenew"
+      ]
+    },
+    {
+      "case": "D28C06",
+      "family": "D28",
+      "control": "requestintentreset",
+      "expanded_scenarios": [
+        "D28IntentRequestCannotRenew"
+      ]
+    },
+    {
+      "case": "D28C07",
+      "family": "D28",
+      "control": "backdatedclock",
+      "expanded_scenarios": [
+        "D28BackdatedCoreClock"
+      ]
+    },
+    {
+      "case": "D29C01",
+      "family": "D29",
+      "control": "waiterror",
+      "expanded_scenarios": [
+        "D29WaitFailureRetainsOwner"
+      ]
+    },
+    {
+      "case": "D29C02",
+      "family": "D29",
+      "control": "killerror",
+      "expanded_scenarios": [
+        "D29SignalFailureRetainsOwner"
+      ]
+    },
+    {
+      "case": "D29C03",
+      "family": "D29",
+      "control": "pidfdreadywithoutwait",
+      "expanded_scenarios": [
+        "D29PidfdReadyIsNotReap"
+      ]
+    },
+    {
+      "case": "D29C04",
+      "family": "D29",
+      "control": "EOFwithoutwait",
+      "expanded_scenarios": [
+        "D29EofIsNotReap"
+      ]
+    },
+    {
+      "case": "D29C05",
+      "family": "D29",
+      "control": "Dropwithoutreap",
+      "expanded_scenarios": [
+        "D29DropIsNotReap"
+      ]
+    },
+    {
+      "case": "D29C06",
+      "family": "D29",
+      "control": "foreignnumericPID",
+      "expanded_scenarios": [
+        "D29ForeignNumericPidIsNotOwner"
+      ]
+    },
+    {
+      "case": "D29C07",
+      "family": "D29",
+      "control": "RustThreadJoinsubstitute",
+      "expanded_scenarios": [
+        "D29ThreadJoinIsNotReap"
+      ]
+    },
+    {
+      "case": "D29C08",
+      "family": "D29",
+      "control": "consumingjoinnonunwindingownerreturn",
+      "expanded_scenarios": [
+        "D29ConsumingJoinReturnsOwnerWithoutUnwind"
+      ]
+    },
+    {
+      "case": "D29C09",
+      "family": "D29",
+      "control": "nonblockingNotReady",
+      "expanded_scenarios": [
+        "D29LiveJoinNotReadyIsPrompt"
+      ]
+    },
+    {
+      "case": "D30C01",
+      "family": "D30",
+      "control": "weakenedone-secondassertion",
+      "expanded_scenarios": [
+        "D30OriginalOneSecondDeadlineUnchanged"
+      ]
+    },
+    {
+      "case": "D30C02",
+      "family": "D30",
+      "control": "fabricatedjoin/fence",
+      "expanded_scenarios": [
+        "D30NoFabricatedJoinFence"
+      ]
+    },
+    {
+      "case": "D30C03",
+      "family": "D30",
+      "control": "cachedresultacceptance",
+      "expanded_scenarios": [
+        "D30NoCachedPassAcceptance"
+      ]
+    },
+    {
+      "case": "D30C04",
+      "family": "D30",
+      "control": "silentprotocolgrantchange",
+      "expanded_scenarios": [
+        "D30ProtocolGrantInventoryUnchanged"
+      ]
+    },
+    {
+      "case": "D30C05",
+      "family": "D30",
+      "control": "StoreIOinschema",
+      "expanded_scenarios": [
+        "D30StoreIoExcludedFromSchema"
+      ]
+    },
+    {
+      "case": "D30C06",
+      "family": "D30",
+      "control": "DesktopdependsStore/App",
+      "expanded_scenarios": [
+        "D30DesktopGraphExcludesStoreApp"
+      ]
+    }
+  ],
+  "expanded_catalog_path": "apps/artifact_editor/tests/process_support/p0_obligations.json",
+  "expanded_catalog_sha256": "b3adb3aa6f3a9e39fdf8ce3bae2949c76bfa39257e2ccba75f2cee403ebaed99",
+  "negative_scenario_count": 223,
+  "positive_scenarios": [
+    {
+      "case": "D01P",
+      "scenario": "D01ExplicitChildParentBuild",
+      "consumer_entry": "process_d01_default_off_build_and_exports",
+      "layer": "root_build_gate"
+    },
+    {
+      "case": "D02P",
+      "scenario": "D02HeldRegisteredElfExecAndRealReap",
+      "consumer_entry": "process_d02_pinned_actual_editor_and_private_channel",
+      "layer": "desktop_owner"
+    },
+    {
+      "case": "D03P",
+      "scenario": "D03AllEightCanonicalMessages",
+      "consumer_entry": "process_d03_canonical_wire_exact_closed_inventory",
+      "layer": "desktop_owner"
+    },
+    {
+      "case": "D04P",
+      "scenario": "D04GenuineOwnedSender",
+      "consumer_entry": "process_d04_actual_sender_credentials_not_bootstrap_pid",
+      "layer": "desktop_owner"
+    },
+    {
+      "case": "D05P",
+      "scenario": "D05ExactDescriptorRolesAndFreshCarrier",
+      "consumer_entry": "process_d05_ancillary_inventory_truncation_and_cleanup",
+      "layer": "desktop_owner"
+    },
+    {
+      "case": "D06P",
+      "scenario": "D06GenuineReadFirstFrameThenFocus",
+      "consumer_entry": "process_d06_genuine_selected_init_and_first_child_frame",
+      "layer": "public_consumer_and_desktop_owner"
+    },
+    {
+      "case": "D07P",
+      "scenario": "D07ActualChildEditAndRasterGolden",
+      "consumer_entry": "process_d07_child_local_keyboard_edit_raster_task",
+      "layer": "public_consumer_and_source_gate"
+    },
+    {
+      "case": "D08P",
+      "scenario": "D08EmptyBase4096PressReleaseAndCtrlS",
+      "consumer_entry": "process_d08_ascii_and_4096_bounds_preserve_prior_draft",
+      "layer": "public_consumer_and_desktop_owner"
+    },
+    {
+      "case": "D09P",
+      "scenario": "D09FrozenCursorSelectionScrollGolden",
+      "consumer_entry": "process_d09_cursor_selection_scroll_exact_state_pixels",
+      "layer": "public_consumer_and_desktop_owner"
+    },
+    {
+      "case": "D10P",
+      "scenario": "D10ProtectedChromeAndOrdinaryChildKey",
+      "consumer_entry": "process_d10_protected_chrome_and_reserved_input_routes",
+      "layer": "public_consumer_and_desktop_owner"
+    },
+    {
+      "case": "D11P",
+      "scenario": "D11AllAliasesUnmappedFullSeals",
+      "consumer_entry": "process_d11_actual_write_seals_and_retained_alias_ebusy",
+      "layer": "desktop_owner"
+    },
+    {
+      "case": "D12P",
+      "scenario": "D12ExactPendingOfferedPair",
+      "consumer_entry": "process_d12_offered_inode_pair_and_cross_child_denials",
+      "layer": "desktop_owner"
+    },
+    {
+      "case": "D13P",
+      "scenario": "D13ExactCompleteTextStateAndSurface",
+      "consumer_entry": "process_d13_complete_mapping_shape_hash_and_base",
+      "layer": "desktop_owner"
+    },
+    {
+      "case": "D14P",
+      "scenario": "D14CurrentAcknowledgmentAndPublication",
+      "consumer_entry": "process_d14_sequence_epoch_ownership_and_single_use",
+      "layer": "desktop_owner"
+    },
+    {
+      "case": "D15P",
+      "scenario": "D15RealOwnerReleaseThenAdmit",
+      "consumer_entry": "process_d15_live_owner_pending_queue_and_save_caps",
+      "layer": "desktop_and_app_owners"
+    },
+    {
+      "case": "D16P",
+      "scenario": "D16LifetimeOffer128ThenFreshReapedChild",
+      "consumer_entry": "process_d16_lifetime_offer_ledger_bytes_and_no_alias_reuse",
+      "layer": "desktop_owner"
+    },
+    {
+      "case": "D17P",
+      "scenario": "D17OneGenuineSaveReceiptAndFreshChildReopen",
+      "consumer_entry": "process_d17_genuine_ctrl_s_full_receipt_and_reopen",
+      "layer": "app_owner_and_public_consumer"
+    },
+    {
+      "case": "D18P",
+      "scenario": "D18FreshSingleUseCtrlSCapture",
+      "consumer_entry": "process_d18_no_save_without_genuine_single_use_capture",
+      "layer": "desktop_owner_and_app_owner"
+    },
+    {
+      "case": "D19P",
+      "scenario": "D19OlderReceiptThenFreshAuthorizedSave",
+      "consumer_entry": "process_d19_newer_draft_keeps_unsaved_after_older_commit",
+      "layer": "app_owner_and_public_consumer"
+    },
+    {
+      "case": "D20P",
+      "scenario": "D20OriginalLookupThenFreshRestart",
+      "consumer_entry": "process_d20_lost_reply_original_only_recovery_no_replay",
+      "layer": "app_owner_and_public_consumer"
+    },
+    {
+      "case": "D21P",
+      "scenario": "D21GenuineUnpermittedClosureThenApprovedChild",
+      "consumer_entry": "process_d21_child_death_before_permit_retains_known_allocation",
+      "layer": "app_owner_and_public_consumer"
+    },
+    {
+      "case": "D22P",
+      "scenario": "D22OriginalWriterSettlesAfterChildReap",
+      "consumer_entry": "process_d22_child_death_after_permit_original_writer_survives",
+      "layer": "app_owner_and_public_consumer"
+    },
+    {
+      "case": "D23P",
+      "scenario": "D23FreshPreviewApprovalNewBirth",
+      "consumer_entry": "process_d23_actual_fault_fresh_restart_approval",
+      "layer": "public_consumer_and_desktop_owner"
+    },
+    {
+      "case": "D24P",
+      "scenario": "D24IndependentChildBWithinOneSecond",
+      "consumer_entry": "process_d24_stalled_child_unrelated_session_one_second",
+      "layer": "public_consumer_and_desktop_owner"
+    },
+    {
+      "case": "D25P",
+      "scenario": "D25BoundedRetryThenFreshOwner",
+      "consumer_entry": "process_d25_flood_eof_short_io_and_backpressure",
+      "layer": "desktop_owner"
+    },
+    {
+      "case": "D26P",
+      "scenario": "D26OtherOwnerAndOriginalReceiptProgress",
+      "consumer_entry": "process_d26_revoke_fences_unpermitted_publication_preserves_permit",
+      "layer": "desktop_and_app_owners"
+    },
+    {
+      "case": "D27P",
+      "scenario": "D27FreshResetApprovalAndSurface",
+      "consumer_entry": "process_d27_focus_compositor_service_reset_and_reserved_reset",
+      "layer": "public_consumer_and_desktop_owner"
+    },
+    {
+      "case": "D28P",
+      "scenario": "D28WithinOriginalBudgetAndActualExpiry",
+      "consumer_entry": "process_d28_absolute_expiry_death_deadline_no_reset",
+      "layer": "desktop_owner_and_public_consumer"
+    },
+    {
+      "case": "D29P",
+      "scenario": "D29SoleWaitThenSupervisorJoinAndChargeRelease",
+      "consumer_entry": "process_d29_real_reap_uncertainty_and_charge_retention",
+      "layer": "desktop_owner_and_public_consumer"
+    },
+    {
+      "case": "D30P",
+      "scenario": "D30AllUnchangedConsumersOnSameCandidate",
+      "consumer_entry": "process_d30_unchanged_c_consumers_and_integration",
+      "layer": "root_integration_gate"
+    }
+  ],
+  "parent_death_addendum": {
+    "scenario": "D29ActualParentDeathSubreaperQuarantine",
+    "consumer_entry": "process_d29_actual_parent_death_retains_uncertain_store_quarantine",
+    "requirements": [
+      "Actual outer controller sets PR_SET_CHILD_SUBREAPER before spawning the real parent fixture.",
+      "Outer controller waits only on native processes it legally owns/adopts; no fabricated original supervisor join.",
+      "Killed-parent Rust producer joins/fences remain unproved; Store root and original operation metadata stay quarantined.",
+      "Original Store outcome is never selected from process absence; recovery uses actual original-operation evidence under fresh authorized ownership."
+    ]
+  },
+  "handoff_path": "docs/DESKTOP_EDITOR_PROCESS_ASSERTIONS_V0.md",
+  "handoff_sha256": "82a9b28d702ddd8e820701f586585d7d25c8b212b0c6387bca226cf2b573d49f",
+  "review": {
+    "coordinator": "root",
+    "independent_reviewer": "reviewer",
+    "decision": "ACCEPT_FOR_P0_AUTHORING",
+    "unresolved_blocking_findings": [],
+    "runtime_accepted": false,
+    "handlers_released": false
+  },
+  "reviewed_amendments": [
+    {
+      "previous_handoff_sha256": "daea7e92481a0ed8b62ab54748d1712793025a10a83eb0bfea66e1f49f52fe8e",
+      "scope": "Exact finite diagnostics/pair binding, failed-open and nonblocking private app diagnostic handoff; decision-boundary snapshots",
+      "reviewer": "reviewer",
+      "decision": "ACCEPT_FOR_P0_AUTHORING"
+    },
+    {
+      "previous_handoff_sha256": "575862129a38cf66ff39805cc15f2f2617675a9a51ed2e218cd533586cd87221",
+      "scope": "Decision-boundary syscall/descriptor/owner evidence; genuine D18 trigger semantics and D23 unresolved-original restart; finite blocking checkpoints; original-allocation native closure bridge and guard retention",
+      "reviewer": "reviewer",
+      "decision": "ACCEPT_FOR_P0_AUTHORING"
+    }
+  ],
+  "rendezvous_scenarios": {
+    "D02PostHeldPathReplacement": [
+      "HeldVerifiedBeforeExec"
+    ],
+    "D02PostHeldInodeMutation": [
+      "HeldVerifiedBeforeExec"
+    ],
+    "D18CaptureAfter1000Ms": [
+      "CaptureBeforeAdopt"
+    ],
+    "D18RoundTripCannotRenewCapture": [
+      "CaptureBeforeAdopt"
+    ],
+    "D19OlderReceiptThenFreshAuthorizedSave": [
+      "PairValidatedBeforeAdopt aftercapture/newerdraft only"
+    ],
+    "D28SpawnPauseCannotRenew": [
+      "ForkOwnedBeforeExecRelease"
+    ],
+    "D28BootstrapPauseCannotRenew": [
+      "BootstrapBeforeSend"
+    ],
+    "D28RoundTripCannotRenew": [
+      "InputReceivedBeforeAck"
+    ],
+    "D28IntentRequestCannotRenew": [
+      "CaptureBeforeAdopt"
+    ],
+    "D29DropIsNotReap": [
+      "SupervisorBeforeSignal"
+    ],
+    "D29PidfdReadyWithoutWait": [
+      "SupervisorBeforeWait"
+    ],
+    "D24NoRegistryLockAcrossSignalWait": [
+      "SupervisorBeforeSignal",
+      "SupervisorBeforeWait"
+    ]
+  }
+}

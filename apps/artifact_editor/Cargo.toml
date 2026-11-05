@@ -28,6 +28,10 @@ host_editor_process_v0_dev = [
   "host_native_save_v0_dev",
   "desktop_service/host_editor_process_v0_dev",
 ]
+host_editor_process_assertions_v0_dev = [
+  "host_editor_process_v0_dev",
+  "desktop_service/host_editor_process_assertions_v0_dev",
+]
 
 [dependencies]
 desktop_service = { path = "../../services/desktop", default-features = false, optional = true }

@@ -1,0 +1,159 @@
+{
+  "schema_version": 1,
+  "scope": "Root-owned actual build/consumer probe receipt consumed by D01/D30 tests; declaration only, no result claimed",
+  "environment_variable": "RAMEN_PROCESS_GATE_RECORD",
+  "fields": {
+    "schema_version": "1",
+    "phase": "preparation|runtime",
+    "run_nonce": "32 lowercase hex",
+    "repo": "absolute repository",
+    "source_manifest": {
+      "path": "absolute exact source manifest",
+      "sha256": "64 lowercase hex"
+    },
+    "lockfile": {
+      "before": "64 lowercase hex",
+      "after": "must equal before"
+    },
+    "probes": [
+      {
+        "id": "unique stable probe ID below",
+        "scenario_id": "closed catalog scenario name",
+        "argv": "actual array of argv strings",
+        "exit_code": "actual integer",
+        "wait_reaped": "actual bool; must be true",
+        "cleanup_uncertain": "actual bool; must be false",
+        "stdout": {
+          "path": "absolute retained file",
+          "sha256": "64 lowercase hex"
+        },
+        "stderr": {
+          "path": "absolute retained file",
+          "sha256": "64 lowercase hex"
+        },
+        "selected": "actual selected test names when applicable",
+        "passed": "actual passed test names when applicable",
+        "artifacts": [
+          {
+            "kind": "production_child|assertion_child|parent|source_mutant|control_leaf",
+            "path": "absolute artifact",
+            "sha256": "64 lowercase hex",
+            "features": "actual active root features",
+            "package_names": "actual normal dependency graph"
+          }
+        ],
+        "gate_reports": [
+          {
+            "path": "absolute retained native gate/semantic reader report",
+            "sha256": "64 lowercase hex",
+            "source_manifest_sha256": "child report input identity; shared rows match Root bytes and all rows match actual source",
+            "source_manifest": {
+              "path": "child gate exact source manifest",
+              "sha256": "child manifest identity, not required equal Root manifest"
+            },
+            "child_run_nonce": "actual preexisting gate run nonce if present; explicitly joined under Root run_nonce"
+          }
+        ]
+      }
+    ]
+  },
+  "required_probes": {
+    "D01DefaultBinaryAbsent": {
+      "exit_code": 101
+    },
+    "D01DefaultParentApiAbsent": {
+      "exit_code": 101
+    },
+    "D01ChildGraphExcludesDesktopStore": {
+      "exit_code": 0
+    },
+    "D01ExplicitChildBuild": {
+      "exit_code": 0
+    },
+    "D01ExplicitParentBuild": {
+      "exit_code": 0
+    },
+    "D17ChildReceiptSetterApiAbsent": {
+      "exit_code": 101
+    },
+    "D30Launch17": {
+      "exit_code": 0
+    },
+    "D30Volatile13": {
+      "exit_code": 0
+    },
+    "D30Store7Reader16": {
+      "exit_code": 0
+    },
+    "D30NativeRead9": {
+      "exit_code": 0
+    },
+    "D30NativePreview5": {
+      "exit_code": 0
+    },
+    "D30Original18Reader93": {
+      "exit_code": 0
+    },
+    "D30Adapter4": {
+      "exit_code": 0
+    },
+    "D30Reliability13": {
+      "exit_code": 0
+    },
+    "D17CopiedAllocationCannotMintIntent": {
+      "exit_code": 101
+    },
+    "D25Aggregate131073RecordingCap": {
+      "exit_code": 0,
+      "scope": "Actual Root recorder boundary exercise; synthetic serializer rows never claim native transmissions"
+    },
+    "D01ExplicitAssertionChildBuild": {
+      "exit_code": 0
+    },
+    "D29ActualParentDeathSubreaperQuarantine": {
+      "exit_code": 0,
+      "scope": "Actual app-private unit record; genuine adopted wait and retained unknown Store root, never dead-parent Rust/Store joins."
+    },
+    "D07ParentEditedDraftSourceReject": {
+      "exit_code": 1,
+      "expected_diagnostic": "PROCESS_SOURCE_FORBIDDEN_PARENT_EDIT",
+      "scope": "Isolated selected source mutation policy refusal only; never execute mutant."
+    },
+    "D07ParentRasterWithReportedPidSourceReject": {
+      "exit_code": 1,
+      "expected_diagnostic": "PROCESS_SOURCE_FORBIDDEN_PARENT_RASTER",
+      "scope": "Isolated selected source mutation policy refusal only; never execute mutant."
+    },
+    "D10ProtectedChromeFdNotExported": {
+      "exit_code": 101,
+      "expected_diagnostic": "E0599 export_process_chrome_fd on HostDesktop",
+      "scope": "Protected Core chrome has no UnixFD export; separately prove actual typed Core refusal, do not fabricate ChromeFD from pixel copy."
+    },
+    "D29ForeignNumericPidCannotConstructOwner": {
+      "exit_code": 101,
+      "expected_diagnostic": "E0599 from_pid on OwnedEditorChild"
+    }
+  },
+  "rules": [
+    "Every raw path/hash and source manifest is validated by consumer; no generic passed flag",
+    "D01 compiler failures require exact expected diagnostics; unrelated failure cannot satisfy absence",
+    "D30 consumes actual unchanged gates and complete raw reader records on identical source; never reruns full preflight recursively",
+    "Original Reader93 and process records remain separate",
+    "Aggregate131073 cap boundary is a Root recorder case with actual append result and immutable prefix count; no Desktop counter substitute"
+  ],
+  "recorder_boundary_stdout": {
+    "prefix": "PROCESS_RECORDER_BOUNDARY ",
+    "fields": {
+      "scope": "recorder-boundary-not-native",
+      "before": {
+        "count": 131072,
+        "bytes": "actualsum",
+        "sha256": "actualaggregateofretainedleaves"
+      },
+      "attempt_index": 131073,
+      "after": "countbyteshashidenticaltobefore",
+      "error": "aggregate control capacity"
+    },
+    "artifacts": "fouractualcontrolleaveswithhashes"
+  }
+}

@@ -575,6 +575,7 @@ dependencies = [
  "artifact_store_schema",
  "desktop_editor_core",
  "kernel_api",
+ "libc",
  "sha2",
 ]
 

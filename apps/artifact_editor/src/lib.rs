@@ -7,6 +7,19 @@
 #[cfg(all(test, feature = "host_native_save_v0_dev"))]
 extern crate self as artifact_editor;
 
+#[cfg(all(test, feature = "host_editor_process_assertions_v0_dev"))]
+#[path = "../tests/native_task_support/mod.rs"]
+mod support;
+
+#[cfg(all(test, feature = "host_editor_process_assertions_v0_dev"))]
+mod dev {
+    pub use desktop_service::dev::*;
+}
+#[cfg(all(test, feature = "host_editor_process_assertions_v0_dev"))]
+mod editor_dev {
+    pub use desktop_service::editor_dev::*;
+}
+
 #[cfg(feature = "host_native_save_v0_dev")]
 mod native;
 #[cfg(feature = "host_native_save_v0_dev")]

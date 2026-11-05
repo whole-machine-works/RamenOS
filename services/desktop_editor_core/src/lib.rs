@@ -1,6 +1,8 @@
 //! Bounded local ASCII edit/raster data shared by host adapters and the editor child.
 //! This component authenticates no input, document, process, mapping or Save.
 
+pub mod process_data;
+
 pub const TEXT_LIMIT: usize = 4096;
 pub const WIDTH: usize = 640;
 pub const HEIGHT: usize = 480;

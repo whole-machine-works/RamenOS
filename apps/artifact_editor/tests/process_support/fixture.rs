@@ -124,3 +124,61 @@ pub fn stroke(f: &mut Fixture, usage: u32, now: u64) {
 pub fn expected_crop(frame: &desktop::ComposedFrame, new: bool) {
     volatile::assert_golden(frame, new);
 }
+
+/// Seed the real Store fixture before enrollment. This is not a process draft
+/// setter: each selected body is subsequently obtained through the genuine
+/// approved Read lease and consuming `take_editor` path.
+pub fn fixture_with_contents(name: &'static str, bodies: &[&[u8]]) -> Fixture {
+    assert!((1..=3).contains(&bodies.len()));
+    let recording = recording::CaseRecorder::open(name)
+        .unwrap_or_else(|error| panic!("actual process recorder setup: {error:?}"));
+    let mut profile = support::profile(bodies.len());
+    for (object, body) in profile.initial_objects.iter_mut().zip(bodies) {
+        assert!(body.len() <= 4096);
+        object.bytes = body.to_vec();
+    }
+    Fixture::recorded_profile(&recording, preparation_spec(name), profile)
+}
+
+/// Generalized genuine enrollment setup for the empty-body capacity scenario
+/// and an independently approved second child. No copied observation constructs
+/// a NativeEditor; only the actual reply's consuming method may return it.
+pub fn initialize_at(
+    f: &mut Fixture,
+    session: usize,
+    object_id: u64,
+    expected_body: &[u8],
+    now: u64,
+) -> (store::PairedNativeSaveLaunch, desktop::NativeEditor) {
+    let launch = f.launch(session, object_id, now);
+    let mut reply = read_reply(f, &launch, 400, now);
+    let response = support::ok(artifact::ReadSelectedReply::decode(reply.wire()));
+    assert_eq!(
+        (response.request_id, response.status, response.revision),
+        (400, 0, 1)
+    );
+    let lease = reply.selected().expect("actual selected lease");
+    let descriptor = lease.descriptor();
+    assert_eq!(descriptor.handle.pack(), response.data_shm);
+    assert_eq!(descriptor.object_generation, response.object_generation);
+    assert_eq!(descriptor.byte_len, response.byte_len);
+    assert!((64..=4160).contains(&descriptor.byte_len));
+    let mut bytes = vec![0xa5; descriptor.byte_len as usize];
+    support::ok(lease.copy_into(0, &mut bytes));
+    let header = support::ok(EditorTextHeaderV0::decode_le(&bytes[..64]));
+    support::ok(header.validate_bytes(&bytes[64..]));
+    assert_eq!(header.revision, response.revision);
+    assert_eq!(header.selected_object_id, object_id);
+    assert_eq!(&bytes[64..], expected_body);
+    let editor = support::ok(reply.take_editor());
+    assert!(matches!(
+        reply.take_editor(),
+        Err(store::StoreStatus::NotReady)
+    ));
+    assert_eq!(
+        support::ok(f.h.editor_observation(&editor, now)).bytes,
+        expected_body
+    );
+    drop(reply);
+    (launch, editor)
+}
