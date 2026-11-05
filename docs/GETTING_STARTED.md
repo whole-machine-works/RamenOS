@@ -1,6 +1,6 @@
 # Getting Started with RamenOS
 
-**Last Updated:** 2026-10-08
+**Last Updated:** 2026-11-04
 **Status:** Active contributor guide
 
 RamenOS is an everyday OS being built for humans and AI agents. It is public
@@ -27,6 +27,19 @@ search the paths in [foundry_s0.sh](../tools/ci/foundry_s0.sh), including Homebr
 QEMU/edk2 and Linux OVMF locations. For another installation, set `OVMF_CODE`
 and `OVMF_VARS` to the actual firmware files. Gates copy the variables template
 into `out/`; do not use an installed firmware template as writable VM storage.
+
+With Homebrew QEMU 11.1.2 on Apple Silicon, set the shipped firmware pair explicitly
+if a gate's discovery paths do not find it:
+
+```bash
+export OVMF_CODE=/opt/homebrew/share/qemu/edk2-x86_64-code.fd
+export OVMF_VARS=/opt/homebrew/share/qemu/edk2-i386-vars.fd
+```
+
+The `edk2-i386-vars.fd` filename is the variables template paired with this x86_64
+code image in QEMU's firmware descriptor. Check both files exist; for another
+installation use the pair named by its descriptor. Each probe still needs its
+own writable copy.
 
 The Linux CI dependencies are recorded in
 [ci.yml](../.github/workflows/ci.yml). On a Debian/Ubuntu host the boot/tooling
@@ -59,7 +72,8 @@ qemu-system-aarch64 --version
 
 | Goal | Command | Evidence |
 |------|---------|----------|
-| Run the scripted human editor task | `just codegen` then `just foundry-desktop-editor-task-ui1-1c` | Injected keyboard/offscreen frames and actual host Store Save/reopen; trusted in-process, review repairs pending |
+| Run the scripted human editor task | `just codegen` then `just foundry-desktop-editor-task-ui1-1c` | Injected keyboard/offscreen frames and actual host Store Save/reopen; trusted in-process scope |
+| Exercise the reviewed editor repairs | `just foundry-editor-reliability-ui1-1` | Ownership, focus, timeout and staging-recovery regressions; real editor process remains separate |
 | Build typed host components | `just build-host` | Host build; runs codegen first |
 | Inspect structured OS state | `just foundry-semantic-state-s10-2` | Host snapshots, subscriptions, filtered views, runner checks |
 | Run a Store demo | `just foundry-store-s0` | Self-contained host service and launch plan |
@@ -72,11 +86,8 @@ For SW0's implemented task controls, use the command/scope table in
 The physical lane and software lane proceed independently. Default hardware
 gates do not establish a physical run or metal graduation.
 
-For a team of agents, the coordinator selects ready tasks from
-[Next Tasks](../NEXT_TASKS.md) and uses [Agentic Workflow](AGENTIC_WORKFLOW.md)
-to assign file ownership, contract dependencies and acceptance gates. Reserve
-shared output directories, QEMU images/sockets and physical equipment before
-parallel runs; separate source files alone do not isolate those resources.
+For parallel authors and independent review, use
+[Agentic Workflow](AGENTIC_WORKFLOW.md) for dispatch and shared-resource reservations.
 
 ## Build and regenerate
 
@@ -127,12 +138,18 @@ just foundry-org-governance-g0
 ```
 
 For a focused edit, use the [warm developer loop](FOUNDRY_CI_OPTIMIZATION_V0.md).
-For code changes, the complete acceptance entry point is `just preflight`. It checks
+For code changes, complete acceptance uses the canonical CI lanes or their serial
+equivalent, `just preflight`; do not duplicate both on the same candidate. It checks
 prerequisites before regeneration, formatting, lint/build/test tranches, and the
 Foundry suites. Its agent-task suite requires Linux, JSON-schema support, and
 the configured container runtime/image. `INCOMPLETE` reports missing prerequisites
 or evidence; it must not be reported as PASS. Read the specific gate log rather
 than repeating unrelated checks.
+
+CI classifies actual inputs through `tools/ci/change_policy.py`. Gate-consumed
+Markdown, including `NEXT_TASKS.md`, can require full Foundry even when the edit
+looks like prose. A docs-only classification does not remove the local planning
+checks above or grant authority to skip an affected contract's checks.
 
 ## Troubleshooting and next steps
 

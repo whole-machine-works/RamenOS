@@ -55,23 +55,25 @@ platform-wide rewrite or wait for unrelated studies/hardware runs.
 
 ## Parallel execution with explicit joins
 
-Use one coordinator, two implementers and one independent reviewer by default.
-The coordinator freezes shared contracts/assertions, assigns disjoint files and
-resources, integrates one reviewed packet at a time and owns final validation.
-A successor starts when its own prerequisites clear; unrelated packets need not
-finish together. Reserve review capacity rather than accumulating completed
-patches. [Agentic Workflow](docs/AGENTIC_WORKFLOW.md) owns the mechanics.
+The critical path is **reviewed P0 → concurrent P1/P2 → P3 → target task →
+persistent task → reference machine**. Reserve review capacity and dispatch the
+two ready pieces of that path before opening extra implementation branches.
+[Next Tasks](NEXT_TASKS.md#process-successor-split-at-real-ownership-boundaries)
+owns the current writer assignments, inputs and release points;
+[Agentic Workflow](docs/AGENTIC_WORKFLOW.md) owns the general mechanics.
 
 ```mermaid
 flowchart LR
-    E[Evidence admission] --> H[Reliable host control]
-    F[Host transition repairs] --> H
-    H --> P[Real editor process]
-    C[Process assertions and owner staging] --> P
+    H[Accepted host foundations] --> C[P0 assertions and ownership freeze]
+    C --> P1[P1 authenticated carrier]
+    C --> P2[P2 child edit and raster]
+    P1 --> P3[P3 real Save and recovery]
+    P2 --> P3
     R[RUN0 firmware ownership] --> L[Target loader/runtime]
     I[Input Vault and Oracle] --> K[Device keyboard]
-    P --> D[Target display and service ports]
-    L --> Q[Same QEMU human task]
+    HC[Frozen host contracts] --> D[Target display and service preparation]
+    P3 --> Q[Same QEMU human task]
+    L --> Q
     K --> Q
     D --> Q
     S[Device block IO and Store adapter] --> T[Persistent target task]
@@ -92,12 +94,11 @@ its own explicit authorization and prerequisites. Target compositor/service port
 can prepare against frozen host contracts before process completion; their final
 acceptance joins the real target task.
 
-Split process work at assertions/owner staging, authenticated carrier, child
-edit/raster and Save/recovery integration. After interface freeze, carrier and
-child implementation can overlap in separately assigned files; acceptance requires
-real combined execution. When two repairs touch the same host or Store lifecycle,
-serialize that scope and backfill with independent work. Exact ready packets and
-regression obligations live only in [Next Tasks](NEXT_TASKS.md#ready-work-front).
+Preparation may overlap without claiming the joined behavior. Review a completed
+branch while its sibling continues; use a freed slot for the next ready target or
+recovery prerequisite. P3 requires accepted P1 and P2 together. Two changes to the
+same host or Store lifecycle stay sequential, with independent work filling the
+other slot. Do not refreeze the whole architecture to start one bounded packet.
 
 ## Demonstrate independent evolution
 

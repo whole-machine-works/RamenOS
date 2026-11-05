@@ -40,39 +40,25 @@ find references. Do not copy the queue or milestone history into instructions.
 [CONSTITUTION.md](CONSTITUTION.md) holds the full invariants. Changing it requires
 a `DECISIONS.md` entry. No temporary exception may silently violate it.
 
-## Slice workflow
+## Deliver a bounded outcome
 
-Implement vertical slices with a bounded behavior or contract, a consumer, and a
-Foundry gate. Each implementation change must improve boot/run behavior, implement
-an IDL contract, add a Foundry assertion, or implement a Store feature consuming an
-OS capability. Documentation and governance changes must support those outcomes
-and their evidence.
+Choose a ready packet from the status/task pair. Each implementation has a real
+consumer, a bounded behavior or contract, and a Foundry assertion. Documentation
+and governance work should remove a named obstacle to those outcomes.
 
-1. Select a ready packet from the authoritative status/task pair and read its contract.
-2. **Gate-first:** write behavior, denial, and failure assertions before implementation.
-   Include the next successful operation after cancellation, rejection, or recovery;
-   a terminal error alone does not prove the resource remains usable.
-3. Define new native interfaces in `idl/harness/`, `idl/portals/`, or `idl/services/`.
-4. Run `just codegen`; never hand-edit `*.generated.rs` or any `generated/` content.
-5. Implement the smallest path across the intended boundary and run affected gates.
-6. Update `CURRENT_STATUS.md` and `CHANGELOG.md` per milestone; update `NEXT_TASKS.md`
-   when work or dependencies change. Record design choices in `DECISIONS.md`.
+- **Gate-first:** write behavior, denial and failure assertions before implementation.
+  A lifecycle check includes the next successful operation after cancellation,
+  rejection or recovery; an error alone does not prove continued usability.
+- Define native interfaces in `idl/harness/`, `idl/portals/` or `idl/services/`.
+  Run `just codegen`; never hand-edit `*.generated.rs` or `generated/` content.
+- Use [Agentic Workflow](docs/AGENTIC_WORKFLOW.md) for coordinator, parallel
+  author, reviewer and integration ownership. It owns dispatch and handoff rules;
+  the queue owns dependencies. Independent review precedes integration.
+- The integration owner updates status/history for achieved behavior and the
+  queue for changed dependencies. Design rationale belongs in `DECISIONS.md`.
 
-If design is blocked, choose the simplest viable default within the Constitution,
-record it, and continue. Missing authority or evidence cannot be replaced by a default.
-
-## Parallel agent work
-
-For coordinator/sub-agent execution, use [Agentic Workflow](docs/AGENTIC_WORKFLOW.md).
-The coordinator freezes contracts and assertions, assigns disjoint writable paths,
-and owns integration. Name one writer for shared registries, generated outputs,
-`justfile`, and status/history files. Workers return scoped changes and reproducible
-gate evidence; independent review precedes integration. Use separate worktrees
-when needed for source or test-output isolation, not as a substitute for ownership.
-Keep work bounded by ready dependencies, worker capacity, and review capacity.
-Prefer short batches that remove critical-path dependencies; integrate reviewed
-packets as they finish. Do not start dependent implementation against an unfrozen
-contract or expand concurrency while completed work waits for review.
+Choose routine defaults within the Constitution. Missing authority, frozen-contract
+changes or absent evidence require the affected packet to be replanned.
 
 ## Code guardrails
 
@@ -100,17 +86,17 @@ contract or expand concurrency while completed work waits for review.
 
 ## Validation
 
-Use the pinned toolchain in `rust-toolchain.toml`, focused gates while iterating,
-and affected consumer/integration gates before handoff. Resolve commands from
-[justfile](justfile). For roadmap, org, and research planning changes, keep
+Use the pinned toolchain in `rust-toolchain.toml` and recipes in [justfile](justfile).
+Select the fast iteration command, packet acceptance and affected integration
+checks before implementation. For roadmap, org, and research planning changes, keep
 `just s11`, `just s12`, `just s13`, and `just foundry-org-governance-g0` green;
 run `just hil-appliance` for appliance docs/contracts. Serialize gates that share
 fixed output paths or hardware; the coordinator runs the final integrated checks.
-Do not run full preflight after each edit. Use the scoped developer loop in
-[the CI execution profile](docs/FOUNDRY_CI_OPTIMIZATION_V0.md), reuse focused
-evidence only when its tested source, inputs and environment remain unchanged,
-and run fresh affected integration assertions on the assembled revision. Compiler
-cache reuse never permits assertion/result reuse across changed inputs.
+Use [the CI execution profile](docs/FOUNDRY_CI_OPTIMIZATION_V0.md) for focused
+iteration and complete acceptance. Run complete CI lanes or their serial preflight
+equivalent on the fixed candidate, without duplicating both. Reuse focused evidence
+only for unchanged transitive inputs and environment; compiler reuse still requires
+fresh assertions. A prose extension does not make a gate-consumed file non-executable.
 
 Full preflight requires Linux, Python `jsonschema`, Docker with builtin seccomp,
 and the already installed pinned image. Missing prerequisites produce `INCOMPLETE`.

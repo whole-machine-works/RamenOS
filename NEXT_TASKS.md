@@ -64,72 +64,18 @@ can do this without interpreting developer logs. This is a usability acceptance
 requirement for the interactive task, not evidence supplied by the existing
 scripted controls or a change to the frozen process API.
 
-### Completed repair batch: reliability and evidence
+### Accepted prerequisites
 
-This batch used a coordinator, two implementers and one reviewer. Future batches
-dispatch only two disjoint
-implementation packets at once; the reviewer checks assertions before dependent
-implementation and rotates onto completed patches. Root owns shared status,
-IDL/generated files, gate registrations, manifests and source registries unless
-explicitly delegated. Multiple packets touching host.rs or Store lifecycle run
-sequentially in that scope; other ready work fills freed capacity. Each row below
-is a bounded outcome, not permission to edit every listed area simultaneously.
-
-| Packet | Consumer and owned boundary | Gate-first completion |
-|--------|-----------------------------|-----------------------|
-| R1 — Store reply ownership | Store data registry → pending reply → native Read/receipt lease; exact files assigned centrally | Concurrent approved sessions on different objects return correct bytes without spurious denial. Pending delivery and held leases survive reclamation; dropped owners release capacity within 32. Join/quiesce actual producers. Cover receipt transfer without replaying mutation. Do not disable reclamation or serialize clients as the fix. |
-| R2 — render acquisition and focus | Desktop renderer/surface lifecycle and trusted launch handoff | Pause before Present, switch to launcher, join stale render, explicitly restore focus and require fresh render+composition. Abandoned acquisition retires only its generation and aliases. Approved initial launch receives focus; background redraw preserves launcher focus and cannot consume its keyboard input. Keep these assertions independent. |
-| R3 — Save before admission | Desktop intent/admission state and native app orchestration | Expired key creates no pending Save; expiration between intent and allocation has authenticated owner-side definitive closure. Fresh Ctrl+S saves unchanged draft exactly once. No operation/dispatch/permit from expired attempt. Preserve admitted Unknown/original reconciliation and no mutation replay. Depends on R2 if same Desktop files are owned. |
-| R4 — journal staging investigation | Store publisher and genuine joined-owner reopen | Inject JournalSync failure; retain disk/trace/original result, join owners and attempt subsequent publication/reopen. Distinguish safe owner-created pre-rename staging from ambiguous post-rename state. Only then implement bounded cleanup/reconciliation with corrupt/foreign/symlink denials. CAS temporary files are a separate investigation. Depends on R1 where Store files overlap. |
-
-CI0 is accepted: executable-input classification and transitive NativeRead/Preview
-source admission have independent review and passing actual Linux affected gates;
-[Current Status](CURRENT_STATUS.md#foundry-development-and-ci-execution) owns the
-validation scope. R1–R4 are implemented with independent assertion/patch review
-and source-bound
-macOS/Linux regression evidence. The new `just foundry-editor-reliability-ui1-1`
-executes Desktop7, Store5 and the complete app-private1 inventory; reviewed
-registry successors preserve all old inputs. The unchanged original 18/Reader93
-passed freshly on macOS. [The resolution](docs/plans/editor-reliability-review-2026-10-13.md)
-records behavior and evidence. Complete Linux56 and fresh five-lane hosted merge
-checks pass on the reviewed candidate, now merged through PR #36. Preserve the
-source-bound evidence before dependent runtime integration. The affected volatile13, Store7,
-Preview codec7, Save codec8, NativeRead9, NativePreview5 and adapter4 controls also
-pass freshly on macOS with strict/feature checks; preserve them. Do not bake historical source row counts into future
-closure acceptance; legitimate additions require reviewed registry/pin successors.
-
-The build/test streamlining review is implemented and independently reviewed.
-Use focused `dev-test`, `dev-compile` or `dev-lint` while iterating; reserve
-`dev-check` for the full selected package check and fresh affected gates for
-handoff. The complete 56/40 inventory remains unchanged across five required CI
-lanes. Warm compiler preparation, selected union executions, optional agent-only
-WAT, fresh QEMU variables and explicit compiler-entry retirement are accepted in
-the local scope recorded in [the resolution](docs/plans/build-streamlining-2026-10-13.md).
-No cross-gate PASS reuse was introduced. Complete Linux56 and fresh five-lane
-hosted qualification pass; that prerequisite for dependent runtime integration
-is complete on the reviewed candidate. Keep the original 18/Reader93 and all
-consumer assertions fresh when their inputs change.
-
-Strict Linux56 qualification is complete on the exact assembled runtime
-candidate: all 56 canonical stages pass, including actual Linux evaluator and
-reconciliation controls, original18/Reader93 and regression13. The pinned image
-is installed and verified; initial environment-permission failures are retained.
-[The qualification](docs/plans/linux56-qualification-2026-10-13.md) records source,
-commands, environment and scope. Fresh five-lane hosted execution and required
-merge checks passed for PR #36. P0 contract/assertion work is ready; dependent
-implementation still requires its reviewed assertions and frozen contracts. Do not repeat the unchanged full preflight for
-this documentation-only evidence update.
-
-The October 14 foundation review successor addresses the seven behavior findings
-and maintained-entry documentation drift. Its additive boundary assertions cover
-broker rejection/revocation retry, fragmented physical spans, trace preservation
-and metadata, empty ring operations, and runner admission/identity. Preserve the
-fresh affected host/QEMU evidence for this successor. PR #38 merged as `f3fa057`
-after both reviewed-head hosted runs passed all nine jobs. Post-merge CI also
-passed all nine jobs and 68 stage/preparation records on its first attempt.
-The preceding strict Linux56 wrapper result remains source-bound history.
-Fresh qualification is required again when relevant inputs change. The process assertion/contract packet stays
-ready within its existing scope and dependencies.
+R1–R4 reliability repairs, CI0 evidence admission, shared-core preservation and
+subsequent foundation fixes are accepted for their recorded source revisions.
+[Current Status](CURRENT_STATUS.md) owns that history and its limits; the
+[reliability resolution](docs/plans/editor-reliability-review-2026-10-13.md),
+[build/test resolution](docs/plans/build-streamlining-2026-10-13.md) and
+[Linux56 record](docs/plans/linux56-qualification-2026-10-13.md) retain the evidence.
+Do not redispatch completed repairs or rerun unchanged historical campaigns.
+Preserve original18/Reader93, regression13 and all affected consumers; changed
+inputs require fresh checks and reviewed source-registry successors. P0 remains
+incomplete, so these accepted foundations do not release process handlers.
 
 ### Process successor: split at real ownership boundaries
 
@@ -140,16 +86,27 @@ complete R1–R4 qualification and CI0. Preserve the [process contract](docs/con
 [process plan](docs/plans/editor-process-v0.md) and live Save contracts. The shared
 pure core and adapters are already accepted; do not reimplement them.
 
-| Packet | Prerequisite | Deliverable / acceptance |
-|--------|--------------|--------------------------|
-| P0 — executable assertions and safe owner staging | Frozen process/live Save contracts; reviewed shared-core control | Complete all thirty finite behavior/denial/failure families and original missing-API RED before dependent handlers. Finish genuine constructor/setup, Read/reopen, consuming-join bounds/non-unwinding owner return, Save-pause panic and uncertain parent-death controls. Private smoke/cleanup evidence remains preparation. |
-| P1 — authenticated carrier and lifecycle | P0 review; relevant reliability fixes | Held sealed executable identity, authenticated bounded control and exact descriptor/publication ownership; child failure, malformed/foreign/stale channels and parent-death cleanup. Unproved quiescence retains owners/charges and original deadlines; watchdog death is not child reap. |
-| P2 — child edit/raster consumer | P0 and fixed P1 interface/ownership contract | Actual Linux editor child uses existing core, edits bounded text and publishes immutable frames through issued channels. Can implement alongside P1 in separate files after interface freeze; acceptance requires their real combined runtime. No copied bootstrap or thread join supplies child authority. |
-| P3 — Save/recovery integration | Accepted P1+P2 and R1–R4+CI0 | Genuine Store evidence/recording binds current Core, successors, original Save owners and full receipt. Preserve original operation through child death without replay; exercise denial/crash/recovery and unrelated consumer progress end to end. Run original in-process task as control plus process gate on one fixed candidate. |
+| Packet / assigned writer | Inputs and dependency | Owned output and acceptance |
+|--------------------------|-----------------------|-----------------------------|
+| **P0 — assertion author** | Frozen process/live Save contracts; reviewed shared-core control | `apps/artifact_editor/tests/process_task.rs`, its `process_support/` helpers and specifically assigned private assertion files. Complete all thirty behavior/denial/failure families and original missing-API RED before handlers. Finish constructor/setup, Read/reopen, consuming owner return, Save-pause panic and uncertain parent-death controls. Independent assertion review releases P1/P2. |
+| **P1 — carrier author** | Accepted P0, fixed private ownership/wire handoff and relevant reliability fixes | Planned `services/desktop/src/editor_dev/process_editor.rs` and `process_editor/linux.rs`: held executable identity, authenticated bounded control, sole supervisor and exact descriptor/publication ownership. Cover malformed/foreign/stale channels, child failure and parent-death cleanup; uncertainty retains owners/charges/deadlines. |
+| **P2 — child author** | Accepted P0 and the same frozen P1 handoff; existing pure editor core/wire | Planned `apps/artifact_editor/src/bin/editor-process.rs`, built with child-only features, edits bounded text and publishes immutable frames. Reuse the accepted pure core. Implement concurrently with P1; acceptance needs their actual combined Linux runtime and must exclude Desktop/Store from the child's active graph. |
+| **P3 — integration author** | Accepted combined P1+P2 and qualified R1–R4/CI0 | `apps/artifact_editor/src/native.rs` common SaveChains plus reassigned process consumers: genuine Store/recording binds current Core, original Save owners and full receipt. Exercise denial, child death, original-only recovery, unrelated-session progress and a fresh Save; run unchanged in-process control and process gate on one candidate. |
 
-Root assigns exact paths and outputs at dispatch; proposed packet IDs are planning
-labels, not implemented recipes. A pure record, PID or source inclusion is not
-process execution, containment, target persistence or hardware evidence.
+The coordinator binds literal private-assertion paths and unique outputs before
+P0 dispatch, verifies the actual Linux prerequisites early, and owns shared Cargo
+features, IDL/generated output, source registries, `editor_dev/mod.rs` and
+`editor_dev/host.rs` bridges, gate registration/reader and status. A worker sends
+a bounded shared-file change to that owner instead of editing a sibling's inputs.
+The planned P1/P2 paths come from the existing process plan; they do not claim an
+implemented runtime. A PID, record or source inclusion is not process execution.
+
+Use the next available author for P0; the other may prepare one ready target or
+recovery prerequisite while the reviewer checks P0 assertions. Once the complete
+P0 review and handoff clear, put both authors on P1/P2. Review each finished piece
+while the other continues. After their combined acceptance, assign one author to
+P3 and release the other to the next ready target join. Do not hold a completed
+packet for an unrelated batch or start P3 against an unaccepted sibling.
 
 `just foundry-editor-process-preparation-ui1-1d` now separates nine genuine
 in-process controls, four parent-owner cleanup policy controls and four authored
@@ -209,13 +166,15 @@ platform or hardware breadth project. Later device variants require real DMA/res
 
 ### Integration cadence
 
-Integrate one reviewed packet at a time; do not accumulate a giant milestone PR.
-Use `just dev-check` and focused gate assertions while editing. On the fixed
-combined candidate, run affected consumers, required planning checks and the
-canonical CI lanes. Reserve shared outputs/build targets; no overlapping writers
-while source-bound gates run. Reuse a result only if its tested inputs/features,
-environment and claim are unchanged. Review throughput and measured host-stage
-costs determine the next optimization; worker count alone is not progress.
+The reviewer takes completed assertion/source packets in critical-path order;
+the coordinator integrates each accepted packet and records its successor inputs.
+Workers run focused feature-correct checks in their reserved scope. The coordinator
+runs affected consumers, required planning checks and canonical CI lanes on the
+fixed joined candidate, serializing shared gate outputs. Compilation can be reused;
+result reuse needs identical tested inputs/features, environment and claim.
+Keep other disjoint authoring moving during review and hosted CI. If review becomes
+the bottleneck, use the free slot for a genuinely independent review or a bounded
+prerequisite rather than accumulating another unreviewed implementation.
 
 ## Physical Lane: H0–H3
 

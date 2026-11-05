@@ -1,30 +1,28 @@
 ---
 name: new-idl
-description: Create a new IDL interface definition and generate Rust bindings
+description: Create or evolve a RamenOS native IDL contract, regenerate bindings and check affected producers and consumers.
 ---
 
-Create or evolve the requested interface. Read `AGENTS.md` and
-`idl/tools/README.md`; use a relevant existing IDL for the current syntax and wire
-limits. Generated syntax is not evidence of enforcement or target availability.
+Read `AGENTS.md`, `idl/tools/README.md` and a relevant existing IDL for current
+syntax. Generated bindings do not prove runtime enforcement.
 
-1. Resolve ownership and interface purpose from context. Choose `idl/harness/`,
-   `idl/portals/`, or `idl/services/`. Clarify only missing requirements that
-   prevent a useful contract; routine naming choices need no confirmation.
-2. Check existing IDLs and `tools/ci/idl_lint.py` for protocol ownership. Allocate
-   protocol/message IDs and freeze the producer/consumer contract with the
-   coordinator before parallel implementation. Never copy another protocol's ID.
-3. Specify bounded fields, error results, request and observable authority, and
-   referenced-object lifetime/range checks. Review alignment and initialized
-   padding; use the supported wire types from the generator reference. Version
-   incompatible layouts or meanings and identify affected consumers.
-4. Write consumer assertions before handlers: behavior, denial, invalid version,
-   length, reserved fields, and ranges as applicable. An interface-only scaffold
-   must not claim these consumers are implemented.
-5. Register outputs in `tools/ci/run_codegen.sh` and handwritten inclusion points
-   such as `kernel_api/src/lib.rs`. In a team, send these shared edits to their
-   assigned owner; that owner runs codegen once the batch's IDLs are settled.
-   Never hand-edit generated files or aggregators.
-6. Run `just codegen`, `just idl-lint`, `cargo build -p kernel_api`, and affected
-   producer/consumer checks under that ownership. Inspect generated diffs.
-7. Report contract/output paths, compatibility decisions, checks and evidence,
-   and remaining implementation scope through the assigned handoff.
+For solo work, own the coordination and integration steps below; in a team, use
+the assigned owners. This skill does not require a separate team for a small edit.
+
+1. Choose `idl/harness/`, `idl/portals/` or `idl/services/` from the interface's
+   purpose. Check existing IDs and `tools/ci/idl_lint.py`; the coordinator allocates
+   shared protocol/message IDs and freezes the producer/consumer contract.
+2. Specify bounded fields, error results, request and observable authority, and
+   referenced-object lifetime/range checks. Check initialized padding and supported
+   wire types. Version incompatible layouts or meanings and identify consumers.
+3. Write behavior, denial and malformed-message assertions before handlers.
+   An interface scaffold cannot claim implemented consumer behavior.
+4. Give the assigned owner output-registration changes for
+   `tools/ci/run_codegen.sh` and handwritten inclusion points such as
+   `kernel_api/src/lib.rs`. That owner runs codegen after the shared IDLs settle;
+   never hand-edit generated output.
+5. Run `just codegen`, `just idl-lint`, `cargo build -p kernel_api` and affected
+   wire/consumer checks under the reserved ownership. Inspect generated diffs.
+
+Return the contract/output paths, compatibility decision, checks and remaining
+implementation scope through the workflow's handoff.

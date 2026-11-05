@@ -1,203 +1,125 @@
 # Agentic Workflow
 
-**Last Updated:** 2026-10-08
+**Last Updated:** 2026-11-04
 **Status:** Contributor coordination contract; tooling is not an OS security boundary
 
-Use one coordinator and simultaneous workers to deliver small, independently
-reviewable packets. Optimize the time to an integrated, tested consumer, not the
-number of agents or patches. [AGENTS.md](../AGENTS.md) owns the stable contract;
-[Current Status](../CURRENT_STATUS.md) owns landed behavior and
-[Next Tasks](../NEXT_TASKS.md) the ready work and dependencies. This workflow does
-not copy the queue. Development with agents does not itself demonstrate the
-[Agent Task Proof](plans/2026-09-16-agent-task-proof.md) or a speed advantage.
+Use a coordinator, parallel authors and independent review for work with separable
+packets. Optimize the path to an integrated consumer. [AGENTS.md](../AGENTS.md)
+owns invariants, [Current Status](../CURRENT_STATUS.md) owns landed behavior, and
+[Next Tasks](../NEXT_TASKS.md) owns dispatch dependencies. This workflow does not
+create a second queue or establish an advantage for the Agent Task Proof.
 
 ## Select and prepare a batch
 
-The coordinator reads the status/task pair, selects the smallest ready packets
-that shorten a product milestone's critical path, and checks the affected source
-and maintained contracts. Distinguish code dependencies from evidence or authority
-needed for graduation. Host/QEMU preparation can proceed wherever the queue
-permits it; missing physical evidence, study controls, or funding still blocks
-the corresponding run or claim. Keep unrelated ready work moving.
+The coordinator selects ready packets for the named product checkpoint, reads
+their contracts and checks the current source. Separate implementation dependencies
+from evidence or authority needed for a later claim: a blocked physical run need
+not stop ready host/QEMU preparation. Research needs a concrete decision to resolve.
 
-Build a small dependency graph from the selected queue packets, not a second
-roadmap. Put contract and reliability prerequisites first, then fan out their
-independent consumers. Choose the next batch by the shortest path to the named
-integrated consumer. Timebox research to a concrete decision or evidence gap;
-use spare capacity for independent preparation without displacing critical work.
+Freeze shared interfaces, protocol IDs and behavior/denial/failure assertions
+before dependent authors start. An unimplemented behavior must fail explicitly.
+Lifecycle assertions cover ownership during failure and the next usable operation;
+preserve uncertainty after possible admission or mutation. A prerequisite author
+can establish a contract while other authors work on unrelated ready packets.
 
-Before dispatching dependent implementation, settle the shared contract and write
-its behavior, denial, and failure assertions. Record the expected initial result:
-an unimplemented behavior must fail, not pass an empty scaffold. Allocate protocol
-IDs, namespaces, generated outputs, and shared-file writers before fan-out. A
-short prerequisite packet can establish that foundation; consumers then implement
-against the same contract. Do not parallelize two competing versions of one API.
-For lifecycle changes, cover ownership during the transition and the next usable
-operation: cancellation followed by render, a rejected Save followed by a fresh
-Save, or a retained reply during concurrent reclamation. Preserve uncertainty
-where admission or mutation may have occurred; definitive pre-admission rejection
-and uncertain completion need different closure rules.
-
-Bound active work by the available workers, disjoint writable scopes, and review
-capacity. For a four-agent team, a useful starting layout is coordinator, two
-implementers, and one independent reviewer or short-prerequisite worker. Rotate
-roles as work finishes. Expand implementation concurrency only while the coordinator
-can keep reviews and integration current. Finish or unblock work before opening
-another batch; avoid leaving a queue of completed patches waiting for integration.
+Reserve review capacity. With four slots, a useful starting arrangement is one
+coordinator, two authors and one reviewer. Adapt to disjoint work and available
+review capacity; more authors do not help when completed patches await review.
+Integrate accepted packets as they finish, without a barrier for unrelated work.
 
 ## Dispatch packet
 
-Give each worker the following information in its assignment. Ordinary task
-assignments can carry it directly; RamenOrg execution must use the existing
-[WorkOrderV0](org/WORK_ORDER_V0.md) and [HandoffPacketV0](org/HANDOFF_PACKET_V0.md)
-artifacts. This table is coordination guidance, not another packet schema or an
-authority grant.
+An ordinary assignment can carry the following fields directly. RamenOrg execution
+uses its existing [WorkOrderV0](org/WORK_ORDER_V0.md) and
+[HandoffPacketV0](org/HANDOFF_PACKET_V0.md); no new schema is required.
 
 | Field | Required content |
 |-------|------------------|
-| Outcome | Queue/slice reference, one consumer-visible behavior, explicit exclusions |
-| Starting state | Base commit, checkout/worktree path, existing local changes relevant to the task |
-| Dependencies | Ready prerequisites, frozen contract revision, assumptions that would require replanning |
-| Write scope | Exact files/directories and authorized new paths; name the owner of shared files |
-| Context | Status/task references plus only the relevant contract, source, and evidence paths |
-| Completion | Prewritten assertions, expected initial failure, focused gates, affected consumers, allowed evidence level |
-| Resources | Gate-output paths, sockets/ports, build directories, lab access and any exclusive reservations |
-| Handoff | Expected patch/evidence format, reviewer, integration owner, and stop/replan triggers |
+| Outcome | Queue/slice reference, consumer-visible behavior and exclusions |
+| Baseline | Checkout, base revision and relevant existing edits |
+| Dependencies | Frozen contract, ready prerequisites and assumptions to recheck |
+| Ownership | Exact writable files, shared-file owner, reviewer and integration owner |
+| Context | Only the source, contract and evidence needed for this outcome |
+| Acceptance | Assertions, expected initial result, fast iteration command and affected integration checks |
+| Resources | Reserved output paths, Cargo targets, sockets, QEMU images or devices |
+| Return | Patch identity, evidence and conditions requiring replanning |
 
-Select the validation plan before dispatch: one fast iteration command, the
-packet's acceptance assertions, and the affected integration checks. Name which
-source, contract, fixtures, dependencies, features or environment changes invalidate
-an existing result. Do not freeze a file list that omits transitive compiled inputs.
-
-Keep the packet small enough to act on without rereading all documentation. Read
-additional references only when they affect the task. An explicit RamenOrg
-[ContextGrantV0](org/CONTEXT_GRANT_V0.md) remains binding: request expansion when
-needed rather than treating the coordinator's summary as permission to read more.
-Direct user authorization and the applicable work order define scope; delegation
-cannot expand either.
+An explicit [ContextGrantV0](org/CONTEXT_GRANT_V0.md) remains binding. A summary
+cannot expand it or the user's authorization. Do not dispatch two competing
+versions of the same interface.
 
 ## Ownership and workspace rules
 
-- **Coordinator:** selects work, freezes dependencies, resolves ownership, assigns
-  review, integrates results, and updates the authoritative queue/status/history.
-  It can implement a bounded prerequisite while workers run, but does not erase
-  independent review of its own changes.
-- **Implementer:** changes only its assigned paths, runs focused checks, and
-  returns evidence plus remaining limits. Request a scope adjustment from the
-  coordinator before editing another worker's files.
-- **Reviewer:** reads the contract, patch, and evidence independently. Check real
-  behavior, consumer effects, denied operations, failures/recovery, and claim
-  scope. Return actionable findings or an explicit no-findings result. This is
-  technical review, not A3 approval or merge authority.
-- **Integration owner:** normally the coordinator; it alone edits shared
-  registries, `justfile`, codegen registration, `Cargo.lock`, root planning files,
-  and shared generated outputs during the batch. It can explicitly delegate one
-  of these resources to a named worker, with dependent writers paused.
+- **Coordinator:** resolves dependencies and ownership, keeps the batch record,
+  assigns reviews and accepts integration. It may author a prerequisite but
+  cannot independently review its own patch.
+- **Author:** edits its assigned paths, runs reserved focused checks and returns
+  evidence. Send cross-owner changes to the coordinator.
+- **Reviewer:** inspects the actual contract, patch and evidence; checks consumers,
+  denied operations, recovery and claim scope. Return actionable findings or an
+  explicit no-findings result. Technical review is not A3 approval or merge authority.
+- **Integration owner:** normally the coordinator, owns shared registries,
+  `justfile`, IDL/codegen outputs, `Cargo.lock` and status/history. It may explicitly
+  delegate a shared file to one author while other writers are excluded.
 
-In a shared checkout, use disjoint file scopes and preserve peers' uncommitted
-changes. Only the integration owner switches branches, creates commits, or runs
-repository-wide mutating tools such as formatting and codegen. Workers may format
-their own files; they must inspect tool side effects. Do not use broad reset,
-restore, cleanup, or stash operations to discard someone else's changes.
+In a shared checkout, only the integration owner switches branches, commits or
+runs repository-wide formatting/codegen. Authors may format their assigned files.
+Preserve existing edits; do not reset, restore, clean or stash away another
+author's work. Use worktrees when source overlap or baseline differences require
+them, not for read-only review or as a substitute for ownership.
 
-Use separate worktrees when source overlap, incompatible baselines, or test side
-effects make a shared checkout unsafe. Worktrees isolate files, not protocol ID
-allocation, external services, hardware, or authority. Record each worktree's
-base, preserve needed work before cleanup, and integrate through one owner.
-Do not create worktrees for read-only review or disjoint edits merely to fill a
-process step.
+Reserve gate resources as well as source files. Separate worktrees do not isolate
+fixed ports, `/tmp` paths or hardware. Serialize gates sharing `out/`, images or
+compiler targets unless the script supports genuinely isolated resources. Retain
+logs before their output paths are reused.
 
-Foundry gates often share fixed `out/` paths, images, sockets, and build artifacts.
-Reserve these resources with the coordinator. Use separate output locations only
-when the gate supports them; otherwise serialize conflicting gates, including
-their evidence capture. Avoid concurrent full preflights and duplicate expensive
-builds. Record who ran each gate and the code and inputs it tested; reuse a
-worker's result only for that unchanged scope, not as proof of later integration.
+## Review and integrate
 
-Use [the scoped developer loop](FOUNDRY_CI_OPTIMIZATION_V0.md#developer-loop)
-for edits, focused Foundry assertions for packet acceptance, and the affected
-combined checks for integration. Full preflight belongs at the required integration
-checkpoint; do not schedule it for every worker or tiny edit. Compiler caches
-may survive source edits when their recipe rechecks those sources; cached reports
-are never a substitute for fresh assertions on changed inputs.
+Each author returns the delivered behavior, changed paths, base/head or retained
+diff digest, commands/environment/results, evidence locations and remaining
+limits. Identify concurrent edits included in the tested state. Do not send
+credentials or whole-repository context dumps.
 
-## Handoff, review, and integration
+An independent reviewer checks the submitted patch before the integration commit
+or milestone acceptance, even when edits are already visible in a shared tree.
+Resolve material findings and rerun checks whose inputs changed. Review the
+coordinator's code by the same rule; rotate a non-author into review if needed.
 
-Each worker returns a compact handoff with:
+The integration owner assembles accepted changes, runs codegen once if required,
+and executes affected producer/consumer gates on that candidate. Reuse a focused
+result only when all relevant source, transitive dependencies, fixtures, features,
+command and environment remain unchanged. Compiler caching never substitutes for
+fresh assertions. Use the [developer loop and CI profile](FOUNDRY_CI_OPTIMIZATION_V0.md)
+to avoid per-edit full preflight or duplicate complete local/hosted runs.
 
-1. The behavior delivered, changed paths, and outstanding acceptance items.
-2. Base/head commits, or a retained diff and its digest for uncommitted work;
-   identify dependent peer changes included in the tested state.
-3. Exact commands, material environment/feature settings, exit results, and
-   evidence paths. Preserve evidence before fixed output paths are reused.
-4. The evidence level, skipped or incomplete checks, remaining risks, and any
-   contract or scope change requested. Never include credentials in evidence.
-
-The reviewer evaluates that patch before integration. In a shared checkout, this
-means before accepting it into the milestone or creating the integration commit,
-even though its files are already visible. Have a worker who did not author the
-change review it; rotate roles when the pool is small. Resolve material findings
-and rerun checks affected by the fixes.
-
-The integration owner reconciles the contracts and patches, generates outputs
-once shared IDLs are settled, and tests affected consumers plus required combined
-gates on the integrated state. Reuse a focused result only if its relevant code,
-inputs, and environment are unchanged. Record the integrated revision/diff and
-results, then update `CURRENT_STATUS.md`, `NEXT_TASKS.md`, `CHANGELOG.md`, and
-`DECISIONS.md` as appropriate. Workers propose wording in their handoffs rather
-than racing to edit those shared files.
-
-Keep one compact batch record with packet/owner, dependency state, reserved
-resources, retained evidence, review result and next integration check. Link the
-existing handoffs instead of copying their contents. As soon as a packet is
-accepted, free its resources and admit the next ready packet; no barrier requires
-unrelated workers to finish together. Recheck the integrated baseline before
-accepting evidence collected while another worker was changing shared inputs.
-
-Completion means accepted behavior and a reviewed, integrated result with matching
-evidence. A scaffold, worker report, or green local hook is not completion of a
-slice. `just preflight` needs Linux and its pinned dependencies; missing
-prerequisites remain `INCOMPLETE`. See [Getting Started](GETTING_STARTED.md) and
-[Evidence Levels](../EVIDENCE_LEVELS.md) for environment and claim boundaries.
+Update the authoritative status, queue, changelog and decisions only where the
+accepted outcome changes them. Keep one compact batch record linking packet,
+owner, dependencies, reserved resources, evidence, review result and next check.
+An author report, empty scaffold or green hook is not completed behavior.
 
 ## Stop and replan conditions
 
-Pause the affected packet and notify the coordinator when a frozen contract must
-change, scopes overlap, a prerequisite is false, a gate fails outside the packet's
-boundary, or a required environment/evidence source is unavailable. Keep
-independent work moving. The coordinator narrows or resequences the packet,
-coordinates consumers, and assigns the missing evidence; it does not silently
-broaden the worker's task or treat a skipped assertion as success. Do not spin on
-the same external blocker or launch replacement workers with the same missing
-inputs.
+Stop the affected packet when its contract must change, ownership overlaps, a
+prerequisite is false, or required environment/evidence is missing. Report the
+specific blocker and retain partial work; keep independent packets moving. The
+coordinator narrows or resequences the work rather than retrying the same missing
+inputs with new authors. A missing prerequisite remains `INCOMPLETE`.
 
-Choose routine design defaults within the Constitution and record consequential
-choices. User input is needed for missing authority or a product decision that
-cannot be inferred from the task. No coordinator or worker can grant itself
-spending, HIL actuation, release, public-support, or merge authority. Follow the
-separate author/reviewer identities in [the PR workflow](org/RAMEN_IMPLEMENTER_BOT.md).
+Routine design choices stay within the Constitution and task. New spending,
+physical actuation, release and merge require the applicable authority; delegation
+does not supply it. Follow [the separate PR identities](org/RAMEN_IMPLEMENTER_BOT.md).
 
 ## Client hooks and skills
 
-[`.claude/settings.json`](../.claude/settings.json) retains `Edit`/`Write`
-guardrails for lockfiles, generated Rust and the Constitution. Automatic per-edit
-formatting and package Clippy are removed: they mutate shared files or acquire
-compiler resources without a packet reservation. Run explicit scoped formatting
-and the developer checks at a useful iteration boundary instead. The retained
-hooks do not cover arbitrary shell writes or other clients and are not a sandbox.
-Use Cargo for lockfiles, `just codegen` for generated content, and the governed
-Constitution change process with a `DECISIONS.md` entry regardless of hooks.
+[`.claude/settings.json`](../.claude/settings.json) guards lockfiles, generated
+Rust and Constitution edits through its `Edit`/`Write` hooks. It does not cover
+arbitrary shell writes or other clients. Per-edit automatic formatting/Clippy is
+disabled to avoid unreserved shared mutations; use explicit scoped checks.
+[`.codex/hooks.json`](../.codex/hooks.json) records the convention but this repository
+does not establish native support for that schema. Neither file is a sandbox.
 
-[`.codex/hooks.json`](../.codex/hooks.json) mirrors the guardrail convention;
-this repository does not establish native Codex support for that hook schema.
-Do not rely on the file executing. `AGENTS.md` and explicit validation apply in
-every client.
-
-Repository skills in [`.agents/skills/`](../.agents/skills/) keep task-specific
-guidance discoverable: `coordinate-work` routes this workflow, `new-slice`
-defines a new bounded slice, `new-idl` handles native contracts, `foundry-gate`
-runs scoped evidence checks, and `ramen-conventions` focuses architecture review.
-Keep client skill entrypoints linked to these sources so fixes do not drift.
-Canonical skills use portable name/description metadata and ordinary task
-instructions; client-specific tool allowlists or invocation controls must not
-silently prevent an assigned worker from performing its scoped checks.
+Canonical skills live in [`.agents/skills/`](../.agents/skills/); client aliases
+link there. Load the skill for the actual task: `coordinate-work` for a batch,
+`new-slice` for a new behavior slice, `new-idl` for a native interface,
+`foundry-gate` for validation, and `ramen-conventions` for code-boundary decisions.
+Keep task mechanics in these skills and shared coordination rules here.

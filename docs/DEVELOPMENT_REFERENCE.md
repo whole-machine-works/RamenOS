@@ -1,6 +1,6 @@
 # Development Reference
 
-**Last Updated:** 2026-10-08
+**Last Updated:** 2026-11-04
 **Status:** Host tooling and operator reference
 
 Start with [Getting Started](GETTING_STARTED.md) for setup and focused gates.
@@ -19,14 +19,14 @@ strict Clippy and selected serialized tests. Features are a comma-separated list
 after checkout and IDL edits. Development records do not replace Foundry gates.
 For a small edit use `just dev-compile PACKAGE TEST FEATURES`,
 `just dev-test PACKAGE TEST FEATURES`, or `just dev-lint PACKAGE TEST FEATURES`.
-The optional fourth argument chooses1..32 build jobs; default2. Modes/targets
+The optional fourth argument chooses 1–32 build jobs; the default is 2. Modes/targets
 share a warm package/feature compiler context while every command executes afresh.
 Inspect completed compiler storage with `just compiler-cache-inspect`; retirement
 requires an exact key/context and never selects evidence directories.
 Run affected consumers, then canonical CI lanes or their serial `just preflight`
 equivalent on the fixed integration candidate; do not duplicate both complete runs.
 
-CI separates quality, host/Docker, agent-task and QEMU jobs on isolated runners, then requires
+CI separates quality, host/Docker, agent-task, editor and QEMU jobs on isolated runners, then requires
 all applicable lanes through the stable `foundry` check. Stage timings are retained
 under `out/foundry/timings/`. The host lane explicitly enables an exact-source,
 phase-separated compiler cache while rerunning every acceptance check. Local gates

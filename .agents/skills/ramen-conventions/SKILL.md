@@ -1,6 +1,6 @@
 ---
 name: ramen-conventions
-description: RamenOS architecture invariants and coding patterns. Apply when writing or reviewing kernel, service, or store code.
+description: Apply RamenOS authority, ownership, wire and recovery invariants when writing or reviewing kernel, service or Store code.
 ---
 
 Use `AGENTS.md` and `CONSTITUTION.md` for invariants; load the relevant maintained
@@ -28,6 +28,5 @@ data objects, and consumer. Check the boundaries the change actually affects:
   hardware, begin with the Reference Vault and Oracle trace; for application
   ports, derive the manifest from observed-capability evidence and scenarios.
 
-Report which behavior and boundary the checks establish, with remaining limits.
-For concurrent work, honor the dispatch scope and shared-resource ownership in
-`docs/AGENTIC_WORKFLOW.md`; send cross-owner changes to the coordinator.
+Return boundary findings and scoped evidence through the assigned workflow;
+send cross-owner changes to the coordinator.

@@ -1,11 +1,15 @@
 # Documentation Index
 
-**Last Updated:** 2026-10-14
+**Last Updated:** 2026-11-04
 **Status:** Active
 
 This is the navigation hub for maintained documentation. Completed plans and
 investigations are preserved under [archive](archive/README.md), where they are
 historical and non-authoritative.
+
+Links below identify each document's purpose. Current acceptance and gate results
+belong in [Current Status](../CURRENT_STATUS.md); this index does not repeat test
+counts or turn a retained plan's original status into a new instruction.
 
 The [Vision](../VISION.md) is an everyday, post-Unix OS for humans and AI agents.
 Architecture, hardware, agent-task, desktop, Foundry, and Store documents describe
@@ -109,36 +113,22 @@ queue. [Next Tasks](../NEXT_TASKS.md) selects work and records its dependencies.
 
 ### OS and Hardware
 
-- [Agent Task Proof](plans/2026-09-16-agent-task-proof.md) — independent SW0 lane; three-arm controls, authority normalization and bounded comparison; scripted foundations landed, model comparison pending
-- [Desktop v0](plans/desktop-v0.md) — accepted bounded human task and runtime/input/surface/launch/recovery design; host launch and in-process editor/Store task plus qualified reliability repairs implemented; actual editor child and device/target joins pending
-- [Desktop session v1](DESKTOP_SESSION_V1.md) — generated protocol-336 preview/confirmation/lifetime contract and passing default-off Unix host process/wire gate
-- [Boot frame ownership v0](BOOT_FRAME_OWNERSHIP_V0.md) — reviewed pure map/retention admission and passing 17-case gate; actual firmware-exit adapter, initial-access evidence and QEMU allocator proof pending
-- [Desktop editor v0](plans/desktop-editor-v0.md) — reviewed UI1.1 proposal with bounded host/Store/task/process packets; volatile editor, host Store transaction and integrated task implemented; actual editor process pending
-- [Desktop editor wire v1](DESKTOP_EDITOR_WIRE_V1.md) — five registered canonical IDLs and 43 generated messages consumed by the passing volatile host editor gate
-- [Desktop editor host API v0](DESKTOP_EDITOR_HOST_API_V0.md) — implemented default-off opaque peers/leases, logical keyboard editing, offscreen composition and 13-case gate; no Store/device/target/process-containment evidence
-- [Desktop editor Store transaction v0](plans/editor-store-transaction-v0.md) — implemented default-off host CAS, atomic selection/receipt and joined-writer recovery; seven behavior cases pass on macOS/Linux, integrated editor/device/target joins remain separate
-- [Desktop editor Store API v0](DESKTOP_EDITOR_STORE_API_V0.md) — frozen pure/service API consumed by the passing nine-case schema and seven-case actual host Store gates; opaque authority, admission and original-operation recovery are exercised within the trusted fixture scope
-- [Editor Store recording contract v0](contracts/editor-store-recording-v0.json) — closed source/provenance/lease/fence/cleanup shapes and explicit temporal receipt correction consumed by the sixteen-case evidence gate and native Rust decoder
-- [Desktop editor native Read API v0](DESKTOP_EDITOR_NATIVE_READ_API_V0.md) and [bounded contract](contracts/editor-native-read-v0.json) — implemented default-off approved-peer/Store Read prerequisite, original deadlines, live copy checks and owned joins; nine host assertions pass on macOS/Linux, with strict Linux preflight passing under `RUST_TEST_THREADS=1` and full UI1.1c Save/task acceptance separate
-- [Pure native Save data contract](contracts/editor-native-save-codec-v0.json) — reviewed codec prerequisite with separate grants464/schema3 and original-outcome248/schema2, complete Binding/receipt crosslinks and eight independently reviewed assertion families passing on macOS/Linux through `just foundry-editor-native-save-codec-ui1-1c` after actual missing-module RED. Strict std Clippy, no_std checks and complete 53-stage Linux preflight pass; no live Save authority, current-draft Saved or IO proof
-- [Live native Save/task API](contracts/editor-native-save-task-v0.json) — accepted default-off trusted in-process host keyboard/Store task with eighteen original assertions and complete 93-scenario recordings; review transition repairs now precede actual editor-process integration. The JSON preserves its contract/preparation snapshot; [Current Status](../CURRENT_STATUS.md) owns current acceptance and limitations
-- [Shared core and adapter preservation](../CURRENT_STATUS.md#ui11d-shared-adapter-migration--accepted-host-preservation) — pure edit/raster core and both existing adapters accepted; protocol384/process contracts do not establish child runtime
-- [Native Store preview Read contract](contracts/editor-native-preview-read-v0.json) and [pure codec contract](contracts/editor-native-preview-codec-v0.json) — implemented default-off Store-current pin/approval/Read-only precursor: five source-bound cases pass on macOS/Linux through `just foundry-editor-native-preview-read-ui1-1c`, with identical source/lock inputs and affected consumers checked. The shared464/248 pure codec retains seven passing assertion families. Strict integrated Linux preflight passes with `RAMEN_CI_STRICT=1` and `RUST_TEST_THREADS=1`. Creation-stage JSON snapshots remain provenance; Save/recovery/IO2 and the original eighteen-case task remain separate. The bounded runtime gate records actual binary/process/log evidence without a universal exported transcript claim
-- [External boot-profile Oracle v0](plans/boot-profile-oracle-v0.md) — reviewed CPU inspection preparation, bounded actual EFI checkpoints and fixed claim limits; relocated-entry resolution and frozen executable capture still pending
-- [Semantic State substrate](plans/2026-02-20-s10-2-semantic-state-substrate.md)
-- [Projection storage](plans/2026-02-20-s10-3-projection-storage.md)
-- [Execution fabric](plans/2026-06-17-s10-4-execution-fabric.md)
-- [Host-to-target integration](plans/2026-06-17-s10-5-host-to-target-integration.md),
-  [host broker/proxy](plans/2026-06-17-s10-5-1-broker-kernel-bridge.md), and
-  [QEMU serial IPC](plans/2026-06-17-s10-5-2-qemu-ipc-bridge.md)
-- [Driver Factory MVP](plans/2026-02-20-s11-driver-factory-mvp.md)
-- [Golden Machine](plans/2026-06-21-s12-golden-machine-design.md)
-- [Persistent storage](plans/2026-06-21-s13-persistent-storage-design.md)
-- [HIL Appliance Controller](plans/2026-06-22-hil-appliance-controller.md)
+- Human task design: [Desktop v0](plans/desktop-v0.md), [editor v0](plans/desktop-editor-v0.md), and [editor process](plans/editor-process-v0.md).
+- Session and editor interfaces: [session v1](DESKTOP_SESSION_V1.md), [wire v1](DESKTOP_EDITOR_WIRE_V1.md), [host API](DESKTOP_EDITOR_HOST_API_V0.md), and [process API](DESKTOP_EDITOR_PROCESS_API_V0.md).
+- Store Save/recovery: [transaction design](plans/editor-store-transaction-v0.md), [Store API](DESKTOP_EDITOR_STORE_API_V0.md), and [recording contract](contracts/editor-store-recording-v0.json).
+- Native editor operations: [Read API](DESKTOP_EDITOR_NATIVE_READ_API_V0.md), [Read contract](contracts/editor-native-read-v0.json), [Save codec](contracts/editor-native-save-codec-v0.json), and [Save/task API](contracts/editor-native-save-task-v0.json).
+- Preview: [Read contract](contracts/editor-native-preview-read-v0.json) and [codec](contracts/editor-native-preview-codec-v0.json).
+- Shared editor core: [accepted adapter preservation](../CURRENT_STATUS.md#ui11d-shared-adapter-migration--accepted-host-preservation).
+- Boot ownership and entry: [frame ownership](BOOT_FRAME_OWNERSHIP_V0.md), [relocated-entry preparation](plans/run0-relocated-entry-preparation-v0.md), and [external boot-profile Oracle](plans/boot-profile-oracle-v0.md).
+- State and execution: [Semantic State](plans/2026-02-20-s10-2-semantic-state-substrate.md), [projection storage](plans/2026-02-20-s10-3-projection-storage.md), and [execution fabric](plans/2026-06-17-s10-4-execution-fabric.md).
+- Integration references: [host-to-target](plans/2026-06-17-s10-5-host-to-target-integration.md), [host broker/proxy](plans/2026-06-17-s10-5-1-broker-kernel-bridge.md), and [QEMU serial IPC](plans/2026-06-17-s10-5-2-qemu-ipc-bridge.md).
+- Devices and persistence: [Driver Factory](plans/2026-02-20-s11-driver-factory-mvp.md), [Golden Machine](plans/2026-06-21-s12-golden-machine-design.md), [persistent storage](plans/2026-06-21-s13-persistent-storage-design.md), and [HIL appliance](plans/2026-06-22-hil-appliance-controller.md).
+- Agent comparison: [Agent Task Proof study](plans/2026-09-16-agent-task-proof.md). It evaluates one part of the product; its required controls and funding remain independent of the human task.
 
-Completed S10 sub-plans are archived; parent architecture documents stay active.
-Gate-bound S10.5 bridge plans remain beside their parent because Foundry checks
-consume their stable paths.
+Creation-stage contracts and accepted review records retain their original scope.
+Use the status/task pair for current implementation and dispatch. Completed S10
+sub-plans are archived; parent architecture references and gate-consumed S10.5
+bridge plans keep their stable paths.
 
 ### Security Operations
 
