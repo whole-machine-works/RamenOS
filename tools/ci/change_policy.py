@@ -1,7 +1,9 @@
 """Fail-closed change classification and merge decision used by CI and tests."""
 import argparse
+import json
 from pathlib import PurePosixPath
 import subprocess
+import sys
 
 
 # These Markdown documents are byte-pinned inputs or content assertions of OS
@@ -52,6 +54,40 @@ def requires_foundry(paths):
     return any(not documentation(path) for path in paths)
 
 
+def changed_paths(base, head):
+    if not base or not head:
+        raise ValueError("change classification requires nonempty base and head refs")
+    raw = subprocess.check_output([
+        "git", "diff", "--no-renames", "--name-only", "-z", base, head, "--"])
+    return [p.decode("utf-8", errors="strict") for p in raw.split(b"\0") if p]
+
+
+def event_paths(event, head, pr_base="", push_base=""):
+    """Return compared paths; None means explicitly requested full validation."""
+    if event == "workflow_dispatch":
+        return None
+    if event == "pull_request":
+        return changed_paths(pr_base, head)
+    if event == "push":
+        if push_base == "0" * 40:
+            # The first main push has no predecessor. Compare the complete tree,
+            # rather than confusing a missing base with a prose-only change.
+            push_base = subprocess.check_output(
+                ["git", "hash-object", "-t", "tree", "--stdin"], input=b"").decode().strip()
+        return changed_paths(push_base, head)
+    raise ValueError(f"unsupported CI event: {event!r}")
+
+
+def classify_paths(paths):
+    """Keep stdout machine-readable and explain costly routing in the job log."""
+    if paths is None:
+        print("Manual dispatch requests complete Foundry validation.", file=sys.stderr)
+        return True
+    required = [path for path in paths if requires_foundry([path])]
+    print("Foundry-required changed paths: " + json.dumps(required), file=sys.stderr)
+    return bool(required)
+
+
 def merge_allowed(changes, os_code, foundry, governance):
     return (changes == "success" and governance == "success"
             and os_code in {"true", "false"}
@@ -72,6 +108,11 @@ def main():
     classify = sub.add_parser("classify")
     classify.add_argument("base")
     classify.add_argument("head")
+    event = sub.add_parser("event")
+    event.add_argument("event")
+    event.add_argument("--head", default="HEAD")
+    event.add_argument("--pr-base", default="")
+    event.add_argument("--push-base", default="")
     merge = sub.add_parser("merge")
     for name in ["changes", "os_code", "foundry", "governance"]:
         merge.add_argument(name)
@@ -80,9 +121,10 @@ def main():
         foundry.add_argument(name)
     args = parser.parse_args()
     if args.command == "classify":
-        raw = subprocess.check_output(["git", "diff", "--no-renames", "--name-only", "-z", args.base, args.head, "--"])
-        paths = [p.decode("utf-8", errors="strict") for p in raw.split(b"\0") if p]
-        print("true" if requires_foundry(paths) else "false")
+        print("true" if classify_paths(changed_paths(args.base, args.head)) else "false")
+    elif args.command == "event":
+        paths = event_paths(args.event, args.head, args.pr_base, args.push_base)
+        print("true" if classify_paths(paths) else "false")
     elif args.command == "foundry":
         if not foundry_allowed(args.changes, args.os_code, args.quality, args.host, args.agent, args.qemu, args.editor):
             raise SystemExit("foundry: FAIL")

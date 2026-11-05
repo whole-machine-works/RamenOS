@@ -1,6 +1,6 @@
 # Foundry development and CI execution profile v0
 
-**Date:** 2026-10-13
+**Date:** 2026-11-04
 **Scope:** Host tooling and CI orchestration; no OS authority or hardware graduation
 
 This profile supports the ready editor and runtime packets in
@@ -147,6 +147,55 @@ the virtio reference-vault READMEs are gate prerequisites. These documents requi
 Foundry. `CURRENT_STATUS.md` remains prose and is checked by governance. Policy
 regressions audit literal OS gate document references, root document names,
 source registries and contract source pins for new Markdown inputs.
+
+CI runs on pull requests and pushes to `main`; it does not also run on every
+feature-branch push. A manual dispatch supplies a complete five-lane run on the
+selected branch, even when the event has no base revision. PR classification
+compares its base with the checked-out merge candidate; a main push compares its
+previous revision with the checked-out commit. An all-zero new-branch base
+compares the complete tree. Missing, invalid or unrecognized event inputs fail
+classification and therefore the required aggregate. The classifier logs the
+paths requiring Foundry while keeping its output value machine-readable.
+PR and main runs retain separate concurrency groups and fresh execution; no PASS
+result is carried from one to the other. Ordinary prose still follows the
+governance route, while executable Markdown still requires all five lanes.
+
+The November 4 routing review examined PR #50's
+[feature-push run](https://github.com/whole-machine-works/RamenOS/actions/runs/41933963863)
+and [PR run](https://github.com/whole-machine-works/RamenOS/actions/runs/41934075701).
+Both executed all nine jobs. The change included `NEXT_TASKS.md`, so full Foundry
+was required even though the patch was Markdown. The push also had an all-zero
+base, which correctly classified the entire tree. Recorded job start/end times
+were:
+
+| Lane | Feature push | PR |
+| --- | ---: | ---: |
+| Quality | 303 s | 371 s |
+| Host | 391 s | 466 s |
+| Agent | 377 s | 398 s |
+| QEMU | 247 s | 262 s |
+| Editor | 373 s | 468 s |
+
+First-job start to final-job completion was 415 seconds for the push and
+691 seconds for the PR. The PR editor job started more than three minutes after
+the first job; these timestamps do not establish why it waited. Suppressing the
+duplicate feature-push workflow removes one redundant set of lane executions
+(1,691 runner-seconds across these five push jobs). It does not shorten a lane's
+assertions or establish a measured improvement in PR latency. Fresh main-push
+and manual validation remain available, and hosted qualification of the changed
+workflow is still required.
+
+For a focused change-policy loop, run
+`uv run --no-project --python 3.14 python tools/ci/test_review_boundaries.py CiTests CiEventTests`.
+These controls use temporary Git repositories and the actual workflow classifier
+shell; they cover prose, executable-document modification/deletion/rename, PR and
+push bases, branchless manual dispatch, and failed classification withholding its
+output. Lane/aggregate controls run with
+`uv run --no-project --python 3.14 python tools/ci/test_ci_lanes.py`.
+Both routes avoid booting QEMU or starting a complete Foundry lane. They are
+editing checks; the complete tooling gate and required affected integration gates
+remain part of fixed-candidate validation. Planning-document edits retain the
+S11/S12/S13 and org-governance checks specified in `AGENTS.md`.
 
 NativeRead and NativePreview retain their historical source inventories and add
 the unchanged NativeSave task collector's conservative dependency closure. That
@@ -323,8 +372,10 @@ Only that compiler entry is removed; evidence and retained binaries remain outsi
 its scope. Interrupted retirement is quarantined. There is no automatic eviction,
 PID-based kill, abandoned-owner reset or whole-out deletion.
 
-The five-lane successor needs fresh hosted qualification. Historical durations
-above do not establish its performance. Focused cold/warm gate measurements must
+The original five-lane successor completed Linux56 and hosted qualification on
+its recorded source, as documented in [Current Status](../CURRENT_STATUS.md#foundry-development-and-ci-execution).
+Those results do not qualify later changes, and historical durations above do
+not establish their performance. Focused cold/warm gate measurements must
 record actual source/configuration/features, exits/reaps and complete assertions;
 compiler warmup never reuses a PASS report. Full Linux 56 qualification remains a
-separate integration requirement.
+separate integration requirement for changes that require it.

@@ -2,9 +2,13 @@ name: ci
 
 on:
   push:
+    branches: [main]
   pull_request:
+  workflow_dispatch:
 
-# PR supersession never cancels a push run, and never changes required checks.
+# Validate PR merge candidates and the landed main commit, not each feature push
+# twice. Manual dispatch supplies a full run for a branch without an open PR.
+# PR supersession never cancels a main push run or changes required checks.
 concurrency:
   group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
@@ -19,21 +23,14 @@ jobs:
         with:
           fetch-depth: 0
       - id: cls
-        name: Detect OS-code changes
+        name: Classify changed inputs (manual dispatch runs all lanes)
         env:
           EVENT_NAME: ${{ github.event_name }}
           PR_BASE: ${{ github.event.pull_request.base.sha }}
           PUSH_BASE: ${{ github.event.before }}
         run: |
           set -euo pipefail
-          if [ "$EVENT_NAME" = "pull_request" ]; then
-            BASE="$PR_BASE"
-          elif [ "$PUSH_BASE" = "0000000000000000000000000000000000000000" ]; then
-            BASE=$(git hash-object -t tree --stdin </dev/null)
-          else
-            BASE="$PUSH_BASE"
-          fi
-          OS=$(python3 tools/ci/change_policy.py classify "$BASE" HEAD)
+          OS=$(python3 tools/ci/change_policy.py event "$EVENT_NAME" --pr-base "$PR_BASE" --push-base "$PUSH_BASE")
           echo "os_code=$OS" >> "$GITHUB_OUTPUT"
 
   quality:

@@ -3,9 +3,12 @@ import importlib.util
 import json
 import os
 import re
+import shutil
 from pathlib import Path
 import subprocess
+import sys
 import tempfile
+import textwrap
 import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -147,6 +150,133 @@ class CiTests(unittest.TestCase):
         self.assertFalse(policy.merge_allowed("success", "false", "skipped", "failure"))
         result = subprocess.run(["python3", str(ROOT / "tools/ci/change_policy.py"), "classify", "no-such-ref", "HEAD"], cwd=ROOT, capture_output=True)
         self.assertNotEqual(result.returncode, 0)
+
+
+class CiEventTests(unittest.TestCase):
+    """Exercise the event CLI with real history, including absent event bases."""
+
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.root = Path(self.temp.name)
+        self.git("init", "-q")
+        self.git("config", "user.name", "CI fixture")
+        self.git("config", "user.email", "fixture@example.invalid")
+        for path in ("README.md", "NEXT_TASKS.md", "kernel.rs"):
+            (self.root / path).write_text("baseline\n")
+        self.git("add", ".")
+        self.git("commit", "-qm", "baseline")
+        self.base = self.git("rev-parse", "HEAD")
+        (self.root / "README.md").write_text("updated prose\n")
+        self.git("commit", "-qam", "prose")
+
+    def git(self, *args):
+        return subprocess.check_output(["git", *args], cwd=self.root,
+                                       stderr=subprocess.DEVNULL).decode().strip()
+
+    def policy(self, *args, cwd=None):
+        return subprocess.run([sys.executable, str(ROOT / "tools/ci/change_policy.py"), *args],
+                              cwd=cwd or self.root, capture_output=True, text=True, timeout=30)
+
+    def test_pr_and_main_push_use_their_own_base(self):
+        for event, valid, unused in (("pull_request", "--pr-base", "--push-base"),
+                                     ("push", "--push-base", "--pr-base")):
+            with self.subTest(event=event):
+                result = self.policy("event", event, valid, self.base, unused, "no-such-ref")
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(result.stdout, "false\n")
+                self.assertIn("Foundry-required changed paths: []", result.stderr)
+
+    def test_new_branch_zero_base_compares_the_complete_tree(self):
+        result = self.policy("event", "push", "--push-base", "0" * 40)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout, "true\n")
+        self.assertIn('"kernel.rs"', result.stderr)
+        self.assertIn('"NEXT_TASKS.md"', result.stderr)
+
+    def test_missing_null_or_unknown_base_fails_then_valid_base_recovers(self):
+        for event, option in (("pull_request", "--pr-base"), ("push", "--push-base")):
+            for args in ((), (option, ""), (option, "null"), (option, "no-such-ref")):
+                with self.subTest(event=event, args=args):
+                    result = self.policy("event", event, *args)
+                    self.assertNotEqual(result.returncode, 0)
+                    self.assertEqual(result.stdout, "")
+            result = self.policy("event", event, option, self.base)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(result.stdout, "false\n")
+        result = self.policy("event", "schedule")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(result.stdout, "")
+
+    def test_executable_markdown_modify_rename_and_delete_keep_foundry(self):
+        for operation in ("modify", "rename", "delete"):
+            if operation == "modify":
+                (self.root / "NEXT_TASKS.md").write_text("updated contract\n")
+            elif operation == "rename":
+                (self.root / "NEXT_TASKS.md").rename(self.root / "ordinary.md")
+            else:
+                (self.root / "ordinary.md").unlink()
+            self.git("add", "-A")
+            self.git("commit", "-qm", operation)
+            with self.subTest(operation=operation):
+                result = self.policy("event", "pull_request", "--pr-base", self.base)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(result.stdout, "true\n")
+                self.assertIn('"NEXT_TASKS.md"', result.stderr)
+
+    def test_branchless_manual_dispatch_requires_fresh_full_lane_results(self):
+        # Manual dispatch has no pull_request.base or before. It must not call
+        # Git with an empty base, infer prose, or depend on a branch predecessor.
+        with tempfile.TemporaryDirectory() as no_git:
+            result = self.policy("event", "workflow_dispatch", cwd=no_git)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout, "true\n")
+        self.assertIn("Manual dispatch requests complete Foundry validation", result.stderr)
+        classification = result.stdout.strip()
+        for lane_result in ("skipped", "failure", "cancelled", "", "success"):
+            with self.subTest(lane_result=lane_result):
+                foundry = self.policy("foundry", "success", classification,
+                                      lane_result, "success", "success", "success", "success")
+                expected = lane_result == "success"
+                self.assertEqual(foundry.returncode == 0, expected, foundry.stderr)
+                merge = self.policy("merge", "success", classification,
+                                    "success" if foundry.returncode == 0 else "failure", "success")
+                self.assertEqual(merge.returncode == 0, expected, merge.stderr)
+        for changes in ("failure", "cancelled", "skipped", ""):
+            merge = self.policy("merge", changes, "", "skipped", "success")
+            self.assertNotEqual(merge.returncode, 0)
+
+    def test_workflow_shell_publishes_only_successful_event_classification(self):
+        workflow = (ROOT / ".github/workflows/ci.yml").read_text()
+        changes = re.search(r"^  changes:\s*\n(.*?)(?=^  [\w-]+:|\Z)",
+                            workflow, re.M | re.S).group(1)
+        # The final step of this job owns the output. Exercise its actual shell
+        # body, including errexit and GITHUB_OUTPUT, with GitHub's empty bases.
+        body = re.split(r"(?m)^\s+run:\s*\|\s*\n", changes, maxsplit=1)[1]
+        body = textwrap.dedent(body)
+        destination = self.root / "tools/ci/change_policy.py"
+        destination.parent.mkdir(parents=True)
+        shutil.copyfile(ROOT / "tools/ci/change_policy.py", destination)
+        output = self.root / "github-output"
+        for event, pr_base, push_base, expected in (
+                ("workflow_dispatch", "", "", "true"),
+                ("pull_request", self.base, "", "false"),
+                ("push", "", self.base, "false"),
+                ("push", "", "0" * 40, "true"),
+                ("push", "", "", None),
+                ("pull_request", "", "", None)):
+            with self.subTest(event=event, pr_base=pr_base, push_base=push_base):
+                output.unlink(missing_ok=True)
+                env = dict(os.environ, EVENT_NAME=event, PR_BASE=pr_base,
+                           PUSH_BASE=push_base, GITHUB_OUTPUT=str(output))
+                result = subprocess.run(["bash", "-c", body], cwd=self.root,
+                                        env=env, capture_output=True, text=True, timeout=30)
+                if expected is None:
+                    self.assertNotEqual(result.returncode, 0)
+                    self.assertFalse(output.exists())
+                else:
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    self.assertEqual(output.read_text(), f"os_code={expected}\n")
 
 
 class ApplianceTests(unittest.TestCase):
