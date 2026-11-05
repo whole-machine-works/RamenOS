@@ -178,12 +178,6 @@ fn app_save(f: &mut Fixture, app: &mut artifact_editor::ProcessArtifactEditor, b
 }
 fn finish_app_at(mut owner: app_owner::AppOwner, now: u64) -> Fixture {
     ok(owner.join(now));
-    {
-        let (f, app) = owner.borrow();
-        f.join_all();
-        ok(app.reconcile_originals(now));
-        assert_eq!(f.h.native_producer_counts().held, 0);
-    }
     owner.release(now)
 }
 fn finish_app(owner: app_owner::AppOwner) -> Fixture {

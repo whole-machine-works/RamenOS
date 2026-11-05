@@ -28,7 +28,10 @@ binds the complete runtime, unchanged consumers, independent reviews and retaine
 failures. The f412 archive retains build/execution hashes but omits the two selected
 child ELFs and parent library. The delivery successor adds their separate archive;
 complete successor CI and direct hashes of its own three files are required before
-readiness. Independent runtime and fresh hosted preservation reviews accept the
+readiness. Failed attempt76f7ade independently verified the archive correction and
+exposed D17's single-poll reply-readiness assumption. Its reviewed correction
+retains the original execution/deadline; complete corrected-successor CI remains
+required. Independent runtime and fresh hosted preservation reviews accept the
 implementation candidate with that explicit archival limitation. Successor artifact
 review and A3 integration are pending.
 The extra local editor-lane attempt failed in D19's subsequent Save; its cause

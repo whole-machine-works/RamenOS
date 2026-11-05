@@ -824,17 +824,29 @@ fn process_d17_genuine_ctrl_s_full_receipt_and_reopen() {
             let held = owner.intercepted.as_mut().unwrap();
             held.flight = held.chain.flight.take();
             assert!(matches!(held.chain.stage, Stage::Commit));
-            held.reply = Some(
-                ok(held
+            // The IO worker can settle the pause before the dispatcher has
+            // constructed/transferred its reply. join_all is nonblocking too.
+            // Poll only this retained execution under its original deadline.
+            loop {
+                assert!(
+                    Instant::now() < deadline,
+                    "original Commit reply readiness deadline: operation={operation} elapsed={:?}",
+                    entered.elapsed()
+                );
+                let reply = ok(held
                     .flight
                     .as_ref()
                     .unwrap()
                     .execution
                     .as_ref()
                     .unwrap()
-                    .poll_once())
-                .expect("actual complete Commit reply"),
-            );
+                    .poll_once());
+                if let Some(reply) = reply {
+                    held.reply = Some(reply);
+                    break;
+                }
+                thread::yield_now();
+            }
             let chain = &mut held.chain;
             let reply = held.reply.as_ref().unwrap();
             let response = ok(artifact::CommitReply::decode(reply.wire()));
@@ -2182,6 +2194,9 @@ fn store_io_cap(owner: &mut OwnedApp) {
         2,
     );
     owner.retire_and_join(ProcessRetireReason::Revoked, 2);
+    let cleanup_deadline = owner
+        .cleanup_deadline
+        .expect("A retirement already owns the original cleanup deadline");
     let f = owner.fixture.as_mut().unwrap();
     let c = f.launch(0, 103, 2);
     owner.third = Some(
@@ -2257,7 +2272,16 @@ fn store_io_cap(owner: &mut OwnedApp) {
     ok(f.prepared().controller().release(&a));
     ok(f.prepared().controller().release(&b));
     assert!(ok(a.wait_until_settled(1000)).settled && ok(b.wait_until_settled(1000)).settled);
-    f.join_all();
+    // Settled IO can still own its native producer row. Those same rows must
+    // actually join before the unchanged global IO cap admits C's fresh Save.
+    while f.h.native_producer_counts().io != 0 {
+        assert!(
+            Instant::now() < cleanup_deadline,
+            "original A cleanup deadline bounds actual IO producer joins"
+        );
+        f.join_all();
+        thread::yield_now();
+    }
     // Capacity release permits a fresh real CtrlS on the same current C draft.
     let app = owner.third.as_mut().unwrap();
     for (usage, phase) in [(224, 1), (22, 1), (22, 2), (224, 2)] {

@@ -103,13 +103,15 @@ impl AppOwner {
             "retire/join must already own the original cleanup deadline"
         );
         loop {
-            if self.app.as_ref().unwrap().assertion_pending_originals() == 0 {
+            let (fixture, app) = self.borrow();
+            if app.assertion_pending_originals() == 0
+                && fixture.h.native_producer_counts().held == 0
+            {
                 return Ok(());
             }
             if Instant::now() >= end {
                 return Err(NativeEditorError::Desktop(Status::Timeout));
             }
-            let (fixture, app) = self.borrow();
             // These are actual nonblocking producer joins and observations of
             // the same retained originals. Neither call replays a Save.
             fixture.join_all();
@@ -139,6 +141,11 @@ impl AppOwner {
             self.app.as_ref().unwrap().assertion_pending_originals(),
             0,
             "child reap/producer joins do not close unresolved original Save owners"
+        );
+        assert_eq!(
+            self.fixture().h.native_producer_counts().held,
+            0,
+            "actual producer joins complete before releasing parent root"
         );
         assert!(matches!(
             self.app.as_ref().unwrap().observe(now),

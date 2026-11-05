@@ -36,7 +36,7 @@ fixture success.
 
 ## Ready work front
 
-**Now:** finish archival-successor qualification and authorized repository delivery
+**Now:** finish receipt-readiness successor qualification and authorized repository delivery
 of the implemented and independently reviewed P0–P3 Linux editor workflow in
 [PR52](https://github.com/whole-machine-works/RamenOS/pull/52). Complete P0/private
 handoff review and strict Linux API RED closed the authoring dependencies. The
@@ -48,8 +48,11 @@ has not been converted to a passing local editor-lane claim. The
 [qualification record](docs/plans/editor-process-delivery-qualification-2026-11-05.md)
 owns source, review and failure evidence. The f412 archive omits the selected two
 child ELFs and parent library despite retaining their execution/hash receipts.
-Qualify the archival successor in complete hosted CI and directly hash its own
-three uploaded files against its gate record before readiness. Complete independent
+The archive correction is independently byte-verified in failed attempt76f7ade,
+which exposed D17's one-poll asynchronous reply assumption. The reviewed correction
+waits on the same staged execution under its original deadline. Qualify the corrected
+successor in complete hosted CI and directly hash its own three uploaded files
+against its gate record before readiness. Complete independent
 review of that successor before the separately authorized A3 integration decision.
 Do not redispatch closed P0/P1/P2/P3
 handler preparation or complete the goal from counts, documentation or a draft PR.

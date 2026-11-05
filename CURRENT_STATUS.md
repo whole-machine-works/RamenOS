@@ -41,8 +41,11 @@ authentic Store closure controls and unchanged editor consumers. Independent
 runtime and fresh hosted preservation audits accept that candidate with the
 archival limitation below. That CI archive retains build/execution hashes but
 omits the two selected child ELFs and parent library. The delivery successor adds
-a separate three-file binary archive; its own complete CI and direct binary-hash
-checks are required before PR readiness. The separate additional local editor-lane
+a separate three-file binary archive, independently byte-verified in the failed
+76f7ade attempt. That attempt exposed an asynchronous D17 reply-readiness driver
+race; its reviewed correction retains the same execution and original deadline.
+Complete CI and direct binary-hash checks on the corrected successor are required
+before PR readiness. The separate additional local editor-lane
 attempt
 failed in D19's second Save with an Unknown issued operation; its cause remains
 unresolved. Its failed receipt is retained, alongside the independently accepted

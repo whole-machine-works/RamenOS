@@ -45,8 +45,8 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install system prerequisites
         run: |
-          sudo apt-get update
-          sudo apt-get install -y just qemu-system-x86 qemu-system-arm ovmf python3 python3-jsonschema gcc cpio gzip e2fsprogs curl ripgrep
+          sudo apt-get update -o Acquire::Retries=3 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30
+          sudo apt-get install -y -o Acquire::Retries=3 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 just qemu-system-x86 qemu-system-arm ovmf python3 python3-jsonschema gcc cpio gzip e2fsprogs curl ripgrep
       - id: toolchain
         name: Read pinned manifest toolchain
         run: echo "channel=$(python3 tools/ci/ci_lanes.py toolchain)" >> "$GITHUB_OUTPUT"
@@ -86,8 +86,8 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install system prerequisites
         run: |
-          sudo apt-get update
-          sudo apt-get install -y just qemu-system-x86 qemu-system-arm ovmf python3 python3-jsonschema gcc cpio gzip e2fsprogs curl ripgrep
+          sudo apt-get update -o Acquire::Retries=3 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30
+          sudo apt-get install -y -o Acquire::Retries=3 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 just qemu-system-x86 qemu-system-arm ovmf python3 python3-jsonschema gcc cpio gzip e2fsprogs curl ripgrep
       - id: toolchain
         name: Read pinned manifest toolchain
         run: echo "channel=$(python3 tools/ci/ci_lanes.py toolchain)" >> "$GITHUB_OUTPUT"
@@ -125,8 +125,8 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install system prerequisites
         run: |
-          sudo apt-get update
-          sudo apt-get install -y just qemu-system-x86 qemu-system-arm ovmf python3 python3-jsonschema gcc cpio gzip e2fsprogs curl ripgrep
+          sudo apt-get update -o Acquire::Retries=3 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30
+          sudo apt-get install -y -o Acquire::Retries=3 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 just qemu-system-x86 qemu-system-arm ovmf python3 python3-jsonschema gcc cpio gzip e2fsprogs curl ripgrep
       - id: toolchain
         name: Read pinned manifest toolchain
         run: echo "channel=$(python3 tools/ci/ci_lanes.py toolchain)" >> "$GITHUB_OUTPUT"
@@ -166,8 +166,8 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install system prerequisites
         run: |
-          sudo apt-get update
-          sudo apt-get install -y just qemu-system-x86 qemu-system-arm ovmf python3 python3-jsonschema gcc cpio gzip e2fsprogs curl ripgrep
+          sudo apt-get update -o Acquire::Retries=3 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30
+          sudo apt-get install -y -o Acquire::Retries=3 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 just qemu-system-x86 qemu-system-arm ovmf python3 python3-jsonschema gcc cpio gzip e2fsprogs curl ripgrep
       - id: toolchain
         name: Read pinned manifest toolchain
         run: echo "channel=$(python3 tools/ci/ci_lanes.py toolchain)" >> "$GITHUB_OUTPUT"
@@ -218,8 +218,8 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install editor host prerequisites
         run: |
-          sudo apt-get update
-          sudo apt-get install -y just python3 python3-jsonschema gcc curl ripgrep
+          sudo apt-get update -o Acquire::Retries=3 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30
+          sudo apt-get install -y -o Acquire::Retries=3 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 just python3 python3-jsonschema gcc curl ripgrep
       - name: Cache Cargo downloads and pinned toolchain
         uses: actions/cache@v4
         with:

@@ -91,6 +91,58 @@ profile does not turn the local result into PASS; the additional local failure
 does not make the actual hosted job results false. Final acceptance must explicitly
 state the retained discrepancy and its remaining uncertainty.
 
+## Archival successor and receipt-readiness correction
+
+Delivery commit `76f7adee5d989ebd2148dbee80ca17ee1c9f635a` added the separate
+three-file archive. Its first editor attempt in
+[run 42049108755](https://github.com/whole-machine-works/RamenOS/actions/runs/42049108755)
+failed at private D17 after 0.62 seconds: one nonblocking `poll_once()` returned
+`None` before the actual Commit reply was published. The IO pause had settled,
+but `Fixture::join_all()` performs only nonblocking try-joins; the dispatcher can
+publish `ExecutionState.ready` afterward. This failure is distinct from the
+additional f412 D19 deadline failure and does not explain its unknown cause.
+
+The three binary files from that failed attempt were independently hashed against
+that attempt's own Cargo-selected artifacts and gate record. The archival-only
+review is `out/p0-p3-review-hosted-76f7ade-eixjkt9g/attempt1-binary-archive-review.json`,
+SHA `954501b0a6cb74c6f20815dbce27225163a5f9ee2225b94859c36370fcb374f4`.
+It accepts the archive correction, not the failed runtime. The assertion child
+execution was not reached; the available normal-child execution identities join
+the retained normal binary. Complete passing successor evidence is still required.
+
+The reviewed D17 correction polls only the same staged execution, yields only on
+`None`, and checks the already-captured original deadline before each poll. Actual
+errors fail, and the genuine reply is staged before any receipt decoding. Full
+176-byte receipt, foreign-binding/hash/revision denials, intent identity, Save
+counts, reopen and subsequent Save assertions remain unchanged. The full private
+D17 target passes on immutable focused candidate `receipt-readiness-040`, retained
+under `out/p0-p3-040-receipt-readiness/`; this focused result is separate from
+complete successor CI qualification. Its independent focused audit is
+`out/p0-p3-review-040-3g8ups99/audit.json`, SHA
+`cacf8b44815e7a718dee574f58e5012ca7038bbf4d01e5366709610765b2ea3f`.
+
+A source-only sibling audit found two related one-pass join assumptions, without
+claiming new observed runtime failures. Public AppOwner cleanup now drains both
+unresolved originals and actual held producer rows under the same already-started
+two-second deadline, preserving explicit zero-owner assertions before release.
+Private D15 IO-capacity recovery drains the actual StoreIo roster under A's existing
+cleanup deadline before the unchanged fresh Save on C. Neither change polls live
+filesystem evidence, creates a deadline, replaces an original or relaxes a quota.
+The full private D15 target and public D17/D19/D20/D21/D22 targets pass on focused
+candidate `producer-readiness-041`, retained in
+`out/p0-p3-041-producer-readiness/`. Its independent audit is
+`out/p0-p3-review-041-xt8fhn21/audit.json`, SHA
+`d7af7e2dbc6c958e9a0c5e2fd28f0b35f7c180ca042a77fa8519545942735214`.
+It verifies all six whole targets and genuine receipt/join/fresh-Save outcomes; the
+IO-zero admission witness follows the compiled predicate rather than a separately
+exported timestamped sample. Complete corrected-successor CI remains required.
+
+Three other jobs in the 76 attempt were delayed in Ubuntu Azure-mirror package
+downloads. The reviewed setup correction keeps all repositories, packages,
+signature/TLS checks and error handling, with three retries and 30-second HTTP/
+HTTPS connection/data inactivity limits per acquisition. It does not impose a
+30-second total setup deadline or turn setup failure into acceptance.
+
 ## Implementation, review and delivery boundaries
 
 The reviewed complete P0/private handoff and actual strict Linux missing-API RED
