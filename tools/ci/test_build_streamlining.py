@@ -15,7 +15,7 @@ lanes = load('ci_lanes')
 policy = load('change_policy')
 EDITOR = ('desktop-launch', 'desktop-editor-host', 'editor-save-schema', 'editor-preview-codec',
           'editor-native-save-codec', 'desktop-editor-store', 'editor-native-read',
-          'editor-native-preview', 'desktop-editor-task', 'editor-adapter-migration', 'editor-reliability')
+          'editor-native-preview', 'desktop-editor-task', 'editor-adapter-migration', 'editor-reliability', 'editor-process-runtime')
 
 
 class StreamliningTests(unittest.TestCase):
@@ -28,7 +28,7 @@ class StreamliningTests(unittest.TestCase):
                      for s in lanes.lane_plan(lane) if s in lanes.extended_plan()]
         self.assertCountEqual(inventory, [s.name for s in lanes.extended_plan()])
         self.assertEqual(len(inventory), len(set(inventory)))
-        self.assertEqual(len(lanes.preflight_plan()), 56)
+        self.assertEqual(len(lanes.preflight_plan()), 57)
 
     def test_five_explicit_required_results(self):
         states = ('success', 'failure', 'cancelled', 'skipped', '', 'unknown')
