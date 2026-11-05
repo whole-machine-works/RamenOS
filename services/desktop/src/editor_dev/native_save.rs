@@ -635,6 +635,8 @@ pub(super) struct SaveGate {
     pub(super) view_exhausted: bool,
     pub(super) armed: Option<(u64, NativeSavePausePoint, Arc<SaveBarrier>)>,
     pub(super) barriers: Vec<Weak<SaveBarrier>>,
+    #[cfg(all(target_os = "linux", feature = "host_editor_process_assertions_v0_dev"))]
+    pub(super) deadline_spawn_fault: Option<ArmedSaveDeadlineSpawnFault>,
 
     pub(super) documents: BTreeMap<u64, DocumentRow>,
     pub(super) intents: BTreeMap<u64, Weak<IntentLife>>,
@@ -716,6 +718,8 @@ impl SaveGate {
             view_exhausted: false,
             armed: None,
             barriers: Vec::new(),
+            #[cfg(all(target_os = "linux", feature = "host_editor_process_assertions_v0_dev"))]
+            deadline_spawn_fault: None,
             documents: BTreeMap::new(),
             intents: BTreeMap::new(),
             next_document: 0,
@@ -811,6 +815,138 @@ pub struct NativeSaveEntry {
     pub(super) life: Arc<CallLife>,
     pub(super) result: Arc<SaveEntryResult>,
     pub(super) producers: [ProducerId; 2],
+}
+
+/// Failure of this Desktop entry attempt, with its authoritative recovery disposition.
+#[must_use]
+pub struct NativeSaveEntryFailure {
+    status: Status,
+    recovery: NativeSaveEntryRecovery,
+}
+
+#[must_use]
+pub enum NativeSaveEntryRecovery {
+    /// This attempt left no installed producer. This does not close a Save intent.
+    NoEntryInstalled,
+    /// Desktop closed the exact Allocate intent before admitting any entry for it.
+    ClosedBeforeAdmission,
+    /// The failed entry is closed and its actual dispatcher still needs a join.
+    Partial(NativeSaveEntryCleanup),
+    /// Entry admission occurred, but no exact unadmitted-intent closure was proved.
+    Unresolved,
+}
+
+/// Retains the failed entry's origin and its actual installed producer token.
+#[must_use]
+pub struct NativeSaveEntryCleanup {
+    life: Arc<CallLife>,
+    producers: [ProducerId; 1],
+}
+
+impl NativeSaveEntryCleanup {
+    pub fn producer_ids(&self) -> &[ProducerId] {
+        &self.producers
+    }
+
+    pub fn deadline(&self) -> Instant {
+        self.life.view.deadline
+    }
+}
+
+impl From<Status> for NativeSaveEntryFailure {
+    fn from(status: Status) -> Self {
+        Self::new(status, NativeSaveEntryRecovery::NoEntryInstalled)
+    }
+}
+
+impl NativeSaveEntryFailure {
+    pub(super) fn new(status: Status, recovery: NativeSaveEntryRecovery) -> Self {
+        Self { status, recovery }
+    }
+
+    pub(super) fn partial(life: Arc<CallLife>, dispatcher: ProducerId) -> Self {
+        Self::new(
+            Status::Internal,
+            NativeSaveEntryRecovery::Partial(NativeSaveEntryCleanup {
+                life,
+                producers: [dispatcher],
+            }),
+        )
+    }
+
+    pub fn status(&self) -> Status {
+        self.status
+    }
+
+    pub fn into_parts(self) -> (Status, NativeSaveEntryRecovery) {
+        (self.status, self.recovery)
+    }
+
+    pub(super) fn into_legacy_status(self) -> Status {
+        // Legacy callers receive Status as before. Core still owns the actual
+        // installed handle and exposes its genuine producer through the roster.
+        self.status
+    }
+}
+
+#[cfg(all(target_os = "linux", feature = "host_editor_process_assertions_v0_dev"))]
+pub(super) struct ArmedSaveDeadlineSpawnFault {
+    pub(super) attachment: Weak<preview::AttachmentLife>,
+    pub(super) hold: Weak<SaveDeadlineSpawnHold>,
+}
+
+#[cfg(all(target_os = "linux", feature = "host_editor_process_assertions_v0_dev"))]
+pub(super) struct SaveDeadlineSpawnHold {
+    released: Mutex<bool>,
+    changed: Condvar,
+}
+
+#[cfg(all(target_os = "linux", feature = "host_editor_process_assertions_v0_dev"))]
+impl SaveDeadlineSpawnHold {
+    pub(super) fn new() -> Self {
+        Self {
+            released: Mutex::new(false),
+            changed: Condvar::new(),
+        }
+    }
+
+    pub(super) fn wait(&self, deadline: Instant) {
+        let mut released = self.released.lock().unwrap_or_else(|p| p.into_inner());
+        while !*released {
+            let left = deadline.saturating_duration_since(Instant::now());
+            if left.is_zero() {
+                return;
+            }
+            released = self
+                .changed
+                .wait_timeout(released, left)
+                .unwrap_or_else(|p| p.into_inner())
+                .0;
+        }
+    }
+}
+
+/// Holds an assertion-injected, unstarted Read dispatcher until release or its
+/// original deadline. Dropping this guard releases the actual worker.
+#[cfg(all(target_os = "linux", feature = "host_editor_process_assertions_v0_dev"))]
+#[must_use]
+pub struct NativeSaveDeadlineSpawnFault {
+    pub(super) hold: Arc<SaveDeadlineSpawnHold>,
+}
+
+#[cfg(all(target_os = "linux", feature = "host_editor_process_assertions_v0_dev"))]
+impl NativeSaveDeadlineSpawnFault {
+    pub fn release(self) {
+        drop(self);
+    }
+}
+
+#[cfg(all(target_os = "linux", feature = "host_editor_process_assertions_v0_dev"))]
+impl Drop for NativeSaveDeadlineSpawnFault {
+    fn drop(&mut self) {
+        *self.hold.released.lock().unwrap_or_else(|p| p.into_inner()) = true;
+        self.hold.changed.notify_all();
+    }
 }
 pub(super) struct SaveEntryResult {
     pub(super) state: Mutex<SaveEntryState>,
@@ -2318,10 +2454,14 @@ impl Drop for NativeSaveIntent {
 impl SaveGate {
     // Only the authenticated entry owner calls this before installing any call.
     // Caller timeout never substitutes for the actual absence of admitted work.
-    pub(super) fn close_unadmitted_intent(
-        &mut self,
-        intent: &Arc<IntentLife>,
-    ) -> Result<(), Status> {
+    pub(super) fn close_unadmitted_intent(&mut self, intent: &Arc<IntentLife>) -> bool {
+        if !self
+            .intents
+            .get(&intent.id)
+            .is_some_and(|row| Weak::ptr_eq(row, &Arc::downgrade(intent)))
+        {
+            return false;
+        }
         if intent
             .entry_admitted
             .load(std::sync::atomic::Ordering::Acquire)
@@ -2346,7 +2486,7 @@ impl SaveGate {
                 .filter_map(Weak::upgrade)
                 .any(|source| Arc::ptr_eq(&source.intent, intent))
         {
-            return Ok(());
+            return false;
         }
         intent
             .closed_before_admission
@@ -2361,7 +2501,7 @@ impl SaveGate {
                 row.view.phase = NativeEditorPhase::Unsaved;
             }
         }
-        Ok(())
+        true
     }
     fn intent_unresolved(&self, intent: &Arc<IntentLife>) -> Result<bool, Status> {
         let mut unresolved_commit = false;

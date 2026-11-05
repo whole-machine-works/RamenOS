@@ -143,6 +143,38 @@ signature/TLS checks and error handling, with three retries and 30-second HTTP/
 HTTPS connection/data inactivity limits per acquisition. It does not impose a
 30-second total setup deadline or turn setup failure into acceptance.
 
+## Qualified predecessor and Desktop entry review findings
+
+Commit `0d449c9184bb885dbf528c91a749622ed4f69732` passed all five hosted lanes,
+Foundry and merge-gate on [run 42059009291](https://github.com/whole-machine-works/RamenOS/actions/runs/42059009291).
+Editor, host Docker, agent task and QEMU completed in attempt 1. Quality was
+cancelled during package acquisition in attempt 1 and completed in attempt 2
+on the same commit. The independent audit verified 57 canonical stages across
+69 actual command receipts, all three of that run's archived binaries, 244
+complete Runs and 244 parent joins. The audit is
+`out/p0-p3-review-hosted-0d449c9-k465vlgx/complete-qualification-audit.json`, SHA
+`9f650b991eb8b68f97a9140095b17cba06883ad3fd8dfe711ef0c5f1a37d2a01`.
+
+A subsequent code review found two failure paths outside the passing test scope.
+An app Ctrl+S rejected before Desktop admission by shared producer pressure
+could retain a Save chain with no original to reconcile. A startup Read could
+install a dispatcher and then fail to spawn its deadline supervisor. The
+status-only return left the app with no actual dispatcher identity, allowing
+it to report complete cleanup without the join.
+
+The correction lets Desktop close the exact unadmitted Allocate intent while
+holding its authority lock. The app releases the chain only on that definitive
+disposition. A partially started Read returns its actual installed dispatcher
+with its entry owner. The failed-open owner reports Complete only after proving
+the join. The D15 regression drives Ctrl+S through the process app with 64
+actual Desktop producers held, verifies no new Store work or stranded app
+chain, drains the producers, and completes a fresh Save on the same child.
+The failed-open regression injects the deadline supervisor failure after
+actual dispatcher installation, verifies Pending before release, joins the
+dispatcher, and then requires Complete and a fresh authorized Read. Both
+focused Linux tests pass. Qualify both tests along with the complete hosted
+lanes and the corrected candidate's own binary archive before A3 handoff.
+
 ## Implementation, review and delivery boundaries
 
 The reviewed complete P0/private handoff and actual strict Linux missing-API RED
@@ -185,11 +217,9 @@ its executable bytes. No local packet substitutes for hosted evidence.
 
 The complete hosted profile satisfies AGENTS.md's complete-CI-lanes OR serial
 preflight requirement. The additional failed local editor15 remains a material
-reproducibility caveat with unknown cause; neither diagnostic passes nor hosted
-success turn it into a passing local result. Final delivery readiness requires
-complete CI on the archival successor and direct verification of that run's own
-three binary files against its own gate record and Cargo receipts. Those fresh
-results belong to the successor, not this implementation commit.
+reproducibility caveat with unknown cause. Final delivery readiness requires
+complete CI on the Desktop entry correction and direct verification of that
+run's own three binary files against its gate record and Cargo receipts.
 
 A2 authorship, local execution, CI success and this record grant no A3 merge or
 self-approval authority. The reviewed implementation, qualification, archival

@@ -1109,7 +1109,7 @@ fn process_d20_lost_reply_original_only_recovery_no_replay() {
                                 app.chains.desktop.begin_save_allocate(
                                     app.chains.launch.desktop().bindings().artifact_origin(),
                                     &chain.intent,
-                                    &chain.allocation_request,
+                                    ok(chain.allocation_request()),
                                     3
                                 ),
                                 Err(Status::Denied | Status::Stale | Status::NotReady)
@@ -1336,7 +1336,7 @@ fn process_d22_child_death_after_permit_original_writer_survives() {
                         app.chains.desktop.begin_save_allocate(
                             app.chains.launch.desktop().bindings().artifact_origin(),
                             &chain.intent,
-                            &chain.allocation_request,
+                            ok(chain.allocation_request()),
                             2
                         ),
                         Err(Status::Denied | Status::Stale | Status::NotReady)
@@ -2045,6 +2045,7 @@ fn store_query_cap(owner: &mut OwnedApp) {
 }
 
 fn store_producer_cap(owner: &mut OwnedApp) {
+    owner.replace(NEW, 2);
     let f = owner.fixture.as_mut().unwrap();
     // This independently approved Read context has not been consumed into
     // process enrollment. Re-extracting A's ProcessOwned Read is denied.
@@ -2066,6 +2067,44 @@ fn store_producer_cap(owner: &mut OwnedApp) {
         Err(Status::Exhausted)
     ));
     assert_eq!(f.h.native_producer_counts().held, 64);
+    // Exercise the consumed process intent against the same live Desktop
+    // pressure. Every input still traverses genuine Focus and child ACKs.
+    let app = owner.app.as_mut().unwrap();
+    for (usage, phase) in [(224, 1), (22, 1), (22, 2), (224, 2)] {
+        f.drivers[0].send(&f.h, usage, phase, 2);
+    }
+    let last = f.drivers[0].next - 1;
+    let end = Instant::now() + Duration::from_millis(1000);
+    loop {
+        match step_composed(app, &f.drivers[0].s.compositor, 2) {
+            Err(NativeEditorError::Desktop(Status::Exhausted)) => break,
+            Ok(_) => {}
+            Err(error) => panic!("actual pressure Save admission failed: {error:?}"),
+        }
+        assert!(
+            Instant::now() < end,
+            "real process Save reaches Desktop pressure"
+        );
+        thread::yield_now();
+    }
+    assert_eq!(app.assertion_pending_originals(), 0);
+    assert_eq!(f.counts(101), (0, 0, 0));
+    assert_eq!(f.h.native_producer_counts().held, 64);
+    let view = ok(app.observe(2));
+    assert_eq!(view.bytes, NEW);
+    assert_eq!(view.phase, desktop::NativeEditorPhase::Unsaved);
+    // The app returned the entry refusal after adopting the capture frame.
+    // Compose that actual frame before continuing the remaining releases.
+    ok(f.h.compose_native_save(&f.drivers[0].s.compositor, 2));
+    while ok(f.h.observe_process_child(app.child.as_ref().unwrap())).acknowledged_sequence() != last
+    {
+        assert!(
+            Instant::now() < end,
+            "actual refused Save chord releases are acknowledged"
+        );
+        ok(step_composed(app, &f.drivers[0].s.compositor, 2));
+        thread::yield_now();
+    }
     for (_, pause) in held.iter() {
         ok(f.dc.release_native_save(pause));
     }
@@ -2303,6 +2342,79 @@ fn store_io_cap(owner: &mut OwnedApp) {
 }
 
 #[test]
+fn process_failed_open_joins_partial_read_entry() {
+    let mut retained = PanicOwners::new((fixture::fixture("app_partial_read_entry", 1), None));
+    let (f, slot) = &mut *retained;
+    let launch = f.launch(0, 101, 1);
+    let before = f.h.native_producer_counts();
+    assert_eq!(before.held, 0);
+    let fault = ok(f
+        .dc
+        .fail_next_native_save_deadline_spawn(launch.desktop().bindings().artifact_origin()));
+    let error = match ProcessArtifactEditor::open(
+        f.h.clone(),
+        f.host(),
+        launch,
+        ok(ChildBudget::checked(5000)),
+        1,
+    ) {
+        Ok(app) => {
+            *slot = Some(app);
+            panic!("partial Read entry must return the failed open owner");
+        }
+        Err(failure) => {
+            let (error, app) = failure.into_parts();
+            *slot = Some(app);
+            error
+        }
+    };
+    assert_eq!(error, NativeEditorError::Desktop(Status::Internal));
+    let failed = slot.as_mut().unwrap();
+    assert!(failed.child.is_none());
+    let stage = failed.chains.startup.as_ref().unwrap();
+    let Some(desktop::NativeSaveEntryRecovery::Partial(cleanup)) = &stage.entry_failure else {
+        panic!("failed open retains the actual installed Read dispatcher");
+    };
+    assert!(stage.entry.is_none() && stage.registered.is_none());
+    let [dispatcher] = cleanup.producer_ids() else {
+        panic!("only the real dispatcher installed before supervisor failure");
+    };
+    assert!(dispatcher.producer_id() > 0);
+    assert!(!ok(f.host().native_save_producer_joined(dispatcher)));
+    assert_eq!(f.h.native_producer_counts().held, before.held + 1);
+    assert_eq!(
+        ok(failed.cleanup_failed_open(2)),
+        ProcessOpenCleanup::Pending
+    );
+    assert_eq!(
+        f.h.native_producer_counts().joined_total,
+        before.joined_total
+    );
+    drop(fault);
+    loop {
+        match ok(failed.cleanup_failed_open(2)) {
+            ProcessOpenCleanup::Complete => break,
+            ProcessOpenCleanup::Pending => thread::yield_now(),
+            ProcessOpenCleanup::Quarantined => panic!("actual partial Read join did not complete"),
+        }
+    }
+    assert_eq!(failed.assertion_pending_originals(), 0);
+    let after = f.h.native_producer_counts();
+    assert_eq!(after.held, before.held);
+    assert_eq!(after.joined_total, before.joined_total + 1);
+    drop(slot.take());
+
+    let launch = f.launch(0, 101, 3);
+    let (reply, revision, body) = fixture::read(f, &launch, 1400, 3);
+    assert_eq!((revision, body.as_slice()), (1, OLD));
+    assert_eq!(f.counts(101), (0, 0, 0));
+    drop((reply, launch));
+    let (fixture, slot) = retained.0.take().unwrap();
+    assert!(slot.is_none());
+    fixture.finish();
+}
+
+#[test]
 fn process_d15_genuine_store_resource_boundaries() {
     for case in ["D15C08", "D15C11"] {
         for scenario in ok(ProcessAssertionScenario::for_case(case)) {
@@ -2333,14 +2445,23 @@ fn process_d15_genuine_store_resource_boundaries() {
             }
             if !matches!(scenario.id(), "D15InflightSaveTwo" | "D15StoreIoThree") {
                 assert_eq!(owner.fixture.as_ref().unwrap().counts(101), before);
-                if scenario.id() != "D15StorePendingSeventeen" {
+                if !matches!(
+                    scenario.id(),
+                    "D15StorePendingSeventeen" | "D15StoreProducerSixtyFive"
+                ) {
                     owner.reopen_child(OLD, 3);
                 }
                 // Pending17 kept this same genuine A process/approval valid
                 // while B filled the context cap. Its actual input and Save
                 // demonstrate progress without a 34th diagnostic grant row.
-                owner.replace(NEW, 3);
+                if scenario.id() != "D15StoreProducerSixtyFive" {
+                    owner.replace(NEW, 3);
+                }
                 owner.save(2, 3);
+                if scenario.id() == "D15StoreProducerSixtyFive" {
+                    assert_eq!(owner.fixture.as_ref().unwrap().counts(101), (1, 1, 1));
+                    assert_receipt(&owner, 1, NEW);
+                }
             }
             owner.finish(3);
         }

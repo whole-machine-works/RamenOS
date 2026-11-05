@@ -36,26 +36,19 @@ fixture success.
 
 ## Ready work front
 
-**Now:** finish receipt-readiness successor qualification and authorized repository delivery
-of the implemented and independently reviewed P0–P3 Linux editor workflow in
-[PR52](https://github.com/whole-machine-works/RamenOS/pull/52). Complete P0/private
-handoff review and strict Linux API RED closed the authoring dependencies. The
-parent carrier, separate child and genuine common Save/original-recovery wrapper
-are implemented. Fixed commit `f412206` passes all five complete hosted lanes,
-including all thirty runtime families and the unchanged consumers. Preserve the
-additional local D19 timeout as a separate failed result with unknown cause; it
-has not been converted to a passing local editor-lane claim. The
-[qualification record](docs/plans/editor-process-delivery-qualification-2026-11-05.md)
-owns source, review and failure evidence. The f412 archive omits the selected two
-child ELFs and parent library despite retaining their execution/hash receipts.
-The archive correction is independently byte-verified in failed attempt76f7ade,
-which exposed D17's one-poll asynchronous reply assumption. The reviewed correction
-waits on the same staged execution under its original deadline. Qualify the corrected
-successor in complete hosted CI and directly hash its own three uploaded files
-against its gate record before readiness. Complete independent
-review of that successor before the separately authorized A3 integration decision.
-Do not redispatch closed P0/P1/P2/P3
-handler preparation or complete the goal from counts, documentation or a draft PR.
+**Now:** qualify the Desktop entry ownership correction and complete authorized
+repository delivery of the P0–P3 Linux editor workflow in
+[PR52](https://github.com/whole-machine-works/RamenOS/pull/52). P0 and the private
+handoff released the completed parent carrier, child and Store integration work.
+The `0d449c9` predecessor passed complete hosted CI and independent archival
+review. Focused Linux tests pass for real Desktop capacity rejection followed by
+a fresh Save on the same child, and for failed Read cleanup waiting for the
+actual dispatcher join. Require complete hosted CI, independent evidence
+review and a direct check of that run's own archived binaries before handoff to
+A3. Preserve the earlier local D19 failure with its unknown cause.
+The [qualification record](docs/plans/editor-process-delivery-qualification-2026-11-05.md)
+owns source, review and failure evidence. Integration requires separate A3 approval
+and merge.
 
 The first product checkpoint remains one keyboard-first human editing task that
 works without a model. Preserve its in-process control, then cross a real process

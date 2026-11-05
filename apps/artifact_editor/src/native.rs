@@ -56,6 +56,7 @@ enum LookupCleanup {
 struct ReadStartup {
     request: Envelope,
     entry: Option<desktop::NativeSaveEntry>,
+    entry_failure: Option<desktop::NativeSaveEntryRecovery>,
     registered: Option<store::RegisteredNativeSave>,
     reply: Option<store::NativeSaveReply>,
     producers: Vec<desktop::ProducerId>,
@@ -80,7 +81,8 @@ enum Stage {
 }
 struct SaveChain {
     intent: desktop::NativeSaveIntent,
-    allocation_request: Envelope,
+    allocation_request: Option<Envelope>,
+    entry_failure: Option<desktop::NativeSaveEntryRecovery>,
     original: Option<store::OriginalNativeSave>,
     // The genuine Allocate original remains distinct after Commit admission.
     // A rejected Commit without a receipt cannot prove that allocation closed.
@@ -91,9 +93,16 @@ struct SaveChain {
     binding: Option<EditorSaveBindingV0>,
     stage: Stage,
     continuation_allowed: bool,
-    allocation_admitted: bool,
     lookup: Option<LookupFlight>,
     staged: Option<EntryStartup>,
+}
+
+impl SaveChain {
+    fn allocation_request(&self) -> Result<&Envelope, NativeEditorError> {
+        self.allocation_request
+            .as_ref()
+            .ok_or(NativeEditorError::InvalidReceipt)
+    }
 }
 
 struct EntryStartup {
@@ -209,6 +218,7 @@ impl SaveChains {
         self.startup = Some(ReadStartup {
             request,
             entry: None,
+            entry_failure: None,
             registered: None,
             reply: None,
             producers: Vec::new(),
@@ -217,11 +227,27 @@ impl SaveChains {
             execution: None,
             deadline: None,
         });
-        let entry = self.desktop.begin_save_read(
+        let entry = match self.desktop.begin_save_read_owned(
             self.launch.desktop().bindings().artifact_origin(),
             &request,
             now,
-        )?;
+        ) {
+            Ok(entry) => entry,
+            Err(failure) => {
+                let (status, recovery) = failure.into_parts();
+                let stage = self.startup.as_mut().unwrap();
+                stage.entry_failure = Some(recovery);
+                if retain_read
+                    && matches!(
+                        stage.entry_failure,
+                        Some(desktop::NativeSaveEntryRecovery::NoEntryInstalled)
+                    )
+                {
+                    self.startup.take();
+                }
+                return Err(status.into());
+            }
+        };
         self.startup.as_mut().unwrap().entry = Some(entry);
         let call = self
             .startup
@@ -324,6 +350,14 @@ impl SaveChains {
         let Some(stage) = self.startup.as_mut() else {
             return Ok(true);
         };
+        let partial_producers = match stage.entry_failure.as_ref() {
+            Some(desktop::NativeSaveEntryRecovery::Partial(cleanup)) => cleanup.producer_ids(),
+            Some(
+                desktop::NativeSaveEntryRecovery::Unresolved
+                | desktop::NativeSaveEntryRecovery::ClosedBeforeAdmission,
+            ) => return Ok(false),
+            None | Some(desktop::NativeSaveEntryRecovery::NoEntryInstalled) => &[],
+        };
         if stage.registered.is_some() && stage.execution.is_none() && stage.reply.is_none() {
             return Ok(false);
         }
@@ -341,6 +375,7 @@ impl SaveChains {
             .as_ref()
             .into_iter()
             .flat_map(|e| e.producer_ids().into_iter())
+            .chain(partial_producers)
             .chain(stage.producers.iter())
             .chain(
                 stage
@@ -390,19 +425,11 @@ impl SaveChains {
         intent: desktop::NativeSaveIntent,
         now: u64,
     ) -> Result<(), NativeEditorError> {
-        let view = intent.snapshot().view();
-        let request = canonical(
-            artifact::AllocateSaveId {
-                request_id: self.request_id()?,
-                session_id: view.actor.session_id,
-                session_generation: view.actor.session_generation,
-                expected_revision: view.expected_revision,
-            }
-            .encode(self.launch.endpoint().handle)?,
-        )?;
+        // Retain the consumed intent before any fallible request construction.
         let mut chain = SaveChain {
             intent,
-            allocation_request: request,
+            allocation_request: None,
+            entry_failure: None,
             original: None,
             allocation_original: None,
             recover_rejected_commit: false,
@@ -411,16 +438,16 @@ impl SaveChains {
             binding: None,
             stage: Stage::Allocate,
             continuation_allowed: true,
-            allocation_admitted: false,
             lookup: None,
             staged: None,
         };
         let start = self.start_allocate(&mut chain, now);
-        // Only a failure before Desktop entry admission can be definitive here.
-        // Once admitted, retain the original chain for owner reconciliation.
-        if !matches!(start, Err(NativeEditorError::Desktop(Status::Timeout)))
-            || chain.allocation_admitted
-        {
+        // Only Desktop's authenticated closure releases the consumed intent.
+        // The status alone cannot distinguish refusal from partial admission.
+        if !matches!(
+            chain.entry_failure,
+            Some(desktop::NativeSaveEntryRecovery::ClosedBeforeAdmission)
+        ) {
             self.pending.push(chain);
         }
         start
@@ -524,14 +551,31 @@ impl SaveChains {
         if self.registration_failure.is_some() {
             return Err(NativeEditorError::Exhausted);
         }
-        let entry = self.desktop.begin_save_allocate(
+        let view = chain.intent.snapshot().view();
+        let request = canonical(
+            artifact::AllocateSaveId {
+                request_id: self.request_id()?,
+                session_id: view.actor.session_id,
+                session_generation: view.actor.session_generation,
+                expected_revision: view.expected_revision,
+            }
+            .encode(self.launch.endpoint().handle)?,
+        )?;
+        chain.allocation_request = Some(request);
+        let entry = match self.desktop.begin_save_allocate_owned(
             self.launch.desktop().bindings().artifact_origin(),
             &chain.intent,
-            &chain.allocation_request,
+            &request,
             now,
-        )?;
-        chain.allocation_admitted = true;
-        self.start_flight(chain, entry, chain.allocation_request)
+        ) {
+            Ok(entry) => entry,
+            Err(failure) => {
+                let (status, recovery) = failure.into_parts();
+                chain.entry_failure = Some(recovery);
+                return Err(status.into());
+            }
+        };
+        self.start_flight(chain, entry, request)
     }
     fn start_flight(
         &mut self,
@@ -676,7 +720,7 @@ impl SaveChains {
         };
         let request = match prior {
             Stage::Allocate => {
-                artifact::AllocateSaveId::decode(&chain.allocation_request)?.request_id
+                artifact::AllocateSaveId::decode(chain.allocation_request()?)?.request_id
             }
             Stage::Commit => artifact::Commit::decode(&flight.request)?.request_id,
             _ => return Err(NativeEditorError::InvalidReceipt),
@@ -812,6 +856,9 @@ impl SaveChains {
                     Some(flight) => flight.registered.original(),
                     None => match &chain.original {
                         Some(value) => value,
+                        // A local construction error or partial entry can
+                        // retain real ownership without an authentic Store
+                        // original. Keep it pending for quarantine.
                         None => return Ok(true),
                     },
                 }
@@ -824,7 +871,7 @@ impl SaveChains {
                     session_id: snapshot.actor.session_id,
                     session_generation: snapshot.actor.session_generation,
                     original_allocate_request_id: artifact::AllocateSaveId::decode(
-                        &chain.allocation_request,
+                        chain.allocation_request()?,
                     )?
                     .request_id,
                 }

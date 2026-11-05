@@ -34,26 +34,21 @@ It exercises Save denial, newer-draft Unsaved, lost-reply recovery without mutat
 replay, issued-writer survival after child death/revoke, unrelated-session progress
 and a subsequent successful Save.
 
-Fixed implementation commit `f412206e914833b072b61872017bf0de51954c3b` passes all
-five complete hosted CI lanes and their Foundry/merge aggregates, including the
-thirty public families, private process/Save assertions, strict feature profiles,
-authentic Store closure controls and unchanged editor consumers. Independent
-runtime and fresh hosted preservation audits accept that candidate with the
-archival limitation below. That CI archive retains build/execution hashes but
-omits the two selected child ELFs and parent library. The delivery successor adds
-a separate three-file binary archive, independently byte-verified in the failed
-76f7ade attempt. That attempt exposed an asynchronous D17 reply-readiness driver
-race; its reviewed correction retains the same execution and original deadline.
-Complete CI and direct binary-hash checks on the corrected successor are required
-before PR readiness. The separate additional local editor-lane
-attempt
-failed in D19's second Save with an Unknown issued operation; its cause remains
-unresolved. Its failed receipt is retained, alongside the independently accepted
-eight local preservation stages. The
+The `0d449c9` predecessor passed all five complete hosted CI lanes and their
+Foundry and merge aggregates, including all thirty public families, strict
+profiles, genuine Store controls and the eight preservation stages. Independent
+review matched the three archived binaries to that run's own receipts. A further
+source review identified two Desktop entry ownership gaps that those checks did
+not cover: a Save rejected before admission could leave an unrecoverable app
+chain, and a failed startup Read could lose the identity of a dispatcher that
+was already installed. The correction carries Desktop's admission disposition
+to the app and retains the actual partial Read owner until joined. Focused
+Linux regressions cover both paths. Fresh hosted qualification of the corrected
+candidate is required before A3 review.
+The separate earlier local D19 failure remains unresolved. The
 [qualification record](docs/plans/editor-process-delivery-qualification-2026-11-05.md)
-keeps those results and source identities distinct. Authorized A3 integration is
-pending; these are Linux host results, with target, physical durability and
-containment limits unchanged.
+keeps these sources, failures and host evidence distinct from target and physical
+qualification.
 
 The four host reliability packets from external review are implemented and
 independently reviewed. Store requests retain their actual reply data through
