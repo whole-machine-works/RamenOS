@@ -9,10 +9,13 @@
   each growth. Add eight required Linux controls and strict Clippy without changing
   original eighteen assertions, Reader93 or the thirty process families.
 - Prepare source-built EFI/PDB and independently checked boot-image provenance.
-  Add a bounded probe supervisor and 25 controls to required CI, with actual
+  Add a bounded probe supervisor and 27 Linux controls to required CI, with actual
   process reap, complete log-tail handling and no capture/guest-access claims.
   Preserve the first default-IDE read-only attachment failure and name the revised
-  virtio read-only profile explicitly. C0/C1/C2 and guest runtime remain separate.
+  virtio read-only profile explicitly. Omit optional CRLF only after final QMP quit;
+  the actual final probe then reaches all five EOFs without stream errors or
+  supervisor signals. Empty firmware diagnostics still prevent prior-entry
+  admission; C0/C1/C2 and guest runtime remain separate.
 - Keep the 57 canonical CI stages. Update affected compilation registries for the
   new control target; preserve failed setup/CI attempts and exact source evidence.
   The candidate diagnostic campaign's D21 fresh-Save-after-reopen timeout remains

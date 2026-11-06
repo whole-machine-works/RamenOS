@@ -167,7 +167,10 @@ class QMP:
         record = {'id': identifier, 'request': request, 'started_ns': started,
                   'finished_ns': None, 'result': 'pending'}
         self.operations.append(record)
-        self.wire.send(json.dumps(request, separators=(',', ':')).encode() + b'\r\n', deadline)
+        # QMP v8.2.2 requires CRLF on server output; client objects complete at
+        # '}'. Avoid leaving optional whitespace unread during final quit.
+        suffix = b'' if command == 'quit' else b'\r\n'
+        self.wire.send(json.dumps(request, separators=(',', ':')).encode() + suffix, deadline)
         while True:
             response = self.receive(deadline)
             if 'event' in response:

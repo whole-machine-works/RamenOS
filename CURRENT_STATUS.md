@@ -198,14 +198,15 @@ existing CI tooling stage. It distinguishes malformed inputs from unavailable
 evidence and preserves explicit false capture, profile-completion and guest
 claims. The successor prepares a real source-built EFI with matching PDB identity,
 tool/firmware provenance and an independently checked read-only boot image. A
-separate owned-VM probe has 25 controls in the required tooling stage: bounded
+separate owned-VM probe has 27 Linux controls in the required tooling stage: bounded
 allowlisted observation, actual teardown/EOF, immutable inputs and explicit false
 capture claims. Its first run exposed the default IDE attachment's rejection of
 read-only media and exited before resume; that failure is retained. The revised
 profile explicitly names its read-only virtio-blk attachment and actually boots
-the guest through init checks and kernel idle. The final probe exits during its
-bounded quit grace without supervisor signals, but QMP still resets; other streams,
-including the empty debug stream, reached EOF. Global retention remains incomplete.
+the guest through init checks and kernel idle. A source-backed final-quit framing
+fix removes only optional trailing CRLF. The final probe exits during bounded quit
+grace without supervisor signals, and all five streams reach EOF without errors.
+The debug stream is empty, so prior-entry admission and C0/C1/C2 remain incomplete.
 Actual observations and remaining prerequisites are recorded in the
 [probe batch](docs/plans/frame-export-run0-probe-batch-2026-11-06.md).
 No actual C0/C1/C2 capture is claimed. The

@@ -47,12 +47,12 @@ The strict external entry-input admission helper and its 22 synthetic controls
 are implemented and independently reviewed. Use it to validate a prepared
 profile's input identities, PE entry/relocations and retained prior diagnostic;
 do not reimplement this subset. The owned probe now adds source-built EFI/PDB,
-tool/firmware/ESP provenance, independently checked image contents and 25 bounded
+tool/firmware/ESP provenance, independently checked image contents and 27 Linux
 supervision controls. Reuse the exact source and execution evidence in the
 [current batch](docs/plans/frame-export-run0-probe-batch-2026-11-06.md); do not
-redispatch another generic input validator. Review the concrete acknowledged-quit
-QMP reset/completeness contract (the final probe exited without supervisor signals)
-and prepare a separately reviewed pinned DEBUG-firmware profile: the
+redispatch another generic input validator or the corrected final-quit framing.
+The final probe has actual EOF on every stream and a no-signal graceful exit.
+Prepare a separately reviewed pinned DEBUG-firmware profile: the
 installed RELEASE build removes the loader diagnostic, and the retained debug
 stream reached EOF empty. Obtain a real profile-bound prior hint, then implement/review the bounded collector and
 actual C0/C1/C2 capture. Missing inputs remain `INCOMPLETE`; input admission or a

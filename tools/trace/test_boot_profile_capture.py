@@ -79,6 +79,67 @@ class ProbeTests(unittest.TestCase):
         self.assertEqual(before, len(wire.sent))
         self.assertIs(control.request('query-status')['running'], False)
 
+    def test_only_final_quit_omits_optional_client_whitespace(self):
+        commands = [('query-status', None), ('query-commands', None),
+                    ('query-cpus-fast', None), ('query-cpu-model-expansion',
+                     {'type': 'full', 'model': {'name': 'qemu64'}}),
+                    ('human-monitor-command', {'command-line': 'info mtree -f'}),
+                    ('human-monitor-command', {'command-line': 'info registers'}),
+                    ('cont', None), ('quit', None)]
+        replies = [{'return': {'running': False, 'status': 'prelaunch'} if i == 2 else {},
+                    'id': i} for i in range(2, 10)]
+        control, wire = self.controller(replies)
+        for name, arguments in commands:
+            control.request(name, arguments)
+        for payload, operation in zip(wire.sent[:-1], control.operations[:-1]):
+            self.assertEqual(json.dumps(operation['request'], separators=(',', ':')).encode()
+                             + b'\r\n', payload)
+        self.assertEqual(b'{"execute":"quit","id":9}', wire.sent[-1])
+
+    @unittest.skipUnless(sys.platform.startswith('linux'), 'Linux AF_UNIX unread-tail semantics')
+    def test_linux_unread_quit_tail_resets_but_complete_object_reaches_eof(self):
+        control, wire = self.controller([{'return': {}, 'id': 2}])
+        control.request('quit')
+        current_quit = wire.sent[-1]
+        old_quit = current_quit.rstrip(b'\r\n') + b'\r\n'
+        for payload, expect_reset in [(old_quit, True), (current_quit, False)]:
+            with self.subTest(suffix=payload[-3:]), tempfile.TemporaryDirectory() as directory:
+                pump = probe.Pump(Path(directory), probe.Budget(time.monotonic() + 3))
+                client, peer = probe.socket.socketpair(probe.socket.AF_UNIX, probe.socket.SOCK_STREAM)
+                try:
+                    client.settimeout(1)
+                    peer.settimeout(1)
+                    client.sendall(payload)
+                    received = bytearray()
+                    while True:
+                        self.assertLess(len(received), 128)
+                        byte = peer.recv(1)
+                        self.assertTrue(byte)
+                        received.extend(byte)
+                        try:
+                            request = json.loads(received)
+                            break
+                        except json.JSONDecodeError:
+                            continue
+                    self.assertEqual({'execute': 'quit', 'id': 2}, request)
+                    ack = {'return': {}, 'id': request['id']}
+                    peer.sendall(json.dumps(ack, separators=(',', ':')).encode() + b'\r\n')
+                    peer.close()  # Deliberately leave any suffix unread; no QEMU claim.
+                    pump.add('qmp', client)
+                    late = pump.drain(pump.budget.deadline)
+                    self.assertEqual([ack], [item['raw_qmp'] for item in late])
+                    if expect_reset:
+                        self.assertEqual([{'stream': 'qmp', 'operation': 'read',
+                                           'errno': errno.ECONNRESET}], pump.io_errors)
+                        self.assertEqual([], pump.eofs)
+                    else:
+                        self.assertEqual([], pump.io_errors)
+                        self.assertEqual({'qmp'}, {item['stream'] for item in pump.eofs})
+                finally:
+                    peer.close()
+                    pump.close()
+                    client.close()
+
     def test_pause_witness_required_single_resume(self):
         control, wire = self.controller([
             {'return': {'running': False, 'status': 'prelaunch'}, 'id': 2},

@@ -163,7 +163,7 @@ on macOS and Linux, including a real cooperative child exiting with no signals
 and a real stalled child requiring bounded TERM/KILL and reap. This avoids
 interrupting acknowledged shutdown; it does not infer a historical reset cause.
 
-The final authorized `probe-004` exited during that grace with no supervisor
+The fourth authorized run, `probe-004`, exited during that grace with no supervisor
 signals and was actually reaped with return 0 in 20.113 s. QMP read errno 104
 still occurred; the other four streams reached EOF, with the same genuine
 949-byte guest boot log and zero debug bytes. All nine requests were acknowledged,
@@ -174,9 +174,31 @@ or checkpoint. Digest:
 This establishes reset recurrence without supervisor signals in this run; no
 cause is assigned to an earlier run and no reset is converted to EOF.
 
-The remaining transport packet must review the concrete acknowledged-quit/QMP
-reset and completeness contract; repeating the same probe or adding another
-generic validator is not progress. The next firmware prerequisite is a separately reviewed diagnostic-capable
+Primary-source review then established a narrow protocol-conforming correction.
+QMP requires CRLF for server output, while its client parser can dispatch a complete
+JSON object at the closing brace. The monitor's one-byte read eligibility and
+input suspension allow final trailing whitespace to remain unread at shutdown;
+Linux AF_UNIX closure with unread receive data supplies a concrete reset mechanism.
+The observer omits optional CRLF only after final `quit`. Other request bytes,
+response framing, EOF requirements, caps, grace and deadlines are unchanged.
+The real Linux socket control observes an acknowledged old encoding followed by
+reset/no EOF, versus the same decoded request without the suffix followed by
+actual EOF/no error. All 27 controls execute and pass on Linux; macOS passes 26
+and explicitly skips the Linux-specific reset control.
+
+The final authorized `probe-005` independently verifies clean observed transport:
+all five streams reached actual EOF, no stream errors occurred, nine requests
+were acknowledged and 23 messages were retained. Its transmitted bytes differ
+from probe-004 by exactly the two terminal CRLF bytes. It exited during quit grace
+with no supervisor signals and was reaped with return 0 in 20.208403 s. Input pins
+stayed unchanged and the same 949-byte guest boot log was retained. Report digest:
+`27142565081b84910220680122370d797549945f5272500558f919153b42eb0a`.
+This supports the bounded source-backed correction without claiming a direct
+historical unread-tail trace or universal fix. Debug output remains empty, so
+status is `INCOMPLETE: diagnostic_missing_or_ambiguous`; all capture/precondition
+and broader claims remain false, with no candidate or C0/C1/C2.
+
+The next firmware prerequisite is a separately reviewed diagnostic-capable
 DEBUG profile built from pinned source. The installed RELEASE source removes
 the required load-address diagnostic, and probe-003's complete debug stream is
 empty. A fresh prior hint still must precede a separately reviewed collector and
@@ -184,6 +206,19 @@ actual C0/C1/C2. No firmware fallback, guessed entry, guest patch or guest-acces
 claim is supplied. Compact evidence is under `out/run0-capture/` in the worktree
 and copied into the primary batch evidence; complete inputs and all attempts
 remain under `bigman:/tmp/wmw-frame-capture-CmEzla0p/run0/`.
+
+## Initial hosted integration failure
+
+[Run 42172938354](https://github.com/whole-machine-works/RamenOS/actions/runs/42172938354)
+on initial combined head `8f7623c` passed quality, QEMU and host-Docker lanes but
+the editor lane stopped before the native task: its shell wrapper still held the
+old registry SHA after the reviewed source-path addition. That failure, logs and
+artifact digests are retained separately. The successor changes only the wrapper's
+registry literal to the already reviewed `9b0738d...` value. Its exact source
+collector command then succeeds and all 273 output rows match actual sources;
+independent review found no remaining old consumer. No assertion, deadline or
+runtime behavior is changed by this repair. Complete final-head CI remains the
+acceptance requirement.
 
 ## Matched frame measurements and retained failure
 
