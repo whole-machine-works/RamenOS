@@ -1241,6 +1241,21 @@ impl CaseRecorder {
     }
 }
 impl ScenarioRecorder {
+    pub fn failure_diagnostic(&mut self, epoch: u32, phase: &str, value: &Value) -> Result<()> {
+        require(
+            matches!(
+                phase,
+                "before_cleanup" | "after_child_join" | "after_original_cleanup"
+            ),
+            "closed failure diagnostic phase",
+        )?;
+        require(
+            value["acceptance"] == false,
+            "diagnostic is never acceptance",
+        )?;
+        let record = json!({"binding":self.binding(epoch), "diagnostic":value});
+        self.record(&format!("failure-{phase}.json"), &record)
+    }
     pub fn frame_export_progress(&self) -> (&[Value], &[Value]) {
         (&self.raw, &self.frames)
     }
@@ -2460,7 +2475,7 @@ impl ScenarioRecorder {
         self.final_records(cleanup, after, failed_reopen)
     }
 }
-fn root_identity(path: &Path) -> Result<Value> {
+pub fn root_identity(path: &Path) -> Result<Value> {
     let held = held_directory(path)?;
     let m = held
         .metadata()

@@ -193,7 +193,7 @@ def main():
         ('D01StrictNormalChild', 'host_editor_process_child_v0_dev', ['--bin', 'editor-process']),
         ('D01StrictAssertionChild', 'host_editor_process_child_assertions_v0_dev', ['--bin', 'editor-process']),
         ('D01StrictNormalParent', 'host_editor_process_v0_dev', ['--lib', '--test', 'process_task']),
-        ('D01StrictAssertionParent', FEATURE, ['--lib', '--test', 'process_task', '--test', 'native_task', '--test', 'shared_frame_controls']),
+        ('D01StrictAssertionParent', FEATURE, ['--lib', '--test', 'process_task', '--test', 'native_task', '--test', 'shared_frame_controls', '--test', 'd21_failure_controls']),
     ]:
         gate.run(identity, ['cargo', 'clippy', '--locked', '-p', 'artifact_editor',
                             '--no-default-features', '--features', feature, *targets, '--', '-D', 'warnings'])
@@ -249,6 +249,19 @@ def main():
     os.environ['RAMEN_SHARED_FRAME_CONTROL_ROOT'] = str(shared_root)
     shared = gate.run('SharedFrameReservationControls', ['cargo', 'test', '--locked', '-p', 'artifact_editor', '--features', FEATURE, '--test', 'shared_frame_controls', '--', '--test-threads=1', '--nocapture'])
     selected(shared, shared_names)
+    gate.save()
+    diagnostic_names = rust_cases(ROOT / 'apps/artifact_editor/tests/process_support/d21_failure_controls.rs')
+    stages.require(diagnostic_names == sorted([
+        'd21_diagnostic_success_has_no_failure_records',
+        'd21_diagnostic_io_failure_preserves_original_panic',
+        'd21_diagnostic_recording_refusal_preserves_original_panic',
+        'd21_diagnostic_cleanup_failure_preserves_original_panic',
+    ]), 'exact four D21 failure diagnostic controls')
+    diagnostic_root = output / 'd21-failure-controls'
+    diagnostic_root.mkdir(mode=0o700)
+    os.environ['RAMEN_D21_DIAGNOSTIC_CONTROL_ROOT'] = str(diagnostic_root)
+    diagnostics = gate.run('D21FailureDiagnosticControls', ['cargo', 'test', '--locked', '-p', 'artifact_editor', '--features', FEATURE, '--test', 'd21_failure_controls', 'd21_diagnostic_', '--', '--test-threads=1', '--nocapture'])
+    selected(diagnostics, diagnostic_names)
     gate.save()
     names = ['full_assertions::' + n for n in rust_cases(ROOT / 'apps/artifact_editor/tests/process_support/full_assertions.rs')]
     names += rust_cases(ROOT / 'apps/artifact_editor/tests/process_task.rs')

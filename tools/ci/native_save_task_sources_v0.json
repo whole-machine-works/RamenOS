@@ -25,6 +25,7 @@
     "apps/artifact_editor/tests/process_support/child_owner.rs",
     "apps/artifact_editor/tests/process_support/cleanup_owners.rs",
     "apps/artifact_editor/tests/process_support/cursor_cases.rs",
+    "apps/artifact_editor/tests/process_support/d21_failure_controls.rs",
     "apps/artifact_editor/tests/process_support/failure_control.rs",
     "apps/artifact_editor/tests/process_support/fixture.rs",
     "apps/artifact_editor/tests/process_support/full_assertions.rs",

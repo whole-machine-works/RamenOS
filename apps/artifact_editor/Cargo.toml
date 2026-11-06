@@ -90,6 +90,11 @@ name = "shared_frame_controls"
 path = "tests/process_support/shared_frame_controls.rs"
 required-features = ["host_editor_process_assertions_v0_dev"]
 
+[[test]]
+name = "d21_failure_controls"
+path = "tests/process_support/d21_failure_controls.rs"
+required-features = ["host_editor_process_assertions_v0_dev"]
+
 [[bin]]
 name = "editor-process"
 path = "src/bin/editor-process.rs"

@@ -1,5 +1,27 @@
 # CHANGELOG
 
+## 2026-11-06 — diagnostic firmware and reopened-Save failure evidence
+
+- Prepare pinned DEBUG OVMF firmware with source-backed loader diagnostics.
+  Two clean firmware builds produce identical CODE/VARS/full images on the same
+  host, with pinned BaseTools reused. One reviewed probe retains a unique loader
+  diagnostic in its complete raw stream, reaches all five EOFs and reaps QEMU
+  without signals or errors. The existing input helper admits the mapped prior
+  hint. Fresh C0/C1/C2 and guest-access claims remain false; no guest or observer
+  code changes are required.
+- Add failure-only D21 current-epoch observations, Store evidence and authentic
+  child/cleanup outcomes. Preserve the original panic across secondary errors,
+  retain unknown owners, and charge diagnostics to the existing cleanup budget.
+  Keep the original one-second assertion and normal ownership lifetime unchanged.
+  Four required Linux controls, unchanged D21 and strict Clippy pass; simulated
+  IO-fault, held-cleanup and recorder-refusal evidence remain distinct.
+- Preserve all existing gates and register the four controls in the required
+  editor stage. Update only affected source pins and compilation inventories.
+  PR #58's post-merge baseline passes all nine checks; the delivery PR must record
+  complete qualification of this joined successor before merge. Historical failures
+  remain unexplained. See the
+  [batch record](docs/plans/debug-firmware-d21-batch-2026-11-06.md).
+
 ## 2026-11-06 — shared frame export and owned RUN0 probe
 
 - Share one fresh evidence census and exclusive reservation across both genuine
