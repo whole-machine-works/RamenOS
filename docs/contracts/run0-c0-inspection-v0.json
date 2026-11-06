@@ -1,0 +1,322 @@
+{
+  "schema_version": 1,
+  "packet": "RUN0-reset-capability-and-C0-inspection",
+  "status": "RSP1_CAP1_INTERFACE_FROZEN_C0_IMPLEMENTATION_HELD",
+  "base_commit": "3a1c5210a9431e2bc9bbc7a787918841eb5aafb8",
+  "implementation_authorized": {"RSP1":true,"CAP1":true,"C0D":false,"C0C":false},
+  "resources_authorized": false,
+    "scope": "External QEMU observation only. Reset capability, fresh C0 and complete C0/C1/C2 capture are distinct outcomes. This contract supplies no actual capability evidence. Independent RSP1/CAP1 interface review and coordinator author assignments are accepted; gate-first controls and exact prelaunch review remain required. C0 implementation remains held.",
+  "precedence": {
+    "parent": "docs/plans/boot-profile-oracle-v0.md",
+    "preparation": "docs/plans/run0-relocated-entry-preparation-v0.md",
+    "rule": "This is a narrower executable preparation interface. It does not change the parent's three-checkpoint completion condition, guest authority, global bounds or seven false claims. Root owns schema registration and any change to those contracts. The companion plan explains unresolved execution prerequisites."
+  },
+  "slice_ownership": [
+    {
+      "slice": "RSP1",
+      "files": ["tools/trace/run0_rsp.py", "tools/trace/test_run0_rsp.py"],
+      "behavior": "Bounded ACK-mode RSP transport, fixed reset operations, source-bound target XML and reset-register decoder. No launcher or guest-memory API."
+    },
+    {
+      "slice": "CAP1",
+      "files": ["tools/trace/run0_rsp_capability.py", "tools/trace/test_run0_rsp_capability.py"],
+      "behavior": "One owned reset-paused VM capability observation using RSP1 and existing checked inputs/ESP/argv/cleanup. No resume, breakpoint or memory read."
+    },
+    {
+      "slice": "C0D",
+      "files": ["tools/trace/run0_c0_decode.py", "tools/trace/test_run0_c0_decode.py"],
+      "behavior": "Later pure strict C0 artifact, ordinary-RAM layout, paging and public EFI decoder. Implementation remains held for source-bitmask/schema review and actual CAP1 result."
+    },
+    {
+      "slice": "C0C",
+      "files": ["tools/trace/run0_c0_capture.py", "tools/trace/test_run0_c0_capture.py"],
+      "behavior": "Later owned fresh-C0 collector. Root must separately freeze its typed transport additions, source audit, assertions and exact launch plan."
+    }
+  ],
+  "inherited_helpers": {
+    "input_path": "tools/trace/boot_profile_inputs.py",
+    "input_sha256": "aa439e5091cd2bb6aab5879a2c8e8dab645f41ce85a2cee2115a8c3fe46fd501",
+    "probe_path": "tools/trace/boot_profile_capture.py",
+    "probe_sha256": "421b3dc853d14ae45ee7a2c28d2bcb792cb2904c4f7a32dee34845ced6288b6d",
+    "reuse": ["validate_profile", "check_esp", "build_argv", "private_regular", "create_run", "Budget", "reap_owned", "file_ref"],
+    "restriction": "Do not call run_probe: it resumes the guest. Existing QMP allowlist is not broadened. CAP1 owns a separate exact dispatcher and one multiplexed stream owner; no competing socket readers. Existing helper changes require a new reviewed proposal."
+  },
+  "status_semantics": {
+    "PASS": "Only the named subset's actual completed assertions; never full Oracle acceptance.",
+    "INCOMPLETE": "Absent input/evidence, unsupported actual capability or CPU/layout mode, deadline/storage/event exhaustion, uncertain response/cleanup, missing stop, differing repeated observations, or incomplete EOF. Preserve actual observations and uncertainty; stop before another observation dispatch.",
+    "DENY": "Present malformed artifact, pin mismatch, invalid grammar/type/length, contradictory identity, forbidden operation, unsafe address span or arithmetic overflow. A local pre-dispatch forbidden request does not poison an otherwise unambiguous transport; test the next allowed operation. A malformed/ambiguous remote reply terminalizes that session.",
+    "no_fallback": "No automatic retry, reconnect, alternate address/profile, scan, parser repair, packet padding, virtual-read fallback, injected call or invented response. Coordinator may authorize a separately reviewed fresh run."
+  },
+  "prelaunch": {
+    "profile": "Reuse the reviewed q35-8.2-tcg-qemu64-virtio-ro-esp-debugcon-v0 input profile and fixed argv builder. Bind new observer and source dossier separately; do not mutate retained prior inputs/profile. Bind exact source, EFI/PDB GUID+age, init, tool/package, DEBUG CODE, initial VARS, read-only independently checked ESP, argv and actual observer bytes.",
+    "source_correspondence": "Before execution require coordinator-reviewed official Ubuntu 1:8.2.2+ds-0ubuntu1.18 source/package dossier, signed publisher metadata, installed executable byte identity and relevant downstream source differences. Upstream tag alone is insufficient. Include gdbstub/system.c, gdbstub/gdbstub.c, target/i386/gdbstub.c, target/i386/cpu.c, target/i386/cpu-dump.c, system/memory.c, system/physmem.c, monitor/hmp-cmds-target.c, hw/intc/apic.c, hw/intc/apic_common.c, gdb-xml/i386-64bit.xml and scripts/feature_to_c.py.",
+    "paths": "Fresh private run directory mode0700; evidence/clone mode0600; executable input modes preserved. Reject symlink, hardlink, directory/FIFO/device inputs and path traversal. Fresh private AF_UNIX sockets only, no public listener. Original inputs are bounded and pinned before launch and checked again afterward; no post-return immutability claim.",
+    "authority": "One actual Popen child in its own process group, private initial-VARS clone, read-only CODE and ESP, no network/passthrough/hardware, fixed -S and one vCPU. No attach to pre-existing VM. Root serializes launch against other timed jobs and authorizes an exact fresh invocation.",
+    "teardown": "The original absolute deadline includes connect, responses, drain and cleanup. Reserve5s. QMP quit has no trailing whitespace; only an actual matching quit acknowledgement enables <=0.5s graceful wait clipped to the same deadline. Then existing owned TERM/KILL fallback and actual wait/reap. Never numeric-PID fallback. Retain actions, grace outcome, return code and per-stream actual EOF/errors separately. Drain unaffected streams under original bounds after a stream error; error is not EOF. Missing EOF/reap or report-finalization failure cannot PASS."
+  },
+  "budgets": {
+    "capability": {
+      "vm_seconds": 60,
+      "teardown_reserve_seconds": 5,
+      "response_seconds": 5,
+      "combined_qmp_objects_and_rsp_packets": 128,
+      "rsp_ack_bytes": 256,
+      "rsp_wire_packet_bytes": 8192,
+      "rsp_decoded_payload_bytes": 4096,
+      "rsp_total_wire_bytes": 262144,
+      "xml_chunk_bytes": 1024,
+      "xml_total_bytes": 16384,
+      "xml_annexes": 2,
+      "qmp_frame_bytes": 65536,
+      "hmp_each_reply_bytes": 65536,
+      "retained_bytes_including_vars_and_report": 33554432,
+      "reserved_report_bytes": 1048576,
+      "reserved_failure_details_bytes": 8192
+    },
+    "c0_subset": {
+      "stop_seconds": 60,
+      "vm_seconds": 90,
+      "teardown_reserve_seconds": 5,
+      "response_seconds": 5,
+      "paired_operations": 512,
+      "table_frames": 32,
+      "frame_bytes": 4096,
+      "physical_read_bytes": 2048,
+      "other_ram_bytes_including_rechecks": 65536,
+      "retained_bytes_including_vars_and_report": 33554432
+    },
+    "full_oracle_unchanged": "C0/C1/C2: <=60s each required stop, <=180s VM, <=5s response, <=1024 paired operations, <=256 distinct (checkpoint,physical frame) snapshots, <=64KiB other RAM, <=64KiB map and <=32MiB retained evidence. A stricter C0 subset bound does not increase any parent bound. Rechecks consume request/event/read/storage budgets and later stops consume fresh snapshots.",
+    "charging": "Check every cap before dispatch/allocation/retention. One monotonic absolute deadline, clipped per-operation deadlines; chunks, transient EAGAIN/EINTR and teardown cannot reset it. ACKs/raw bytes/XML count cumulatively. QMP async objects count too. Reserve a bounded INCOMPLETE terminal report even if detailed report exceeds its cap."
+  },
+  "rsp1_api": {
+    "wire": "RSPWire.read_chunk(deadline:float,max_bytes:int)->bytes; RSPWire.write_all(data:bytes,deadline:float)->None. CAP1 owns its fresh socket and multiplexed drain. Wire supplies bytes only; RSPClient is the sole packet/operation authority. Raw incoming/outgoing bytes are retained before interpretation, with direction and monotonic boundaries. Tests use real sockets and transport spies.",
+    "codec": [
+      "encode_packet(payload:bytes)->bytes",
+      "AckDecoder.feed(chunk:bytes)->list[Frame]",
+      "Frame is exactly ACK, NACK or PACKET(payload:bytes,raw:bytes); codec carries incomplete fragments across calls under cumulative limits"
+    ],
+    "client": [
+      "RSPClient(wire:RSPWire,budget:boot_profile_capture.Budget)",
+      "RSPClient.query_supported()->bytes",
+      "RSPClient.query_threads()->tuple[bytes,bytes,bytes]",
+      "RSPClient.select_thread()->tuple[bytes,bytes]",
+      "RSPClient.read_target_description()->TargetDescription",
+      "RSPClient.read_reset_registers()->RegisterSnapshot",
+      "RSPClient.query_qemu_supported()->bytes",
+      "RSPClient.query_physical_mode()->int",
+      "RSPClient.enable_physical_mode()->None"
+    ],
+    "decoder": [
+      "decode_target_description(target_xml:bytes,core_xml:bytes)->TargetDescription",
+      "decode_reset_registers(payload:bytes,target:TargetDescription)->RegisterSnapshot"
+    ],
+    "types": {
+      "TargetDescription": "Immutable {architecture:str,annexes:tuple[str,str],registers:tuple[RegisterSpec,...],packet_bytes:int,target_xml:bytes,core_xml:bytes}; RegisterSpec immutable {regnum:int,name:str,bits:int,offset_bytes:int}.",
+      "RegisterSnapshot": "Immutable {raw_payload:bytes,raw_bytes:bytes,values:tuple[int,...]}; exactly66 values in XML order. Observations only, not guest authority.",
+      "RSPOperation": "Immutable {name:str,request_packet:bytes,response_packet:bytes|null,response_payload:bytes|null,started_ns:int,finished_ns:int|null,result:ok|error|timeout|pending}. client.operations returns tuple snapshots in dispatch order, one row per packet including each XML chunk. Install pending before write. Closed names: supported,thread_first,thread_next,thread_current,thread_general,thread_continue,feature_target,feature_core,reset_registers,qemu_supported,physical_mode_query,physical_mode_enable. No row for local pre-dispatch denial. ACKs remain raw-wire evidence. Semantic failure marks the actual reply row error; partial write/response ambiguity remains pending or error/timeout as actually known, never successful.",
+      "errors": "Typed reason with DENY or INCOMPLETE and terminal flag. No arbitrary public request(payload) or remote-monitor command API. Shared existing Budget counts QMP objects and RSP packets; separate RSP wire/ACK/XML limits are stricter local caps, not additional lifetime allowances."
+    }
+  },
+  "rsp_wire": {
+    "mode": "ACK mode only; no QStartNoAckMode. One pending request. Check checksum of exact encoded payload before unescape; bounded fragments/coalesced frames accepted. Emit '+' only for valid response packet. Preserve request ACK separately from command result. Unexpected NACK, corrupt checksum, unsolicited packet, empty required capability, missing ACK/response, EOF or unsupported RLE terminalizes with retained raw evidence; no retransmission.",
+    "encoding": "ASCII fixed commands; hexadecimal numeric fields lowercase on transmit. Packet '$' payload '#' two hexadecimal checksum digits. Handle standard '}' XOR0x20 escape with decoded bound4096. Unescaped '*' RLE is unsupported and terminal; the pinned QEMU writer does not need it. Escaped literal '*' is data. No console 'O' or notification '%' normalization; unexpected payload types are unsupported and terminal. An ACK alone never means operation success.",
+    "sequence": [
+      {"request": "qSupported:qXfer:features:read+", "require": "Unique valid PacketSize>=0x1000 and qXfer:features:read+. Retain other advertised features; do not negotiate multiprocess merely because server advertises it."},
+      {"request": "qfThreadInfo", "require": "m01"},
+      {"request": "qsThreadInfo", "require": "l"},
+      {"request": "qC", "require": "QC01"},
+      {"request": "Hg01", "require": "OK"},
+      {"request": "Hc01", "require": "OK"},
+      {"request": "qXfer:features:read:target.xml:<offset>,400", "require": "m/l chunks, contiguous progress from0; final l; bounded target grammar below"},
+      {"request": "qXfer:features:read:i386-64bit.xml:<offset>,400", "require": "m/l chunks, contiguous progress from0; final l; exact pinned core description"},
+      {"request": "g", "require": "Only while verified reset-paused with no resume ever; exactly1216 hex characters decoding608 bytes"},
+      {"request": "qqemu.Supported", "require": "Unique semicolon tokens include PhyMemMode"},
+      {"request": "qqemu.PhyMemMode", "require": "0"},
+      {"request": "Qqemu.PhyMemMode:1", "require": "OK; debugger access mode only, no guest register/memory write"},
+      {"request": "qqemu.PhyMemMode", "require": "1; no memory read follows in CAP1"}
+    ],
+    "xml": "target.xml must equal the source-generated single-core target shape: XML1.0 declaration, inert DOCTYPE target SYSTEM gdb-target.dtd, target, architecture i386:x86-64, exactly xi:include href=i386-64bit.xml, close target. The generated xi prefix is unbound; use this exact byte grammar rather than repairing arbitrary XML namespaces. Core annex must byte-match the independently pinned downstream gdb-xml/i386-64bit.xml (upstreamSHA1b3acc75743d5cea86aadda52e75a9ecdcbaefa89050d1aae8c4d8f3dd880953 if correspondence confirms). Feature-to-C preserves source bytes. Accept only that known inert DOCTYPE; never fetch DTD, resolve entities, internal subsets, network/file includes or extra annexes. Record actual raw chunks and assembled bytes.",
+    "register_layout": {
+      "count": 66,
+      "bytes": 608,
+      "groups": [
+        {"first": 0, "bits": 64, "offset": 0, "names": ["rax","rbx","rcx","rdx","rsi","rdi","rbp","rsp","r8","r9","r10","r11","r12","r13","r14","r15","rip"]},
+        {"first": 17, "bits": 32, "offset": 136, "names": ["eflags","cs","ss","ds","es","fs","gs"]},
+        {"first": 24, "bits": 64, "offset": 164, "names": ["fs_base","gs_base","k_gs_base","cr0","cr2","cr3","cr4","cr8","efer"]},
+        {"first": 33, "bits": 80, "offset": 236, "names": ["st0","st1","st2","st3","st4","st5","st6","st7"]},
+        {"first": 41, "bits": 32, "offset": 316, "names": ["fctrl","fstat","ftag","fiseg","fioff","foseg","fooff","fop"]},
+        {"first": 49, "bits": 128, "offset": 348, "names": ["xmm0","xmm1","xmm2","xmm3","xmm4","xmm5","xmm6","xmm7","xmm8","xmm9","xmm10","xmm11","xmm12","xmm13","xmm14","xmm15"]},
+        {"first": 65, "bits": 32, "offset": 604, "names": ["mxcsr"]}
+      ],
+      "rule": "Sequential little-endian register values, no unavailable x bytes/padding/truncation/guessed offsets. TARGET_X86_64 GDB_FORCE_64 applies even at reset; the source's mode-dependent write helper is not used. This is an emulator register observation, not executed CPUID."
+    },
+    "forbidden_capability": ["?","p","P","G","m","M","X","Z0","Z1","z0","z1","c","C","s","S","vCont","D","k","R","qRcmd","QStartNoAckMode","multiprocess+","arbitrary annex","arbitrary QMP/HMP"]
+  },
+  "cap1_qmp": {
+    "allowlist": ["qmp_capabilities","query-commands","query-status","query-cpus-fast","qom-get","human-monitor-command","quit"],
+    "qom_get": "Only properties realized and phys-bits on the sole query-cpus-fast CPU0 qom-path; retain that reply. Path must be exact returned bounded ASCII path<=256 with no caller substitution. realized must be JSON true; phys-bits must be exact integer32..52, never bool/0/model-expansion default. Each getter's installed source and no-write behavior must be in the dossier.",
+    "hmp": ["info registers","info mtree -f"],
+    "rules": "Strict bounded newline JSON, duplicate keys/nonfinite numbers rejected, exact response ID and one pending request. HMP strings are constants, no arguments or caller-supplied text. query-status must remain running=false and status=prelaunch at initial/final reset brackets; unexpected RESUME/RESET/STOP or changed status terminalizes. query-cpus-fast must show exactly CPU0 on expected x86_64 target. Host thread-id is not RSPthread01. QMP events retained separately. HMP dump must identify CPU0/SMM=0 and agree with overlapping g values; parse CPL/CS64/GDTR/IDTR without guest-memory reads. HMP dump source uses CPU_DUMP_FPU, not CPU_DUMP_CODE.",
+    "physical_mode_scope": "Set/readback proves protocol state only. No m or guest resume; no RAM-access or breakpoint-hit claim. Reset APIC source initializes vapic_paddr=0, making the CR8 path in reset g narrowly defensible. Any guest execution before g invalidates this premise."
+  },
+  "memory_view": {
+    "source_rule": "QEMU physical RSP mode calls cpu_physical_memory_read on global address_space_memory and returns success even for MMIO/transaction errors. Transport OK is no RAM proof. Never use CPU virtual-debug translation or monitor mapping walkers as the check.",
+    "admission": "Parse complete bounded info mtree -f output. Select exactly one FlatView containing AS memory with root system; require AS cpu-memory-0/root system belongs to the same FlatView, actual SMM=0 and sole CPU0. Reject missing/ambiguous/unknown row grammar, wrapped endpoints, overlap, duplicate AS ownership or inconsistent flatview identity. Do not select cpu-smm-0 or I/O AS.",
+    "ram": "Only ordinary ram rows named pc.ram, with complete checked physical interval and source-derived backing offset. Require identity mapping: physical start equals backing offset; implicit missing offset is0 only. Reject ramd, nv-ram, rom, romd, I/O, holes, overlays, nonidentity aliases and overlapping backing ranges. Check entire requested span fits admitted ordinary-RAM interval(s) without gaps BEFORE dispatch; split only into independently checked spans. All table and object reads obey this rule.",
+    "freshness": "CAP1 layout is capability evidence only. Recapture at actual C0 and each later stop; no earlier layout authorizes reads. The QMP stopped witness is not device/DMA quiescence. Register/layout brackets plus repeated table/object reads may establish observed equality only, never an atomic all-RAM snapshot or future continuity."
+  },
+  "c0_candidate_and_stop": {
+    "candidate": "Use only prior actual unique full-stream diagnostic admitted by boot_profile_inputs and bound by explicit field mapping to this exact source/tool/firmware/EFI/symbol/init/ESP/initial-VARS profile. The prior admission-profile digest and probe-profile digest differ by schema and are not interchangeable. Never copy an address from this contract as authority. No hint =>INCOMPLETE; malformed/mismatched hint=>DENY.",
+    "later_transport": "C0C adds reviewed typed Z1,<candidate>,1 / z1,<same>,1 (OK required), c with no address/signal, whitelisted p reads and checked physical m. Exactly one active hardware execution breakpoint. No software breakpoints, ?, bulk g after resume, single stepping, register/memory writes or injected calls. This extension is not authorized in RSP1/CAP1.",
+    "actual_stop": "Bind the actual asynchronous T05thread:01; stop to the one original c, the sole successful Z1 and actual RSP p10 RIP==candidate. Require fresh QMP running=false/status=debug and HMP CPU0/SMM=0. QEMU lacks a hwbreak reason in this reply: T05 alone proves no breakpoint cause. '?' fabricates T05 and removes breakpoints, so it is forbidden. After acknowledged c, send no RSP bytes until the genuine asynchronous stop packet arrives: even an ordinary byte/duplicate ACK can pause this server. No keepalive/poll/interrupt byte. Unexpected stop/wrong RIP/missing stop stays incomplete or contradictory identity DENY; no scan, alternate breakpoint or retry.",
+    "registers": "Whitelisted p register numbers0..23,27..30,32 only (hex0..17,1b..1e,20). Each exact XML-sized reply independently decoded and cross-checked against source-audited HMP CPU0 fields where shared. Exclude CR8/p1f: it can synchronize VAPIC via an implicit physical read. Exclude FP/vector/MXCSR/base registers not needed for this packet. HMP supplies actual CPL, CS64, SMM, GDTR/IDTR and corroborating control registers. An individually audited source path is required for every allowed p/HMP field.",
+    "entry_identity": "Derive loaded base=actual RIP-pinned entryRVA using checked arithmetic and compare the prior candidate; bound full base+SizeOfImage. Read pinned header extents via fresh checked translation, compare explicit DOS/PE signatures, AMD64/PE32+/EFI subsystem, entryRVA, image/header bounds and section descriptors. PE OptionalHeader.ImageBase is source-authorized to be rewritten to loaded base by EDK II BasePeCoffLib; do not require whole-header byte equality or silently ignore arbitrary differences. Read exact32 entry bytes and compare the existing admission helper's precise supported relocation result. Unsupported/header-overlapping relocation or partial inspected overlap must be denied until explicitly implemented. No whole-image authenticity claim follows."
+  },
+  "paging_reader": {
+    "mode": "Require actual CPL0, CS64, CR0.PE+PG, CR4.PAE and EFER.LME+LMA; four-level48-bit canonical addresses. Require LA57, PCIDE, SMAP, SMEP, PKE, PKS and CET disabled for this narrow subset; record CR0.WP and EFER.NXE. Unsupported modes are INCOMPLETE before memory dispatch. Physical width is actual realized CPU property bound to this run, not configured phys-bits=0 or a default guess.",
+    "walk": "Iterative bounded partial walk at C0, root from actual CR3 after checked supported flags/width. Validate canonical address, entry-present, reserved/high bits, alignment, NX versus NXE and complete effective permissions at every level. Address masks/reserved-bit table must be independently reviewed against pinned Intel/AMD primary architecture text before C0D implementation; no guessed mask. No1GiB leaf unless the reviewed realized/configured feature evidence permits it; pinned qemu64 advertises pdpe1gb=false, so this profile refuses it. Support4KiB/2MiB leaves only initially.",
+    "frames": "Each discovered whole4096 frame must fit ordinary RAM before reading. Read as two <=2048-byte requests with exact response lengths. Keep raw frame bytes, parent entry offsets/values and derived translations. Reject cycle or incompatible-level reuse, overflow, out-of-width frame or partial backing. Consistent same-level sharing is allowed and deduplicated within the same checkpoint. No recursive whole-memory enumeration.",
+    "consistency": "After all necessary reads, reread each captured table frame and object extent, then repeat selected register and layout observations before any resume. Exact equality is required; inequality =>INCOMPLETE with both versions retained. This witnesses observed consistency only. Tables/objects must not be combined across stops. Read side effects remain excluded by ordinary-RAM admission, including implicit register paths.",
+    "classifications": "At C0 emulator ordinary-RAM backing is established; final EFI descriptor classification and full graph remain pending C2. Do not call C0 profile_preconditions_met or establish guest-safe access. The later adapter must revalidate its own state and access assumptions."
+  },
+  "public_efi": {
+    "provenance": "Independent UEFI2.10 public definitions plus pinned EDK II edc6681206c1a8791981a2f911d2fb8b3d2f5768 and Cargo.lock uefi-raw0.5.2 repr(C) declarations. These are public layouts, not private Rust struct transmutation. Archive exact reference bytes/sections in the execution dossier.",
+    "header": {"bytes":24,"signature_offset":0,"revision_offset":8,"size_offset":12,"crc32_offset":16,"reserved_offset":20},
+    "system_table": {"bytes":120,"alignment":8,"signature":"0x5453595320494249","revision":"0x00020046","boot_services_pointer_offset":96},
+    "boot_services": {"bytes":376,"alignment":8,"signature":"0x56524553544f4f42","revision":"0x00020046","get_memory_map_pointer_offset":56},
+    "validation": "Pinned EDK II revision is (2<<16)|70, hence0x00020046; do not substitute0x00020070. Validate signature, exact profile revision and HeaderSize, reserved0 and IEEE CRC32 over entire table with bytes16..19 zeroed. Reject null/noncanonical/misaligned pointers, truncated tables, overflow, wrong sizes/revision/CRC; no pointer chase before RAM/translation checks. Retain full120/376 bytes. ImageHandle RCX is observed opaque handle; do not dereference it. GetMemoryMap pointer must resolve to executable ordinary RAM and bounded code bytes, without claiming independent firmware function authenticity.",
+    "onward_abi": "C1 on actual GetMemoryMap: RCX=size*, RDX=map*, R8=key*, R9=stride*, fifth version* at [RSP+40]; saved returnRIP at [RSP]. UINTN/pointer64, version32. Bound caller return to actual pinned EFI code/instruction range. C2 must be that same call's saved return with EFI_SUCCESS(RAX=0), same output pointers and live map; no arbitrary subsequent successful firmware call may substitute."
+  },
+  "artifact_schema": {
+    "notation": "Every object has exactly its listed fields, unless a literal optional field is stated. No unknown fields. JSON strict UTF-8, no duplicate keys, nonfinite values or bool-as-integer; bounded reads before parse/hash. Types u64/u63 are exact nonnegative integers within width; all additions/multiplications checked. Null means unobserved, never default0. Raw referenced bytes are authoritative; derived values independently recomputed.",
+    "PrelaunchFailure": {
+      "schema_version": 1,
+      "kind": "run0_reset_prelaunch_failure_v0",
+      "status": "INCOMPLETE",
+      "reason": "identity_retention_failed",
+      "child_spawned": false
+    },
+    "BlobRef": {"path":"safe relative ASCII path<=240; no absolute/dotdot/symlink/hardlink","sha256":"64 lowercase hex","length":"u64 bounded by artifact role"},
+    "FalseClaims": {"guest_access_executed":false,"post_exit_verified":false,"interrupt_masking_verified":false,"retention_complete":false,"allocator_installed":false,"target_user_execution":false,"physical_hardware":false,"capture_complete":false,"profile_preconditions_met":false},
+    "Operation": {"seq":"contiguous1..N","protocol":"qmp|rsp|supervisor","operation":"closed typed operation name from this packet","request_ref":"BlobRef|null for actual unsolicited observation","response_ref":"BlobRef|null","started_ns":"u63","finished_ns":"u63|null if pending","result":"ok|error|timeout|pending"},
+    "Termination": {"status":"PASS|INCOMPLETE|DENY","reason":"ASCII[a-z0-9_],1..96","reaped":"bool","returncode":"signed32|null","actions":"array<=8 of bounded actual cleanup action strings","grace":"not_attempted|exited|timeout|error","streams":"array of StreamEnd"},
+    "StreamEnd": {"name":"qmp|rsp|serial|debug|stdout|stderr","eof":"bool actual read0 only","error":"null or {operation:read|write|close,errno:exact integer1..4095}"},
+    "CapabilityReport": {
+      "schema_version":1,
+      "kind":"run0_reset_capability_v0",
+      "run_id":"[a-z0-9-]{1,64}",
+      "profile_ref":"BlobRef",
+      "observer_ref":"BlobRef",
+      "source_dossier_ref":"BlobRef",
+      "argv_ref":"BlobRef",
+      "raw_refs":"array<=16 BlobRef including all socket/stdout/stderr streams",
+      "observations":"CapabilityObservations",
+      "operations":"array of Operation bounded by shared message cap",
+      "termination":"Termination",
+      "claims":"FalseClaims",
+      "fresh_c0_verified":false
+    },
+    "CapabilityObservations": {
+      "qmp_cpu_ref":"BlobRef|null",
+      "realized":"bool|null",
+      "phys_bits":"integer32..52|null",
+      "rsp_thread":"01|null",
+      "target_xml_ref":"BlobRef|null",
+      "core_xml_ref":"BlobRef|null",
+      "reset_registers_ref":"BlobRef|null",
+      "hmp_registers_ref":"BlobRef|null",
+      "layout_ref":"BlobRef|null",
+      "initial_status_ref":"BlobRef|null",
+      "final_status_ref":"BlobRef|null",
+      "physical_mode":"integer0..1|null",
+      "resumed":false,
+      "guest_memory_read_bytes":0,
+      "hardware_breakpoint_tested":false
+    },
+    "C0Report": {
+      "schema_version":1,
+      "kind":"run0_c0_inspection_subset_v0",
+      "run_id":"[a-z0-9-]{1,64}",
+      "profile_ref":"BlobRef",
+      "observer_ref":"BlobRef",
+      "source_dossier_ref":"BlobRef",
+      "capability_ref":"BlobRef of same-profile capability; capability is not a fresh snapshot",
+      "prior_admission_ref":"BlobRef",
+      "profile_mapping_ref":"BlobRef",
+      "argv_ref":"BlobRef",
+      "raw_refs":"array<=16 BlobRef",
+      "operations":"array<=512 Operation",
+      "checkpoint":"C0Snapshot|null",
+      "termination":"Termination",
+      "claims":"FalseClaims",
+      "fresh_c0_verified":"bool; true only after all C0 assertions and complete owned teardown",
+      "remaining_checkpoints":["C1","C2"]
+    },
+    "C0Snapshot": {
+      "id":"C0",
+      "phase":"firmware_active",
+      "rip":"u64",
+      "loaded_base":"u64",
+      "image_handle":"u64 opaque",
+      "system_table":"u64",
+      "boot_services":"u64",
+      "get_memory_map":"u64",
+      "stop_ref":"BlobRef of actual async reply",
+      "resume_seq":"u64 original operation seq",
+      "breakpoint_seq":"u64 original successful Z1 operation seq",
+      "registers_before_ref":"BlobRef",
+      "registers_after_ref":"BlobRef",
+      "hmp_before_ref":"BlobRef",
+      "hmp_after_ref":"BlobRef",
+      "layout_before_ref":"BlobRef",
+      "layout_after_ref":"BlobRef",
+      "tables":"array<=32 TableFrame",
+      "objects":"array<=32 ObjectRead",
+      "translations":"array<=128 Translation",
+      "observed_consistent":"bool",
+      "atomic_snapshot":false,
+      "device_quiescence_verified":false,
+      "call_ref":null
+    },
+    "TableFrame": {"physical":"u64 4096aligned","level":"integer1..4","first_ref":"BlobRef length4096","recheck_ref":"BlobRef length4096","read_sequences":"array of exactly4 u64 operation seqs"},
+    "ObjectRead": {"role":"pe_header|entry_code|system_table|boot_services|get_memory_map_code","virtual":"u64","length":"integer1..65536","first_ref":"BlobRef exactlength","recheck_ref":"BlobRef exactlength","read_sequences":"nonempty bounded array u64 operation seqs"},
+    "Translation": {"virtual":"u64","physical":"u64","length":"integer1..2048","path":"array1..4 of {frame:u64,index:integer0..511,entry:u64}","writable":"bool","executable":"bool","user":"bool","page_bytes":"4096|2097152"},
+    "limits": "Input report<=1MiB; raw/log total shared32MiB. Referenced operation payload1..65536 bytes. Hashes of finalized reports live in an external manifest, never self-reference. Termination still written on limit/error with observations null or explicitly partial; seven claims plus two full-profile flags remain exactlyfalse on every path. C0 subset is not cpu_boot_inspection_trace_v0 and must not be registered as a complete Oracle artifact."
+  },
+  "assertions": [
+    {"id":"RSP01","slice":"RSP1","assert":"Real socket fragmented/coalesced ACK and packet traffic decodes with exact checksum/escape/raw identity; ACK alone never yields result."},
+    {"id":"RSP02","slice":"RSP1","assert":"Checksum/NACK/malformed escape/RLE/oversize/unexpected packet/EOF terminate without retransmission; independent byte, expansion, ACK and cumulative caps hold before growth."},
+    {"id":"RSP03","slice":"RSP1","assert":"Exact qSupported/no-multiprocess and m01/l/QC01/Hg01/Hc01 sequence; duplicate/ambiguous feature or thread mismatch rejects, absent support incomplete."},
+    {"id":"RSP04","slice":"RSP1","assert":"Only two exact annexes; offset chunks progress without deadline/cap reset. Reject extra include, entity/DTD variation, namespace repair, path traversal, overlap, missing l and changed source bytes."},
+    {"id":"RSP05","slice":"RSP1","assert":"All66 register offsets and608bytes match independent source inventory; exact little-endian RIP/control scalars; short/long/nonhex/unavailable bytes denied with no padding."},
+    {"id":"RSP06","slice":"RSP1","assert":"Physical mode0->OK->1 retained without m; unsupported/empty/lying set response never permits further observation."},
+    {"id":"RSP07","slice":"RSP1","assert":"Every forbidden capability operation has zero wire dispatch. A pre-dispatch denial is followed by a successful allowed query on the same unambiguous real transport."},
+    {"id":"RSP08","slice":"RSP1","assert":"Delayed fragment/EAGAIN/EINTR/peer stall honor one absolute deadline, no replay or reconnect; subsequent independent client remains usable."},
+    {"id":"CAP01","slice":"CAP1","assert":"Actual input/observer/source pin or ESP validation failure occurs before Popen; missing evidence incomplete; no modification of prior input/evidence or shared VARS."},
+    {"id":"CAP02","slice":"CAP1","assert":"Only owned fresh private socket/child and fixed argv. Reject linked/special files and unsafe directories; exact initial/final original pins and clone hashes retained."},
+    {"id":"CAP03","slice":"CAP1","assert":"Sole CPU0 returned qom-path controls only realized/phys-bits getters. Reject bool-as-width,0,out-of-range,foreign path,multiCPU and synthetic configured width."},
+    {"id":"CAP04","slice":"CAP1","assert":"Strict ID-bound QMP/HMP allowlist and no RESUME. Reset initial/final prelaunch status and actual HMP0/SMM0/g common fields agree; forbidden commands have no dispatch."},
+    {"id":"CAP05","slice":"CAP1","assert":"Unique memory/cpu-memory-0 flatview binding and identity pc.ram intervals; synthetic holes/overlays/wrap/ramd/romd/alias/multipleASs rejected without any m."},
+    {"id":"CAP06","slice":"CAP1","assert":"Real cooperating/stalled child cleanup and late-tail/error controls preserve bounded grace/fallback/reap and actual per-stream EOF; no signal or EOF invention."},
+    {"id":"CAP07","slice":"CAP1","assert":"Shared message/raw/XML/VARS/report/storage and deadline limits stop before next dispatch and leave bounded terminal report; output errors remain incomplete."},
+    {"id":"CAP08","slice":"CAP1","assert":"Every success/failure report strictly validates all exact fields and false claims, resumed=false,memoryread0,breakpointtested=false,freshC0=false; duplicate keys/unknowns/nonfinite/bool integers denied."},
+    {"id":"CAP09","slice":"CAP1","assert":"After rejection or cancellation of an owned session, a fresh unrelated owned fixture succeeds without stale sockets, packet state, budgets or VARS; unchanged existing27 probe controls remain separate evidence."},
+    {"id":"C001","slice":"C0D/C0C","assert":"Prior hint alone cannot create checkpoint; wrong profile/diagnostic/entry/bytes fails. Actual same-run Z1+c+asyncstop+thread+RIP+QMPdebug/HMP witness required; '?' cannot supply it."},
+    {"id":"C002","slice":"C0D/C0C","assert":"No post-resume bulk g or CR8 read, software breakpoint, injected call, write, stepping or virtual m; each individual p/HMP path source-audited."},
+    {"id":"C003","slice":"C0D/C0C","assert":"Entire physical span checked against fresh exact AS ordinary-RAM view before m; boundary crossing, MMIO, ROM, alias, width overflow and unsafe table roots deny before dispatch."},
+    {"id":"C004","slice":"C0D/C0C","assert":"Independent4KiB/2MiB fixtures cover all walk levels, canonical edges, permissions,NX,CR3 flags/reserved bits/cycles/shared frames/depth reuse; unsupported1GiB/CPU mode incomplete without guessed masks."},
+    {"id":"C005","slice":"C0D/C0C","assert":"Actual loaded header identity allows only documented ImageBase rewrite/implemented relocations, matches exact32 entry bytes and full image bounds; malformed/fake PE and unsupported overlap denied."},
+    {"id":"C006","slice":"C0D/C0C","assert":"Independent public header/SystemTable/BootServices offsets, sizes, revision, CRC and GMM pointer tested; bad CRC/NULL/truncation/misalignment/overflow/nonexecutability denied before further chase."},
+    {"id":"C007","slice":"C0D/C0C","assert":"Changed register/layout/table/object recheck remains incomplete, never atomic/device-quiescent claim; snapshots across stops cannot merge; every reread charged."},
+    {"id":"C008","slice":"C0D/C0C","assert":"Exact subset report decodes only retained raw sources; missing/forged/tampered/mislinked refs, unknown fields and counter/length overflows reject. No C1/C2 or full profile acceptance from C0."},
+    {"id":"C009","slice":"C0D/C0C","assert":"Breakpoint removal uncertainty, stop/read timeout, output cap, child failure and missing EOF retain incomplete evidence and owned reap; fresh unrelated fixture works afterward."}
+  ],
+  "execution_prerequisites": [
+    "Independent interface/assertion freeze and coordinator assignment before implementation.",
+    "Reviewed downstream source/package correspondence and exact fresh profile/argv/observer pins before CAP1 launch.",
+    "Actual CAP1 observed reset register/XML, realized physical width and effective memory view; unsupported output requires replan, not liberal parsing.",
+    "Before C0D: pinned primary architecture reserved-bit/mode rules, independently reviewed layout/page-decoder assertions and exact artifact/API validation.",
+    "Before C0C: per-register implicit-read audit, actual breakpoint/stop capability review, independently accepted decoder/collector and root-authorized fresh run.",
+    "After C0: same-call C1/C2 typed additions and assertions, complete current C2 graph plus raw-map classifications under unchanged parent bounds. Only then assess full external profile prerequisites; guest access and production retention remain separate."
+  ]
+}

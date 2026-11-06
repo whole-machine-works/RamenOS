@@ -474,6 +474,11 @@ foundry-boot-profile-inputs-run0-0:
 foundry-boot-profile-probe-run0-0:
 	python3 tools/trace/test_boot_profile_capture.py
 
+# Reset capability controls. The owned VM requires a reviewed exact plan.
+foundry-run0-reset-capability:
+	python3 tools/trace/test_run0_rsp.py
+	python3 tools/trace/test_run0_rsp_capability.py
+
 # Inspection is read-only; retirement requires an exact completed entry and context.
 compiler-cache-inspect scope="acceptance":
 	python3 tools/ci/compiler_cache_control.py inspect --scope {{quote(scope)}}

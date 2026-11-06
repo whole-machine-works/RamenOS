@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## 2026-11-06 — RUN0 reset debugger capability
+
+- Add bounded, allowlisted RSP and an owned reset capability collector. Twenty-one
+  transport controls and fifteen launcher controls cover framing, exact identity,
+  refusal, cleanup and cancellation. The actual reset probe verified debugger
+  negotiation, CPU width, register payload, memory view and physical-mode
+  readback with six EOFs and a clean owned exit.
+- Keep all existing Foundry stages and add the two control suites to the quality
+  tooling stage. Record the remaining nested-translation prerequisite for fresh
+  C0 and retain the bounded IPC diagnostic and nonreproduction results.
+
 ## 2026-11-06 — diagnostic firmware and reopened-Save failure evidence
 
 - Prepare pinned DEBUG OVMF firmware with source-backed loader diagnostics.

@@ -237,6 +237,19 @@ The prior address is a candidate for a fresh stopped entry; it does not establis
 address stability, C0/C1/C2 or guest access. The
 [entry preparation](docs/plans/run0-relocated-entry-preparation-v0.md) owns the
 remaining capture and guest-access dependencies.
+
+The [reset capability packet](docs/plans/run0-c0-inspection-v0.md) adds a bounded
+debugger transport and an independently reviewed reset-only launch. The pinned
+QEMU reported one realized CPU with 40 physical address bits, an exact 608-byte
+register payload, the matching memory view and successful physical-mode
+readback. All six streams reached EOF and the owned VM exited and was reaped.
+Fresh C0 still needs a source-bound exclusion or actual witness for hidden
+nested translation before it can inspect ordinary RAM.
+
+The IPC diagnostic reproduced two zero-byte timeouts before a later valid
+reply on the same VM. The separate single-client run succeeded immediately.
+The retained CPU snapshots follow successful replies, so the cause of the
+earlier timeouts remains open.
 Actual relocated-entry capture, complete retained-range collection, final firmware
 exit map, allocator installation and target application execution remain pending.
 Native USB/HID input and device-backed storage also remain pending. Independent
