@@ -1,6 +1,6 @@
 # Next Tasks
 
-**Last Updated:** 2026-11-05
+**Last Updated:** 2026-11-06
 **Status:** Authoritative ready work and acceptance dependencies
 
 [Current Status](CURRENT_STATUS.md) records landed behavior; [Roadmap](ROADMAP.md)
@@ -46,11 +46,17 @@ physical setup does not block ready host/QEMU preparation.
 The strict external entry-input admission helper and its 22 synthetic controls
 are implemented and independently reviewed. Use it to validate a prepared
 profile's input identities, PE entry/relocations and retained prior diagnostic;
-do not reimplement this subset. Next supply the actual source/tool/firmware/ESP
-provenance, independently checked profile semantics and prior address diagnostic,
-then implement/review the bounded collector and actual C0/C1/C2 capture. Missing
-inputs remain `INCOMPLETE`; input admission does not release guest-access or
-ownership adapter work by itself.
+do not reimplement this subset. The owned probe now adds source-built EFI/PDB,
+tool/firmware/ESP provenance, independently checked image contents and 27 Linux
+supervision controls. Reuse the exact source and execution evidence in the
+[current batch](docs/plans/frame-export-run0-probe-batch-2026-11-06.md); do not
+redispatch another generic input validator or the corrected final-quit framing.
+The final probe has actual EOF on every stream and a no-signal graceful exit.
+Prepare a separately reviewed pinned DEBUG-firmware profile: the
+installed RELEASE build removes the loader diagnostic, and the retained debug
+stream reached EOF empty. Obtain a real profile-bound prior hint, then implement/review the bounded collector and
+actual C0/C1/C2 capture. Missing inputs remain `INCOMPLETE`; input admission or a
+probe does not release guest-access or ownership adapter work by itself.
 
 P0–P3 is merged through
 [PR52](https://github.com/whole-machine-works/RamenOS/pull/52) as
@@ -66,15 +72,25 @@ Linux host scope and the source-bound
 Keep a separate reliability packet for the retained capacity, D19 and D09
 failures, whose historical causes remain unknown. Save receipt-failure diagnostics
 and D09 parent-phase timings are implemented; use them before adding another
-instrumentation layer. The full-corpus D09 comparison records substantially more
-time in repeated directory scans. Review a joint reservation/census for both
-complete frame exports before implementing that optimization; preserve every
-path check, cap and independent Host assertion. Retain the original permit/Store
+instrumentation layer. Joint reservation/census for both complete frame exports
+is now implemented with eight separate denial/lifecycle controls; preserve its
+sticky failure ownership, all path checks/caps and independent Host assertions.
+Use the matched measurements in the current batch without claiming a historical
+timeout cause. Retain the original permit/Store
 publication/reply timeline for Save failures before proposing a fix. Preserve
 original deadlines, owners, every frame and exact assertions;
 retain every failed attempt. A later PASS alone does not close this packet or
 establish target durability. This investigation can proceed alongside disjoint
 RUN0 preparation.
+
+The matched shared-export campaign also exposed a new D21 fresh-Save deadline
+failure after reopen. Its cause remains unresolved; the old no-permit fence
+does not prove the new epoch's terminal state. The next bounded diagnostic
+packet should retain failure-only current-epoch Store/IO/permit/reply and
+pending-original state, root retention and actual child/join proof, preserving the original
+panic and one-second deadline. Do not infer a runtime fix or classify it as an
+unrelated flake from a later PASS. See the current batch's retained source-bound
+D21 audit; this work can proceed alongside RUN0's next prerequisite.
 
 The first product checkpoint remains one keyboard-first human editing task that
 works without a model. Preserve its in-process and merged Linux process controls,

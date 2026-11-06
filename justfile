@@ -470,6 +470,10 @@ foundry-boot-frame-pool-run0-0:
 foundry-boot-profile-inputs-run0-0:
 	python3 tools/trace/test_boot_profile_inputs.py
 
+# Bounded external probe controls; the owned VM probe requires reviewed inputs.
+foundry-boot-profile-probe-run0-0:
+	python3 tools/trace/test_boot_profile_capture.py
+
 # Inspection is read-only; retirement requires an exact completed entry and context.
 compiler-cache-inspect scope="acceptance":
 	python3 tools/ci/compiler_cache_control.py inspect --scope {{quote(scope)}}

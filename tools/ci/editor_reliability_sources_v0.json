@@ -35,6 +35,7 @@
     "apps/artifact_editor/tests/process_support/p0_obligations.json",
     "apps/artifact_editor/tests/process_support/reopen_drop_control.rs",
     "apps/artifact_editor/tests/process_support/setup_control.rs",
+    "apps/artifact_editor/tests/process_support/shared_frame_controls.rs",
     "apps/artifact_editor/tests/process_task.rs",
     "artifact_store_core/Cargo.toml",
     "artifact_store_core/src/lib.rs",
@@ -281,9 +282,9 @@
   "assertion_sources": {
     "apps/artifact_editor/src/native_tests.rs": "8a81a4644390147db8d020aaf097946105a45955290a9bd7b9451269497ad798",
     "apps/artifact_editor/tests/desktop_reliability.rs": "86e9a6d2d955101e13cc874d9e6ea3939e1c3bff5eb236b1ea1ab4730f924e33",
-    "apps/artifact_editor/tests/native_task_support/mod.rs": "3f0590c99d5bfa1d3955aaa2eaa057fead14e7cbe2b8151e9e07c70144ce8e18",
+    "apps/artifact_editor/tests/native_task_support/mod.rs": "ba5f7cc2cc98cfa96167a200a5204a8af24c9ec2b06de74e36cac246716f0f8c",
     "apps/artifact_editor/tests/native_task_support/protected_goldens.rs": "f99add25f2aa9b4bf37074fb7a2ae3fca5f78475775c7fe469f649d9dd438d6c",
-    "apps/artifact_editor/tests/native_task_support/recording.rs": "99d9dde156f00711c334326c12ad8f4cae33a7eaf3f1947cb0e25b97bd886970",
+    "apps/artifact_editor/tests/native_task_support/recording.rs": "1aafbf159631da672c3baa314565f22c0a3b71ea76bcee888690ea06171c5d36",
     "services/desktop/tests/support/editor_host_assertions.rs": "6d0d0101dc8f65806b22a28fb98baa0d0c00003c9d334b23b41ecd32cfaa80df",
     "services/store_service/tests/editor_reliability.rs": "b17b18af1a90dd71530ed0cf9604a9afb5c142f99646c7c7d26c0bd568a929c6",
     "services/store_service/tests/support/editor_store.rs": "0e775ab56dba85c0ead5f5cf03c49d271666becab5bd8d1e08d980d39b510818"

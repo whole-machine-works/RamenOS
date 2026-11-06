@@ -107,13 +107,26 @@ impl ReferenceFixture {
             assert_eq!(actual.first_visible_line, expected.first_visible_line);
             assert_eq!(actual.text_generation, expected.text_generation);
             assert_eq!(actual.view_version, expected.view_version);
+            // Admission and the one real census are included in the first
+            // composition span. Complete its export before composing the peer.
             let process_timing = phases.start(1);
-            let process_frame = ok(process_fixture.compose(0, 2));
+            let mut process_recorder = process_fixture.recording.borrow_mut();
+            let mut reference_recorder = reference_fixture.recording.borrow_mut();
+            let mut shared = ok(recording::SharedFrameReservation::prepare(
+                process_recorder.as_mut().unwrap(),
+                reference_recorder.as_mut().unwrap(),
+            ));
+            let (process_frame, process_chrome) = ok(process_fixture.capture_composed_frame(0, 2));
+            ok(shared.record_next(&process_frame, &process_chrome));
             if let Some(timer) = process_timing {
                 timer.complete();
             }
             let reference_timing = phases.start(2);
-            let reference_frame = ok(reference_fixture.compose(0, 2));
+            let (reference_frame, reference_chrome) =
+                ok(reference_fixture.capture_composed_frame(0, 2));
+            ok(shared.record_next(&reference_frame, &reference_chrome));
+            ok(shared.finish());
+            drop((process_recorder, reference_recorder));
             if let Some(timer) = reference_timing {
                 timer.complete();
             }
@@ -158,6 +171,9 @@ impl ReferenceFixture {
                 "coverage": "66 corpus steps; initial process/reference frames are not timed",
                 "completed_corpus_steps": self.completed_steps,
                 "timing": "monotonic wall time includes observer overhead; nested recorder phases are not additive with compose totals",
+                "recording_strategy": "one shared reservation; first complete export precedes second composition",
+                "scan_attribution": "one actual shared census in process_recording; reference inventory_scan has no observations",
+                "composition_spans": "process includes admission/census; reference includes final marker settlement",
                 "owners": owners, "outer": self.phases.observation(),
                 "process_recording": self.process_recording.observation(),
                 "reference_recording": self.reference_recording.observation(),

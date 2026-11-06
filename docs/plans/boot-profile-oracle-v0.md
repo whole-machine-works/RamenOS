@@ -1,8 +1,10 @@
 # External boot-profile Oracle v0
 
-**Status:** Independently reviewed proposed preparation contract. No collector,
-inspection schema implementation, gate, Reference Vault or capture is claimed
-to exist. Coordinator registration and failing assertions precede implementation.
+**Status:** Independently reviewed preparation contract. The entry-input helper
+and a separate bounded capability/prior-diagnostic probe are implemented; see
+the [current probe batch](frame-export-run0-probe-batch-2026-11-06.md). The full
+collector, inspection schema, Reference Vault and C0/C1/C2 capture remain open.
+Coordinator registration and failing assertions precede dependent implementation.
 
 **Preparation base:** `a44993e5880fee83d9ca4400f8a291f309ef813c` plus the
 coordinator's assembled source state. The reviewed
@@ -118,7 +120,8 @@ qemu-system-x86_64 -machine pc-q35-8.2,accel=tcg -cpu qemu64
   -smp 1 -m 512M -nic none -S -display none -no-reboot
   -drive if=pflash,format=raw,readonly=on,file=<pinned-code>
   -drive if=pflash,format=raw,file=<private-vars-clone>
-  -drive format=raw,readonly=on,file=<pinned-esp>
+  -drive if=none,id=esp,format=raw,readonly=on,file=<pinned-esp>
+  -device virtio-blk-pci,drive=esp
   -serial file:<run>/serial.log
   -qmp unix:<run>/qmp.sock,server=on,wait=off
   -chardev socket,path=<run>/gdb.sock,server=on,wait=off,id=gdb0
@@ -129,6 +132,12 @@ The profile validator rejects path escapes, symlinks to outside inputs, shared
 VARS/output paths and artifact/hash mismatches before launch. Record both VARS
 template and disposable clone initial/final hashes. The supervisor owns this VM's
 PID and sockets, applies deadlines and cleans up only its own resources.
+
+The probe's named invocation profile makes the read-only virtio attachment
+explicit: QEMU 8.2.2 rejects a read-only default IDE disk. Its separate debugcon
+at port `0x402` records firmware-generated output through capped streams. The
+initial rejected launch and every revised profile remain separately retained.
+Neither this device choice nor a successful probe supplies a boot checkpoint.
 
 ## Checkpoints and command boundary
 

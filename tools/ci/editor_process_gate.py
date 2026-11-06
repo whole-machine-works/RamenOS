@@ -193,7 +193,7 @@ def main():
         ('D01StrictNormalChild', 'host_editor_process_child_v0_dev', ['--bin', 'editor-process']),
         ('D01StrictAssertionChild', 'host_editor_process_child_assertions_v0_dev', ['--bin', 'editor-process']),
         ('D01StrictNormalParent', 'host_editor_process_v0_dev', ['--lib', '--test', 'process_task']),
-        ('D01StrictAssertionParent', FEATURE, ['--lib', '--test', 'process_task', '--test', 'native_task']),
+        ('D01StrictAssertionParent', FEATURE, ['--lib', '--test', 'process_task', '--test', 'native_task', '--test', 'shared_frame_controls']),
     ]:
         gate.run(identity, ['cargo', 'clippy', '--locked', '-p', 'artifact_editor',
                             '--no-default-features', '--features', feature, *targets, '--', '-D', 'warnings'])
@@ -233,6 +233,23 @@ def main():
         closure = gate.run('StoreAuthenticClosure-' + target, ['cargo','test','--locked','-p','store_service','--features','editor_native_save_v0_dev','--test',target,'--','--test-threads=1','--nocapture'])
         selected(closure, rust_cases(ROOT/('services/store_service/tests/' + target + '.rs')))
         gate.save()
+    shared_names = rust_cases(ROOT / 'apps/artifact_editor/tests/process_support/shared_frame_controls.rs')
+    stages.require(shared_names == sorted([
+        'shared_frame_success_and_single_census',
+        'shared_frame_second_target_refusal_then_fresh_success',
+        'shared_frame_root_case_and_mode_substitution_then_recovery',
+        'shared_frame_symlink_hardlink_and_foreign_reservation_refusal',
+        'shared_frame_combined_file_byte_and_case_json_caps',
+        'shared_frame_partial_write_retains_owner_and_fresh_root_succeeds',
+        'shared_frame_second_write_refusal_retains_first_rows',
+        'shared_frame_second_composition_failure_retains_first_export',
+    ]), 'exact eight shared frame reservation controls')
+    shared_root = output / 'shared-frame-controls'
+    shared_root.mkdir(mode=0o700)
+    os.environ['RAMEN_SHARED_FRAME_CONTROL_ROOT'] = str(shared_root)
+    shared = gate.run('SharedFrameReservationControls', ['cargo', 'test', '--locked', '-p', 'artifact_editor', '--features', FEATURE, '--test', 'shared_frame_controls', '--', '--test-threads=1', '--nocapture'])
+    selected(shared, shared_names)
+    gate.save()
     names = ['full_assertions::' + n for n in rust_cases(ROOT / 'apps/artifact_editor/tests/process_support/full_assertions.rs')]
     names += rust_cases(ROOT / 'apps/artifact_editor/tests/process_task.rs')
     helpers = rust_cases(ROOT / 'apps/artifact_editor/tests/process_support/cleanup_owners.rs')

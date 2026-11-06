@@ -1002,13 +1002,21 @@ impl Fixture {
         // The actual successful Attach creates a new queue with next_sequence=1.
         self.drivers[i].next = 1;
     }
-    pub fn compose(&self, i: usize, now: u64) -> Result<desktop::ComposedFrame, Status> {
+    pub fn capture_composed_frame(
+        &self,
+        i: usize,
+        now: u64,
+    ) -> Result<(desktop::ComposedFrame, desktop::NativeSaveChromeObservation), Status> {
         let frame = self
             .h
             .compose_native_save(&self.drivers[i].s.compositor, now)?;
         let chrome = ok(self
             .dc
             .save_chrome_observation(&self.drivers[i].s.compositor));
+        Ok((frame, chrome))
+    }
+    pub fn compose(&self, i: usize, now: u64) -> Result<desktop::ComposedFrame, Status> {
+        let (frame, chrome) = self.capture_composed_frame(i, now)?;
         self.record(|r| r.frame(&frame, None, None, Some(&chrome)));
         Ok(frame)
     }
