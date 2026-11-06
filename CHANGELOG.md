@@ -16,7 +16,10 @@
   the original native-task `slots/0` Save returned Unknown for operation 1 without
   the required receipt. Seventeen other tests passed. Queue bounded failure-only
   Store/IO/permit/reply/join diagnostics; no root cause or remediation is claimed,
-  and later retry results remain separate from this failed attempt and D19.
+  and D19 remains separate. The one unchanged failed-jobs [retry, attempt 2](https://github.com/whole-machine-works/RamenOS/actions/runs/42151282196/attempts/2)
+  completed `slots/0` but failed `native_max/6` with the same Unknown operation 1
+  receipt result: seventeen passed, one failed. Both main attempts remain failed;
+  PR53's separate passing run and merge do not resolve their unknown cause.
 - Advance dispatch to RUN0 and the IN0/STORE0/UI2 target joins. Preserve the earlier
   local D19 failure as unresolved with a bounded reproduction follow-up. Host
   acceptance does not establish target persistence or physical durability.

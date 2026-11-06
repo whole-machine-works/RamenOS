@@ -56,7 +56,17 @@ where a successful 176-byte receipt was required. The command exited 101 and was
 reaped. Only the scenario's initial Store snapshot survived, so the underlying
 permit/publication/reply failure remains unexplained. The retained pre-merge
 qualification and actual merge do not establish a green post-merge baseline.
-A later retry result is separate evidence, not a root-cause resolution.
+
+The one unchanged failed-jobs [retry, attempt 2](https://github.com/whole-machine-works/RamenOS/actions/runs/42151282196/attempts/2)
+also failed that capacity test: `slots/0` completed, but `native_max/6` returned
+Unknown for operation 1 without the required receipt. Again seventeen tests
+passed and one failed; the command exited 101 and was reaped. The failed scenario
+again retained only its initial Store snapshot. Both main qualification attempts
+on `c9ed54a` remain failed, with root cause unknown. Separately, PR53's
+[hosted run 42151684699](https://github.com/whole-machine-works/RamenOS/actions/runs/42151684699)
+passed all nine checks and its dispatch update merged as `65d45be`; that passing
+run does not explain or remediate either main failure. Obtain the diagnostics
+below before another retry.
 
 The bounded follow-up is to add failure-only terminal Store/IO/permit/reply/join
 diagnostics, then reproduce this named scenario on a fresh source-bound Linux
