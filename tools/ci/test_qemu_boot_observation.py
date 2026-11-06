@@ -111,15 +111,45 @@ class BootObservationTests(unittest.TestCase):
 
     def test_valid_marker_followed_by_unrequested_exit23_is_failure(self):
         with tempfile.TemporaryDirectory() as temporary:
+            actual_spawn = boot.subprocess.Popen
             actual_read = boot.serial_bytes
+            held = []
+            synchronized = False
+            def held_spawn(*args, **kwargs):
+                process = actual_spawn(*args, **kwargs)
+                held.append(process)
+                return process
             def terminal_read(path):
-                time.sleep(.04)  # Observe the real child's natural terminal state.
+                nonlocal synchronized
+                if not synchronized:
+                    self.assertEqual(len(held), 1)
+                    process = held[0]
+                    deadline = time.monotonic() + 1.5
+                    while True:
+                        self.assertLess(time.monotonic(), deadline)
+                        # Observe the exact child's exit without consuming it;
+                        # the real observer still owns group cleanup and reap.
+                        terminal = os.waitid(os.P_PID, process.pid,
+                                             os.WEXITED | os.WNOHANG | os.WNOWAIT)
+                        if terminal is not None and terminal.si_pid == process.pid:
+                            self.assertEqual((terminal.si_code, terminal.si_status),
+                                             (os.CLD_EXITED, 23))
+                            self.assertIsNone(process.returncode)
+                            synchronized = True
+                            break
+                        time.sleep(.005)
                 return actual_read(path)
-            with mock.patch.object(boot, 'serial_bytes', terminal_read):
+            with mock.patch.object(boot.subprocess, 'Popen', held_spawn), \
+                 mock.patch.object(boot, 'serial_bytes', terminal_read):
                 result = self.fixture(Path(temporary), "import pathlib,sys; pathlib.Path(sys.argv[1]).write_text('complete'); sys.exit(23)", timeout=.5)
             self.assertFalse(result['success'])
             self.assertTrue(result['reaped'])
             self.assertEqual(result['exit_code'], 23)
+            self.assertEqual(result['failure'], 'unexpected-process-exit')
+            self.assertIsNotNone(result['markers']['complete'])
+            self.assertLess(result['markers']['complete'], result['deadline_monotonic_ns'])
+            self.assertTrue(result['terminal_before_cleanup'])
+            self.assertFalse(result['stop_requested'])
 
     def test_sigterm_reaps_actual_boot_owner_without_success(self):
         with tempfile.TemporaryDirectory() as temporary:

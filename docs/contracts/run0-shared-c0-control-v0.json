@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "kind": "run0_shared_c0_control_v0",
+  "scope": "shared_c0",
+  "host_contract_sha256": "640acef5b1437c2871f302a2f2592d682e0456cf0d289626aded3c1e9104d089",
+  "decoder_contract_sha256": "8ac6ec114177d1234ed7e60a7a50234bc1758e1d5cef318d84c743bfa0184cda",
+  "rsp_operations_added": [
+    "hardware_breakpoint_set",
+    "hardware_breakpoint_clear",
+    "resume",
+    "acknowledge_stop",
+    "register_read",
+    "physical_read"
+  ],
+  "resume_response": "The actual single-byte request ACK. The checksum-valid asynchronous stop is a separate ControlEvent with exact decoded name T05thread:01; and the same raw packet as stop_ref.",
+  "acknowledge_stop": {
+    "protocol": "rsp",
+    "operation": "acknowledge_stop",
+    "request": "SliceRef covering exactly one + byte, uniquely indexed and first raw outgoing byte after the sole resume packet",
+    "response": null,
+    "clock": "Actual send starts strictly after receipt of the complete validated stop and finishes before any following RSP request.",
+    "success": "Only a completed one-byte write is ok. A missing, failed or pending acknowledgment prevents PASS. Early, duplicate, overlapping, wrong-slice or intervening output is DENY."
+  },
+  "register_index": {
+    "schema_version": 1,
+    "operations": "Ascending ControlOperation seqs covering exactly the selected p register inventory in register order within the corresponding bracket"
+  },
+  "streams_index": "shared_c0 requires exactly twelve unique StreamEnd rows. The sole added name rsp binds raw_ref to ControlIndex.raw_rsp_in_ref with actual read-zero EOF and no error. Reset keeps exactly eleven rows and rejects rsp. Existing C0 retained-byte bounds apply.",
+  "physical_mode_readback": "Require the actual same-session qqemu.PhyMemMode reply 1 after the asynchronous stop acknowledgment and before the first physical m request. Pre-resume negotiation does not supply the fresh stop readback.",
+  "authority": "An evidence-ordering amendment for shared C0 only. All existing message and byte caps apply. Reset control and RSP1 reject the new operation. This grants no live C0 execution authority and establishes no breakpoint cause."
+}

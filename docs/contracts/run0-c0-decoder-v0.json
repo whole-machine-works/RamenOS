@@ -1,0 +1,157 @@
+{
+  "schema_version": 1,
+  "packet": "RUN0-C0D-pure-offline-decoder",
+  "status": "INTERFACE_PROPOSED_FOR_INDEPENDENT_REVIEW",
+  "base_commit": "9f343d4cf9a708429aa914a83eeb058dfd266b20",
+  "implementation_authorized": false,
+  "resources_authorized": false,
+  "scope": "Freeze the pure decoder and its synthetic assertion inventory before implementation. No collector, transport extension, host-process read, VM launch or guest access is authorized. A green exact main baseline and independent interface review precede implementation. Passing these controls cannot supply an actual stopped C0 or the missing CPU-state witness.",
+  "precedence": {
+    "inspection": "docs/contracts/run0-c0-inspection-v0.json",
+    "host_cpu_witness": "docs/contracts/run0-host-cpu-witness-v0.json",
+    "oracle": "docs/plans/boot-profile-oracle-v0.md",
+    "entry_admission": "tools/trace/boot_profile_inputs.py",
+    "rule": "This narrows C0D only. Existing C0Report/C0Snapshot, C0C authority, inherited bounds, C1/C2 same-call requirements and all false claims remain unchanged. No shared artifact schema is silently extended. The coordinator owns any necessary successor registration."
+  },
+  "source_basis": {
+    "preparation": {
+      "locator": "c0d-preparation/paging-rules.json in the retained run0-rsp-ipc-20261106 evidence packet",
+      "sha256": "e3e7acfb51db057884c200dc935a42bc22f3a35a594f803eef05b51ec1cd9817",
+      "primary_manifest_sha256": "936d226ff3f4f8daf88618dab8872b3f2c6dfa9d36a3e9e4ed53ce3f4e3ccd96",
+      "authority": "Prepared source rules and exact primary files, not execution evidence or an actual value of MAXPHYADDR."
+    },
+    "architecture": {
+      "title": "Intel SDM Vol.3A 253668-084US, June 2024",
+      "url": "https://cdrdv2-public.intel.com/825758/253668-sdm-vol-3a.pdf",
+      "sha256": "7a21e8673dcf047cef6a344e15a746dd6e02a4f8c6d6e7764e6a02617ee0a5c5",
+      "sections": ["2.5", "4.1", "4.5.2", "4.5.4", "4.6.1"],
+      "tables": ["4-12", "4-15", "4-17", "4-18", "4-19", "4-20"]
+    },
+    "emulator": "Authenticated Ubuntu 1:8.2.2+ds-0ubuntu1.18 patched source: target/i386/tcg/sysemu/excp_helper.c and target/i386/cpu.h corroborate masks, permissions, A20 and hidden nested translation. Exact file hashes are in the retained primary manifest; an upstream tag or configured CPU feature is not a replacement.",
+    "public_efi": "UEFI 2.10 public definitions and EDK II edc6681206c1a8791981a2f911d2fb8b3d2f5768 UefiSpec.h/UefiMultiPhase.h, BaseLib/CheckSum.c and BasePeCoffLib/BasePeCoff.c. Pinned uefi-raw 0.5.2 is a layout cross-check only; its CRC comment is not algorithm authority.",
+    "reuse": "Reuse the pure parse_pe, loaded_extent, expected_entry, parse_diagnostic and diagnostic_candidate functions from the accepted entry helper; reuse the exact ordinary-RAM flatview grammar. Do not call filesystem admission, run_probe or any collector from the decoder."
+  },
+  "pure_interface": {
+    "module": "tools/trace/run0_c0_decode.py",
+    "tests": "tools/trace/test_run0_c0_decode.py",
+    "entry_point": "decode_c0(origin:synthetic_fixture|retained_runtime, report_ref:BlobRef, blobs:Mapping[str,bytes], prerequisites:ValidatedHostState|null)->C0DecodeResult",
+    "local_error": "Before origin/report_ref can be structurally bound, malformed invocation raises C0DecodeError with immutable {status:DENY,reason:ASCII[a-z0-9_],1..96}; do not fabricate a valid BlobRef or origin to construct a report. Once that envelope is valid, missing/malformed recorded evidence produces the corresponding structured C0DecodeResult. Both paths leave inputs unchanged and permit a fresh independent invocation.",
+    "effects": "Deterministic decoding of supplied immutable bytes only: no filesystem, network, subprocess, clock, sleep, debugger, host-memory read, guest-memory read or callback that acquires bytes. Missing recorded data returns INCOMPLETE; the API emits no read request or future read authority. Tests may observe in-memory lookups to prove that rejection never follows another table pointer.",
+    "inputs": "report_ref identifies the exact inherited C0Report bytes. origin is a requested evidence class, not proof; retained_runtime requires the independently validated runtime prerequisite, while an absent prerequisite remains INCOMPLETE with the requested origin retained. Resolve only explicitly referenced safe paths in blobs; values must be exact bytes. Validate role bounds before hashing/parsing, then exact length and SHA-256. Reject conflicting identities for the same path. A path string never triggers a file open. The acquisition owner separately enforces filesystem ownership, regular-file/link rules and retention; this pure decoder cannot establish those facts from a dictionary.",
+    "strictness": "Every decoded object has exactly the inherited or newly listed fields. Strict bounded UTF-8 JSON, no duplicate keys, unknown fields/versions, nonfinite numbers, booleans as integers or default-zero missing state. All integers are exact non-bool integers. Arithmetic is checked before slicing, allocation or following a reference. Preserve input bytes and the first failing reason; no repair, padding, masking of unexplained differences, alternate profile or stale result reuse.",
+    "prerequisite_type": "Import ValidatedHostState from the separately reviewed run0_host_cpu_witness module. Its sole production constructor is validate_report(report_ref:BlobRef,blobs:Mapping[str,bytes])->ValidatedHostState, using immutable supplied bytes only, never an acquiring resolver. The returned opaque immutable value has exactly origin,report_ref,binding,state,final_status; final_status is literalPASS only after admissionADMIT+finalPASS. origin is decoded from the witness report, not a caller override, and must match this invocation's origin. HostCPUWitnessRef is only an alias for inherited BlobRef. C0D checks this report ref's bytes/hash and binding against its own report/raw stopped brackets. The witness owner validates the host ABI,104-byte acquisition, process identity, cleanup and internal state; C0D does not duplicate that implementation. No validated value is produced for a nonPASS witness.",
+    "result": {
+      "schema_version": 1,
+      "kind": "run0_c0_decode_v0",
+      "origin": "synthetic_fixture|retained_runtime",
+      "report_ref": "BlobRef of exact supplied C0Report bytes",
+      "host_cpu_witness_ref": "HostCPUWitnessRef|null when unavailable",
+      "status": "PASS|INCOMPLETE|DENY",
+      "reason": "ASCII[a-z0-9_],1..96",
+      "observed_consistent": "bool; only equality of the required supplied brackets/rechecks",
+      "loaded_identity": "null or {loaded_base:u64,entry_address:u64,image_handle:u64,system_table:u64,boot_services:u64,get_memory_map:u64}",
+      "translations": "array<=128 TranslationResult in requested-span order; partial results cannot certify an uncovered extent",
+      "claims": "Exactly the inherited nine FalseClaims, all false",
+      "fresh_c0_verified": false,
+      "atomic_snapshot": false,
+      "device_quiescence_verified": false,
+      "remaining_checkpoints": ["C1", "C2"]
+    },
+    "translation_result": "Exactly {translation:inherited Translation,cpl0_readable:bool,cpl0_writable:bool}. Inherited path entries retain each raw u64 and frame/index identity. translation.writable is the conservative AND of every R/W bit; cpl0_writable separately models !CR0.WP || all_RW. translation.user is all_US; translation.executable is !any_NX. No result asserts a cached TLB value or an executed load/store/fetch.",
+    "status_semantics": {
+      "PASS": "The named pure decoding checks succeeded on the supplied origin's bytes. This is not fresh-C0 collection, full Oracle qualification or runtime authority. Synthetic PASS remains explicitly synthetic.",
+      "INCOMPLETE": "Absent raw bytes or validated prerequisite, unsupported active mode/1GiB leaf, non-present required mapping, exhausted existing acquisition budget, changed rechecks, missing stop/cleanup/EOF or unfinished required evidence. Retain observed facts without a complete-extent claim.",
+      "DENY": "Present malformed or contradictory data, wrong source/profile/run/stop identity, hash/length mismatch, forbidden address backing, reserved bits, overflow, cycle/incompatible-level reuse or failed required PE/EFI identity. A new independent valid synthetic input must still decode without stale state."
+    }
+  },
+  "runtime_prerequisites": {
+    "witness_kind": "run0_host_cpu_witness_v0",
+    "profile_digest": "Match StopBinding.profile_sha256 using boot_profile_inputs.profile_digest(parsed_probe_profile): SHA256 of json.dumps(profile,sort_keys=True,separators=(',',':'),ensure_ascii=True,allow_nan=False).encode(), with no newline. This is distinct from raw profile_ref.sha256 and from the different entry-admission-schema profile digest; validate their explicit profile mapping rather than equating them.",
+    "host_cpu_witness": "Require the separately validated report's admission.status=ADMIT and termination.status=PASS, with nonnull consistent State. StopBinding must have context=c0, stop_id=C0, cpu_index=0, rsp_thread=01, exact run_id and canonical probe profile_sha256, the actual qmp_thread_id, matching stop_ref/resume_seq/breakpoint_seq and enclosing control_before_seq/control_after_seq in the same stopped interval. State.no_npt/no_svm_guest/no_smm must be true, and its CPL0/CS64/LMA must agree with independent HMP/selected-RSP state. Missing evidence is INCOMPLETE; a present forged/mislinked/contradictory witness is DENY. Reset context, CAP1, a previous run, synthetic fixture, CPUID npt=false, EFER.SVME=0 or absence of log messages cannot substitute. A live ADMIT can serve a separately authorized collector only; final offline runtime acceptance requires the witness's actual cleanup and final PASS. C0D neither chooses host addresses nor interprets ABI raw words itself.",
+    "a20": "Require actual A20=1 in both source-audited same-stop HMP CPU0 brackets. A20 is not supplied by the host witness. Missing A20 is INCOMPLETE; a well-formed unsupported A20=0 mode is INCOMPLETE before considering table/object bytes; contradictory brackets remain INCOMPLETE observed change.",
+    "fresh_cpu_mode": "Fresh actual individual-register/HMP brackets must agree on the required CPU state and identity; no post-resume bulk g or unaudited register path. Require the genuine C0 async stop, admitted prior candidate, sole hardware-breakpoint/resume linkage, same CPU and stopped/debug interval already specified by the inspection contract. An earlier layout or reset register packet cannot authorize C0 data interpretation.",
+    "physical_width": "M is the actual realized phys-bits property, exact integer32..52, bound to this run's actual CPU identity and retained getter evidence. Do not infer M from a configured zero, advertised model default, host width, memory size or the earlier CAP1 run. This contract supplies no actual M.",
+    "physical_debug_mode": "Before interpreting any recorded m response, require this same uninterrupted RSP session's source-bound successful Qqemu.PhyMemMode:1 command with actual OK response and subsequent qqemu.PhyMemMode readback1, completed before the first m. No intervening mode reset/change, reconnect, foreign command or replacement transport is permitted through the last read. CAP1's earlier physical_mode=1 field is not current evidence. This validates already recorded operations; it grants no new dispatch authority.",
+    "synthetic_boundary": "A test-only prerequisite fixture can exercise pure masks/layouts but must be tagged synthetic_fixture and cannot be promoted to retained_runtime. Missing runtime witness keeps runtime decoding INCOMPLETE even if every synthetic assertion is green. No public 'skip witness' switch."
+  },
+  "required_mode": {
+    "CPL": 0,
+    "CS64": true,
+    "CR0_set_bits": [0, 31],
+    "CR4_set_bits": [5],
+    "EFER_set_bits": [8, 10],
+    "CR4_clear_bits": [12, 17, 20, 21, 22, 23, 24],
+    "recorded_bits": {"CR0_WP":16,"EFER_NXE":11,"CR4_PGE":7},
+    "unsupported": "LA57, PCIDE, SMEP, SMAP, PKE, CET and PKS must be clear. Unsupported mode returns INCOMPLETE before any table lookup. Ordinary four-level paging only; no nested or HLAT translation. PSE is not required for a 2MiB leaf in this mode. A/D and global/cache attributes are retained without modifying entries or claiming memory-type/TLB behavior."
+  },
+  "paging": {
+    "domain": "u64 input addresses/entries, M exact32..52. Use finite u64 masks, never an unbounded complement. Every table entry is one little-endian u64 in a complete4096-byte frame with512 entries.",
+    "masks": {
+      "U": "(1<<64)-1",
+      "P": "(1<<M)-1",
+      "A": "((1<<52)-1) & (U ^ 0xfff)",
+      "H": "((1<<52)-1) & (U ^ P)",
+      "N": "0 if EFER.NXE=1 else (1<<63)",
+      "CR3_reserved": "U ^ P",
+      "CR3_root": "CR3 & P & (U ^ 0xfff)",
+      "CR3_ignored_low": "0xfe7"
+    },
+    "cr3": "With PCIDE=0 reject any CR3_reserved bit. Low bits2:0 and11:5 are ignored; PWT3/PCD4 are permitted and retained. Do not mask away reserved high bits. Physical root0 is permitted only when the complete frame is admitted ordinary RAM; do not impose a guessed nonzero-root rule.",
+    "canonical48": {"lower_inclusive":["0x0","0x7fffffffffff"],"upper_inclusive":["0xffff800000000000","0xffffffffffffffff"],"rule":"Require a nonempty checked u64 span whose inclusive last byte is representable and remains within one canonical half. Never cross the hole or wrap. Split at leaf and physical-read boundaries without dropping a final byte."},
+    "index_shifts": [39, 30, 21, 12],
+    "index_mask": "0x1ff",
+    "entry_order": "Check exact types, mode, root/span/RAM identity first. At each selected entry, P0 stops unmapped before interpreting any other bit or looking up a child. For P1 reject common reserved bits, then enforce the supported level/leaf form. Unsupported PDPTE.PS1 never descends or guesses a 1GiB mask.",
+    "entries": [
+      {"level":4,"kind":"PML4 pointer","present_reserved":"H | N | 0x80","base":"entry & A & P","ignored":"bit6,bits11:8,bits62:52"},
+      {"level":3,"kind":"PDPT pointer","present_reserved":"H | N","supported":"PS7=0; PS7=1 is unsupported1GiB, not automatically an architectural reserved-bit violation","base":"entry & A & P","ignored":"bit6,bits11:8,bits62:52"},
+      {"level":2,"kind":"PD pointer","present_reserved":"H | N","supported":"PS7=0","base":"entry & A & P","ignored":"bit6,bits11:8,bits62:52"},
+      {"level":2,"kind":"2MiB leaf","present_reserved":"H | N | 0x1fe000","supported":"PS7=1; CR4.PSE may be0","base":"entry & P & (U ^ ((1<<21)-1))","offset":"VA & ((1<<21)-1)","PAT_bit":12,"ignored":"bits11:9,bits58:52,bits62:59 with PKE/PKS0"},
+      {"level":1,"kind":"4KiB leaf","present_reserved":"H | N","base":"entry & A & P","offset":"VA & 0xfff","PAT_bit":7,"ignored":"bits11:9,bits58:52,bits62:59 with PKE/PKS0"}
+    ],
+    "permissions": {"all_RW":"AND of bit1 over all present path entries","all_US":"AND of bit2 over all present path entries","any_NX":"OR of bit63 after NXE/reserved checks","cpl0_readable":true,"cpl0_writable":"!CR0.WP || all_RW","executable":"!any_NX","conservative_writable":"all_RW","restriction":"These are current-memory page-walk semantics under the admitted disabled protections, not cached translations, a guest-access test or future mapping continuity. NX does not deny a data read. A/D0 is valid and never written."},
+    "frames": "Use a bounded iterative partial walk for named objects only. A frame is keyed by the exact run/stop/physical4096-aligned address and one level. Same-level sharing reuses equal bytes within that stop; cycle or cross-level reuse is DENY for this profile even if some recursive mappings are architectural. No cross-stop cache or full-memory enumeration. Keep every parent frame/index/raw entry in each translation path.",
+    "ram": "Independently decode both fresh complete HMP flatviews using the accepted exact grammar. Require one AS memory/root system and the same sole CPU0 cpu-memory-0 view, ordinary ram named pc.ram and exact identity backing offsets. Whole table4096 spans and every object/read span must fit admitted ranges and M; reject holes, ambiguous overlays, overlap, MMIO, ROM/ROMD, nv-ram or nonidentity aliases. Adjacent validated ranges may cover a span only with explicit gap-free identity coverage; no unknown byte is bridged. Returning bytes is not RAM admission."
+  },
+  "recorded_evidence": {
+    "wire_binding": "Reconstruct each operation from the actual retained directional wire bytes, exact allowed request/reply packet grammar and checksums, ACKs, decoded payload and ordering in this one session. A separately hashed response blob or claimed successful operation index is insufficient. Bind the original sole Z1/c and genuine asynchronous stop without an intervening request, the allowed selected p reads and each physical m address/length to those exact bytes and operation sequences. The host witness's control_ref supplies the same StopBinding control sequence namespace; reject fabricated, unrelated, duplicate or cross-session references. No extra '?' or command repair is inferred from a stop.",
+    "frames": "Each inherited TableFrame has exactly4096 first bytes and4096 equal recheck bytes, with four distinct successful read sequences: two consecutive2048-byte chunks for first acquisition and two for recheck. Recompute addresses, lengths and frame concatenation from the actual operation response bytes; never trust the derived frame BlobRef alone.",
+    "objects": "Each inherited ObjectRead is nonempty, completely translated and ordinary-RAM backed, split into requests<=2048 at leaf/backing boundaries. Exact first/recheck lengths and byte equality, every actual acquisition sequence, no zero-fill. One response cannot fill two required independent acquisition slots; multiple translations may reference the same genuinely shared TableFrame. Object read bytes including every recheck charge the inherited64KiB limit; overlapping actual requests are charged again.",
+    "brackets": "All frame/object first reads precede their rechecks within the same stopped interval; the final selected register/layout brackets occur after rechecks and before resume or teardown. Compare all required values and exact accepted layout meaning plus raw identities. Changed frames/objects/registers/layout or an intervening resume means INCOMPLETE. Different run/CPU/stop identities mean DENY. Equality establishes observed consistency only; device/DMA quiescence and atomicity remain false.",
+    "accounting": "Recompute the inherited512 paired-operation,32 distinct-frame,32 object,128 translation,65536 other-RAM-byte and32MiB retained-evidence bounds from linked records, with checked arithmetic and no deduplication of actual rechecks. Stop60s/VM90s/response5s/teardown reserve5s remain collector bounds checked from retained evidence; the pure decoder does not start, renew or widen a clock. Input report<=1MiB; pinned input artifact bounds remain those of the existing admission profile.",
+    "termination": "Runtime input needs actual original owned cleanup/reap and complete required stream outcomes. Missing/uncertain cleanup cannot be repaired by pure decoding. Failure reports remain inspectable and explicitly partial; no missing checkpoint or observation is manufactured. C0 supplies no raw final EFI map or final ownership classifications."
+  },
+  "public_efi": {
+    "header": {"bytes":24,"signature":[0,8],"revision":[8,4],"header_size":[12,4],"crc32":[16,4],"reserved":[20,4]},
+    "system_table": {"bytes":120,"alignment":8,"signature":"0x5453595320494249","revision":"0x00020046","boot_services_pointer_offset":96},
+    "boot_services": {"bytes":376,"alignment":8,"signature":"0x56524553544f4f42","revision":"0x00020046","get_memory_map_pointer_offset":56},
+    "crc": {"algorithm":"CRC32 IEEE reflected","polynomial":"0xedb88320","init":"0xffffffff","xorout":"0xffffffff","check_123456789":"0xcbf43926","zero_range_half_open":[16,20],"coverage":"Exactly the complete HeaderSize bytes, equal to120 or376 for the corresponding pinned table; do not checksum only the24-byte header or use CRC32C/Castagnoli."},
+    "validation": "Decode public little-endian fields, never private struct transmutation. Require exact signature, pinned revision (2<<16)|70, exact HeaderSize, reserved0, complete bytes and IEEE CRC. System/BootServices pointers must be nonzero,8-aligned and have complete canonical checked translated ordinary-RAM spans before consulting their supplied bytes. RCX ImageHandle remains opaque u64 and is never dereferenced. RDX identifies the system table. Its BootServices pointer and that table's GetMemoryMap pointer are recomputed from the raw fixed offsets.",
+    "code_pointer": "GetMemoryMap must be nonzero/canonical and its32 inspected bytes must translate to executable ordinary RAM under every ancestor. No artificial8-byte function-alignment rule. Retain equal first/recheck bytes; this validates the inspected destination and does not independently authenticate a firmware function or call it."
+  },
+  "loaded_pe": {
+    "input_binding": "Bind pinned EFI bytes, source/profile, accepted entry-admission report and original diagnostic through the existing profile mapping. Recompute parse_pe(...,entry_length=32), the prior diagnostic candidate and expected_entry; do not trust derived candidate/PE fields alone or invent another address source.",
+    "base": "Checked loaded_base=actual stopped RIP-pinned entryRVA must equal the admitted candidate base, and RIP must equal its single candidate entry. Apply existing loaded_extent alignment/canonical/SizeOfImage checks to the whole image extent; no subtraction/addition wrap. Full-image bounds are not a claim that every loaded image byte was read or identical.",
+    "header_extents": "Read the pinned DOS64-byte header; the pinned PE signature+COFF24-byte extent; the complete pinned OptionalHeader of admitted SizeOfOptionalHeader; and all admitted40-byte section descriptors. Validate all offsets/counts/SizeOfHeaders/SizeOfImage before selecting these extents. Compare their bytes to the pinned file at the corresponding header RVAs, allowing exactly OptionalHeader.ImageBase bytes[24,32) to equal the actual loaded base as documented by EDK II. Gaps and header padding outside these named extents are not inspected and cannot be claimed equal. No arbitrary header masking.",
+    "entry": "Read exactly32 bytes at the actual candidate RIP through fresh translations and require executable ordinary RAM. Compare exactly to accepted expected_entry(pe,loaded_base), including checked DIR64 arithmetic. Only existing ABSOLUTE padding and DIR64 relocation rules are supported. Reject header-overlapping relocation, unimplemented relocation kind, duplicate/overlapping/self-modifying targets, changed base without usable relocations, overflow and any8-byte fixup only partially intersecting the inspected entry32 span. Do not zero-fill raw file padding or claim whole-image authenticity.",
+    "rechecks": "Every named loaded header/entry extent has a separately linked equal recheck under the same CPU/stop/layout prerequisites and is charged to the original other-RAM budget."
+  },
+  "gate_first_assertions": [
+    {"id":"C0D01","assert":"Exact non-bool integer/u64/M types, zero/negative/overflow spans and counts; reject before another blob lookup. A fresh valid input succeeds after each local rejection."},
+    {"id":"C0D02","assert":"Missing runtime host/A20/M/stop evidence is INCOMPLETE; forged or mismatched run/profile/CPU/stop refs DENY. Reset or synthetic witness cannot certify runtime C0. Exercise every required/unsupported control bit and no caller boolean bypass."},
+    {"id":"C0D03","assert":"CR3 at M32,36,52: each bit63:M reserved, low2:0/11:5 ignored, PWT/PCD permitted, root0 allowed only with whole-frame RAM. PCIDE unsupported; no masking fallback."},
+    {"id":"C0D04","assert":"PML4 one-bit mutations: every bit51:M, PS7 and NX with NXE0 rejected when present; ignored6/8..11/52..62 accepted. Verify selected index and exact child-frame identity."},
+    {"id":"C0D05","assert":"PDPT PS0 pointer resolves with permitted flags; common reserved bits fail. Otherwise-valid PS1 returns unsupported1GiB INCOMPLETE with no child lookup, independent of advertised pdpe1gb."},
+    {"id":"C0D06","assert":"PDE2MiB supports PSE0 and PAT12; each bit20:13/high-reserved bit rejected. First/last byte and cross-leaf splits preserve exact offset, physical width and all ancestor flags."},
+    {"id":"C0D07","assert":"PDE PS0 follows a checked PT; PTE PAT7 is allowed, not treated as PS. Ignored software/key bits accepted with PKE/PKS0; physical high bits rejected. Independent4KiB positive fixtures."},
+    {"id":"C0D08","assert":"At every level P0 with every other bit set stops unmapped before reserved checks/child lookup. No old translation survives; a subsequent independent valid walk succeeds."},
+    {"id":"C0D09","assert":"RW/US AND and NX OR across every ancestor. CPL0 WP0/WP1 distinguish conservative writable from modeled writable. NXE0 NX is reserved; NXE1 denies fetch but not data read. A/D0 and PGE/global variation require no entry mutation."},
+    {"id":"C0D10","assert":"Both48-bit canonical halves, inclusive last byte, hole/cross-hole/u64 overflow and exact4KiB/2MiB/2048-byte splits. Denied spans consult no data bytes."},
+    {"id":"C0D11","assert":"Whole-frame/data RAM admission with exact memory/cpu-memory-0 binding; reject missing/ambiguous AS, holes, overlap, aliases, MMIO/ROMD/nv-ram and partial backing. Equal bytes from an unsafe address do not pass."},
+    {"id":"C0D12","assert":"Same-level sharing succeeds; cycle/cross-level reuse DENY. Exact32-frame/32-object/128-translation/512-operation/64KiB-other/32MiB limits and one-over controls; rechecks and repeated overlapping reads charged, no lookup/growth beyond the cap."},
+    {"id":"C0D13","assert":"Frame4096 first/recheck reconstruction from four exact2048-byte responses; objects split and fully covered. Missing/truncated/changed data, duplicate read-sequence reuse, virtual-mode m, missing current physical-mode set/readback, post-mode reconnect/change, intervening resume, cross-stop combination or changed brackets cannot pass. Equality never sets atomic/device-quiescent/TLB claims."},
+    {"id":"C0D14","assert":"Independent public binary fixtures: header24/system120/boot376, signatures, offsets, revision0x00020046 and exact CRC coverage. IEEE known vector and table positives; CRC32C, header-only CRC, unzeroed CRC field, wrong reserved/size/revision, null/misaligned/noncanonical/overflow pointers, truncated/nonexecuting code negatives. Rejection precedes another pointer lookup."},
+    {"id":"C0D15","assert":"Pinned PE and candidate/RIP/base/full-image bounds; explicit header extents allow only the documented ImageBase rewrite. Exact32 entry bytes with valid complete DIR64 fixups; wrong identity, unsupported/header-overlapping/partial-entry relocation, overflow and file-padding substitution denied. Uninspected image bytes remain unclaimed."},
+    {"id":"C0D16","assert":"Strict report/blob/witness identities, duplicate keys/unknown fields/bool integers, source/profile/run/stop mismatch and actual directional raw-wire operation linkage. A forged operation index pointing to unrelated but correctly hashed bytes is denied; exact request/reply/order and async-stop identity are required. Missing prerequisites/cleanup remain INCOMPLETE. Nine false claims plus fresh-C0/atomic/device-quiescent false preserved for synthetic and runtime origins; no C1/C2/map/call evidence invented."}
+  ],
+  "implementation_release": "Coordinator records green exact main baseline and independent acceptance of this decoder interface plus the opaque witness boundary, then assigns gate-first pure controls and records expected RED before decoder handlers. Runtime C0 remains separately gated on accepted actual same-stop CPU witness, audited C0 transport/collector, source-bound actual evidence and owned cleanup. No build or VM follows merely from committing this document."
+}

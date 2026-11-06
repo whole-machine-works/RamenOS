@@ -29,5 +29,8 @@ python3 tools/trace/test_boot_profile_inputs.py
 python3 tools/trace/test_boot_profile_capture.py
 python3 tools/trace/test_run0_rsp.py
 python3 tools/trace/test_run0_rsp_capability.py
+python3 tools/trace/test_run0_host_cpu_reader.py
+python3 tools/trace/test_run0_host_cpu_witness.py
+python3 tools/trace/test_run0_c0_decode.py
 cargo test --locked -p idl_codegen --test content_stable
 printf '%s\n' 'FOUNDRY_CI_OPTIMIZATION: PASS scope=tooling'

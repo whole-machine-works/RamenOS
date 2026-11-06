@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "kind": "run0_host_cpu_metadata_bound_v0",
+  "host_contract_sha256": "640acef5b1437c2871f302a2f2592d682e0456cf0d289626aded3c1e9104d089",
+  "trigger": {
+    "run_id": "reset-001",
+    "report_sha256": "68541d3b62c3900e99ec4bca1250ff6aa39aeab99256257aad36820f1382a010",
+    "observation": "The first metadata helper completed only stat, reached the old maps byte cap before observing EOF, and exited 3. The owner never opened mem or started a field reader. QEMU and helper were actually reaped and the five QEMU streams reached EOF."
+  },
+  "limits": {
+    "maps_bytes": 131072,
+    "map_rows": 1024,
+    "smaps_bytes": 1048576,
+    "metadata_output_bytes": 1572864,
+    "aggregate_witness_seconds": 5,
+    "shared_retained_bytes": 33554432
+  },
+  "artifact": {
+    "MetadataIndex.maps_ref": "BlobRef<=131072",
+    "metadata_read_limit_reason": "A fixed role-specific identifier for stat, maps, smaps, or mountinfo when that cap is reached before EOF."
+  },
+  "authority": "The one fixed readonly proc maps metadata snapshot may use the larger byte bound in each existing metadata bracket. The same row and framing checks, fixed descriptor inventory, aggregate clock and storage caps, map admission, field reads and teardown requirements apply. This amendment grants no launch authorization."
+}
