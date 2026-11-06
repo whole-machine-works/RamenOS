@@ -48,6 +48,23 @@ the Read dispatcher's join followed by Complete and a fresh authorized Read.
 These are host results; target/runtime, device input, persistent target storage
 and physical qualification remain pending.
 
+Post-merge main [run 42151282196, attempt 1](https://github.com/whole-machine-works/RamenOS/actions/runs/42151282196/attempts/1)
+failed the unchanged native task before process-runtime qualification. Seventeen
+original tests passed; `ui1_1_clock_capacity_and_counter_limits_fail_closed`
+failed its first `slots/0` Save: operation 1 returned Unknown (10), with no receipt,
+where a successful 176-byte receipt was required. The command exited 101 and was
+reaped. Only the scenario's initial Store snapshot survived, so the underlying
+permit/publication/reply failure remains unexplained. The retained pre-merge
+qualification and actual merge do not establish a green post-merge baseline.
+A later retry result is separate evidence, not a root-cause resolution.
+
+The bounded follow-up is to add failure-only terminal Store/IO/permit/reply/join
+diagnostics, then reproduce this named scenario on a fresh source-bound Linux
+snapshot before proposing a root-cause fix. Preserve every original deadline,
+owner and assertion; do not accept Unknown as the expected successful receipt.
+Retain every failed attempt. This investigation can proceed alongside independent
+RUN0 preparation and does not change the accepted dispatch dependencies.
+
 The separate earlier local D19 second-Save failure remains unresolved with its
 cause unknown; the later hosted PASS does not explain it. The ready queue retains
 a bounded reproduction/instrumentation follow-up without renewing deadlines or

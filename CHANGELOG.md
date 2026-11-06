@@ -12,6 +12,11 @@
   capacity rejection leaves no stranded Save, and failed startup Read cleanup
   waits for its actual dispatcher join. All nine checks pass; independent audits
   verify 57 canonical stages, eight preservation stages and three archived binaries.
+- Retain the separate post-merge [main attempt 1 failure](https://github.com/whole-machine-works/RamenOS/actions/runs/42151282196/attempts/1):
+  the original native-task `slots/0` Save returned Unknown for operation 1 without
+  the required receipt. Seventeen other tests passed. Queue bounded failure-only
+  Store/IO/permit/reply/join diagnostics; no root cause or remediation is claimed,
+  and later retry results remain separate from this failed attempt and D19.
 - Advance dispatch to RUN0 and the IN0/STORE0/UI2 target joins. Preserve the earlier
   local D19 failure as unresolved with a bounded reproduction follow-up. Host
   acceptance does not establish target persistence or physical durability.
