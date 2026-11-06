@@ -1,5 +1,21 @@
 # CHANGELOG
 
+## 2026-11-05 — merged Linux editor process and original Save recovery
+
+- Merge [PR52](https://github.com/whole-machine-works/RamenOS/pull/52) as
+  `c9ed54a5b69a1a279d7014929bf932288aa86ec6` after separate A3 approval of
+  reviewed head `59723ffe198019fa847f34777269b4da543758c4`. The default-off host
+  workflow combines the supervised editor child with genuine Store Save and
+  original-outcome recovery; the parent retains all effectful authority.
+- Qualify both Desktop entry fixes in
+  [hosted run 42098888792](https://github.com/whole-machine-works/RamenOS/actions/runs/42098888792):
+  capacity rejection leaves no stranded Save, and failed startup Read cleanup
+  waits for its actual dispatcher join. All nine checks pass; independent audits
+  verify 57 canonical stages, eight preservation stages and three archived binaries.
+- Advance dispatch to RUN0 and the IN0/STORE0/UI2 target joins. Preserve the earlier
+  local D19 failure as unresolved with a bounded reproduction follow-up. Host
+  acceptance does not establish target persistence or physical durability.
+
 ## 2026-11-04 — Linux editor-process kernel prerequisites
 
 - Add six default-off, actual Linux witnesses for shared writable-alias seal
