@@ -1,6 +1,6 @@
 # RUN0.0 relocated-entry and ownership preparation
 
-Source-derived preparation reviewed on 2026-10-06. The collector, profile and schema are not frozen; no capture or ownership transition has occurred. The accepted pure selector remains a numeric prerequisite, and the current UEFI path has no actual ownership transition. This preparation grants no native interface, kernel change or hardware actuation authority.
+Source-derived preparation reviewed on 2026-10-06. The collector and inspection schema remain open; the [DEBUG prerequisite batch](debug-firmware-d21-batch-2026-11-06.md) now supplies a pinned probe profile and actual admitted prior hint. No C0/C1/C2 capture or ownership transition has occurred. The accepted pure selector remains a numeric prerequisite, and the current UEFI path has no actual ownership transition. This preparation grants no native interface, kernel change or hardware actuation authority.
 
 The smallest first packet is the existing external Oracle's three-checkpoint capture, with a bounded candidate-address admission rule. It must finish before production page-table dereferences are added. The next packet collects actual retained extents and the final successful firmware-exit map, masks interrupts, validates access, and installs the admitted pool once. Passing either packet does not establish target application execution.
 
@@ -15,9 +15,11 @@ defined in the helper; it returns `ADMIT` (exit 0), `DENY` (2), or `INCOMPLETE` 
 
 Admission checks bounded file identities, PE32+ AMD64 EFI entry mapping and
 supported relocations, and one retained prior diagnostic bound to the exact
-profile digest. It supplies only a prior address candidate. Opaque invocation
-and CPU bytes, matching symbols, ESP-to-EFI binding and a fresh C0 stop remain
-unverified; all profile/capture and broader guest claims stay false. Missing or
+profile digest. It supplies only a prior address candidate. The helper alone
+does not interpret opaque invocation/CPU bytes or establish symbol and ESP
+provenance. The DEBUG prerequisite batch separately checks those input bindings
+and their explicit mapping; a fresh C0 stop remains unverified. All
+profile/capture and broader guest claims stay false. Missing or
 ambiguous prior diagnostics remain incomplete, with no guessed-address fallback.
 The existing EFI parser smoke is labelled `PARSE_ONLY`, with unverified build
 provenance. The full collector/profile/CPU decoder and actual C0/C1/C2 capture
@@ -33,7 +35,7 @@ Bind this C0 stop to a unique input image through pinned read-only ESP/input pro
 
 Then preserve C1/C2 exactly as the maintained Oracle contract: hardware breakpoint on the actual GetMemoryMap pointer, genuine EFI caller/return-site binding, five original pointers, entry capacity, successful return and returned scalars/raw map. The pinned crate has separate map-size-query and buffer-map helper paths (the current selected `memory_map` invokes the firmware function once); the assertion inventory must identify the actual pinned EFI call-site range, not accept an arbitrary firmware caller or quietly skip a failed selected call.
 
-Operational viability is still unproven. Pinned EDK II source includes a debug-only load base/entry diagnostic during load, before StartImage invokes the entry. It does not establish that the installed OVMF build emits that diagnostic, identifies this EFI uniquely, or delivers it before entry. Same-run log polling followed by stop/breakpoint installation has a race and is not the chosen method. A prior-run hint removes that installation race but may miss if the fresh load address changes; preserve such a run as INCOMPLETE. An actual missed stop cannot become a synthetic C0. If no usable prior diagnostic exists, do not grow an automatic fallback. The alternative is a separate reviewed profile adding a pre-entry firmware discovery stop, with exact firmware symbols/instruction identity and bounded actual argument decoding; no such address or stop is available here.
+Prior-hint acquisition is now demonstrated by the reviewed DEBUG build and actual full-stream diagnostic; fresh C0 viability remains unproven. Pinned EDK II emits the load base/entry diagnostic during load, before StartImage invokes the entry, but the completed prior stream does not establish a usable same-run delivery deadline. Same-run log polling followed by stop/breakpoint installation has a race and is not the chosen method. A prior-run hint removes that installation race but may miss if the fresh load address changes; preserve such a run as INCOMPLETE. An actual missed stop cannot become a synthetic C0. If inputs change or no usable prior diagnostic exists, do not grow an automatic fallback. A pre-entry firmware discovery stop would require a separate reviewed profile with exact firmware symbols/instruction identity and bounded actual argument decoding; no such stop is supplied by this packet.
 
 Primary references checked during preparation: [EDK II image loader at edk2-stable202402](https://raw.githubusercontent.com/tianocore/edk2/edk2-stable202402/MdeModulePkg/Core/Dxe/Image/Image.c), [QEMU v8.2.2 GDB documentation](https://raw.githubusercontent.com/qemu/qemu/v8.2.2/docs/system/gdb.rst), and [Microsoft PE format](https://learn.microsoft.com/en-us/windows/win32/debug/pe-format). These are source references, not installed-binary or actual-capture pins. The maintained Oracle additionally names UEFI2.10 and Intel SDM June2024; freeze archived specification references in the CPU dossier before implementation. No CPU Reference Vault/actual trace is present in the inspected maintained paths.
 

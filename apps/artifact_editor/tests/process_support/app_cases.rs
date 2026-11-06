@@ -183,24 +183,33 @@ fn finish_app_at(mut owner: app_owner::AppOwner, now: u64) -> Fixture {
 fn finish_app(owner: app_owner::AppOwner) -> Fixture {
     finish_app_at(owner, 3)
 }
-fn fresh_save_after_reopen(mut f: Fixture, body: &[u8]) {
+fn fresh_save_after_reopen(f: Fixture, body: &[u8]) {
+    fresh_save_after_reopen_with_control(f, body, |_, _| {});
+}
+// Test-private seam: the required negative controls apply an existing real
+// Store fault. The normal consumer supplies only the no-op above.
+pub(super) fn fresh_save_after_reopen_with_control(
+    mut f: Fixture,
+    body: &[u8],
+    before_save: impl FnOnce(&mut Fixture, &store_service::editor_store::EditorEndpoint),
+) {
     f.reopen();
     let mut owner = app_owner::AppOwner::new(f);
     ok(owner.open(0, 101, 4));
     let result = catch_unwind(AssertUnwindSafe(|| {
-        let (f, app) = owner.borrow();
+        let (f, app, endpoint) = owner.borrow_with_endpoint();
         app_until_at(f, app, body, false, 5);
         let before = ok(app.observe(5)).confirmed_revision;
         app_replace_at(f, app, b"note=next\n", 5);
+        before_save(f, endpoint);
         app_save_at(f, app, b"note=next\n", 5);
         assert_eq!(ok(app.observe(5)).confirmed_revision, before + 1);
         assert_eq!(selected_blob(f, 101), b"note=next\n");
     }));
-    let f = finish_app_at(owner, 6);
     if let Err(payload) = result {
-        std::mem::forget(f);
-        resume_unwind(payload);
+        owner.retain_failure_diagnostics(5, 6, payload);
     }
+    let f = finish_app_at(owner, 6);
     f.finish();
 }
 pub(super) fn public_save_lifecycle(name: &'static str) {

@@ -11,13 +11,13 @@
     },
     {
       "relative_path": "apps/artifact_editor/tests/native_task_support/mod.rs",
-      "byte_len": 142169,
-      "sha256": "ba5f7cc2cc98cfa96167a200a5204a8af24c9ec2b06de74e36cac246716f0f8c"
+      "byte_len": 145667,
+      "sha256": "e39e96e82a57d58ad5d11016ab13b52466451406fdaafa89ceb8452c86969f19"
     },
     {
       "relative_path": "apps/artifact_editor/tests/native_task_support/recording.rs",
-      "byte_len": 101976,
-      "sha256": "1aafbf159631da672c3baa314565f22c0a3b71ea76bcee888690ea06171c5d36"
+      "byte_len": 102561,
+      "sha256": "ab13f1a1d7b6154aa2698de842d949e63ee76f2d72b5924c66afad98525f3727"
     },
     {
       "relative_path": "apps/artifact_editor/tests/native_task_support/protected_goldens.rs",

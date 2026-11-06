@@ -127,10 +127,25 @@ owns the matched measurements, source identity, failed attempts and qualificatio
 
 The candidate's diagnostic campaign also failed D21's fresh Save after reopen:
 the correct draft remained Unsaved at its unchanged one-second deadline. Its
-cause remains unresolved and reopened-epoch terminal evidence is missing. Complete
-hosted qualification is required on the fixed candidate, including unchanged D21;
-a later PASS does not explain this retained failure. The queue names the bounded
-failure-only diagnostic follow-up.
+cause remains unresolved and that run lacks reopened-epoch terminal evidence.
+PR #58's reviewed head and its post-merge
+[run 42178680168](https://github.com/whole-machine-works/RamenOS/actions/runs/42178680168)
+passed all nine checks; the latter audit verifies 57 canonical stages, eight
+preservation stages and 244 recording runs. That success does not explain the
+earlier failure.
+
+D21 now has failure-only current-epoch Store/IO/permit/reply and pending-owner
+diagnostics. It records authentic child exit/join evidence separately from
+original-operation cleanup, retains failed roots, and resumes the exact original
+panic even if recording or cleanup also fails. Diagnostic work consumes the
+existing two-second cleanup budget; the original one-second assertion is
+unchanged. Four dedicated Linux controls and strict Clippy pass, including real
+execution of the existing simulated IO-fault seam, recording refusal and held
+cleanup. A child join with one held producer remains incomplete even when the
+pending-original count is zero. The unchanged D21 case also passes. These results
+validate diagnostic behavior, not a historical cause or production fix. The
+[diagnostic batch](docs/plans/debug-firmware-d21-batch-2026-11-06.md) records exact
+evidence and the complete hosted qualification requirement.
 
 The separate earlier local D19 second-Save failure remains unresolved with its
 cause unknown; the later hosted PASS does not explain it. The ready queue retains
@@ -206,10 +221,20 @@ profile explicitly names its read-only virtio-blk attachment and actually boots
 the guest through init checks and kernel idle. A source-backed final-quit framing
 fix removes only optional trailing CRLF. The final probe exits during bounded quit
 grace without supervisor signals, and all five streams reach EOF without errors.
-The debug stream is empty, so prior-entry admission and C0/C1/C2 remain incomplete.
-Actual observations and remaining prerequisites are recorded in the
+That RELEASE-firmware debug stream is empty. Its actual observations remain in the
 [probe batch](docs/plans/frame-export-run0-probe-batch-2026-11-06.md).
-No actual C0/C1/C2 capture is claimed. The
+
+A separately reviewed DEBUG OVMF profile now supplies the missing prior hint.
+Two clean firmware builds produce identical CODE/VARS/full images on the same
+host with pinned BaseTools reused. One bounded probe retains the complete
+12,323-byte debug stream, with one matching loader diagnostic. It reaches all
+five EOFs and exits without signals or transport errors in 20.096573 seconds;
+actual reap and unchanged input pins are recorded. The existing entry-input
+helper returns `ADMIT` for the explicitly mapped profile and full diagnostic.
+The [DEBUG batch](docs/plans/debug-firmware-d21-batch-2026-11-06.md) owns source,
+build, profile and admission identities. No guest or observer code changed.
+The prior address is a candidate for a fresh stopped entry; it does not establish
+address stability, C0/C1/C2 or guest access. The
 [entry preparation](docs/plans/run0-relocated-entry-preparation-v0.md) owns the
 remaining capture and guest-access dependencies.
 Actual relocated-entry capture, complete retained-range collection, final firmware

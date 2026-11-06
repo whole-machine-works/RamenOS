@@ -51,12 +51,19 @@ tool/firmware/ESP provenance, independently checked image contents and 27 Linux
 supervision controls. Reuse the exact source and execution evidence in the
 [current batch](docs/plans/frame-export-run0-probe-batch-2026-11-06.md); do not
 redispatch another generic input validator or the corrected final-quit framing.
-The final probe has actual EOF on every stream and a no-signal graceful exit.
-Prepare a separately reviewed pinned DEBUG-firmware profile: the
-installed RELEASE build removes the loader diagnostic, and the retained debug
-stream reached EOF empty. Obtain a real profile-bound prior hint, then implement/review the bounded collector and
-actual C0/C1/C2 capture. Missing inputs remain `INCOMPLETE`; input admission or a
-probe does not release guest-access or ownership adapter work by itself.
+The separately reviewed
+[DEBUG firmware batch](docs/plans/debug-firmware-d21-batch-2026-11-06.md) now
+supplies pinned clean-repeat firmware, a real profile-bound prior hint, and
+`ADMIT` from the existing input helper using the complete original diagnostic.
+Do not redispatch firmware preparation or manufacture another address source.
+Use the retained exact inputs and explicit admission mapping to freeze the
+bounded RSP transport, inspection schema and RAM-only reader assertions. Then
+implement/review the collector and offline validation for a fresh stopped C0,
+followed by the same-call C1/C2 capture. The prior address is only a candidate:
+a missed stop or missing new profile-bound hint remains `INCOMPLETE`; present
+mismatched or malformed inputs are `DENY`. No scan, guessed address or automatic
+retry supplies the missing witness. Input admission and the probe do not release guest-access or
+ownership adapter work by themselves.
 
 P0–P3 is merged through
 [PR52](https://github.com/whole-machine-works/RamenOS/pull/52) as
@@ -83,14 +90,19 @@ retain every failed attempt. A later PASS alone does not close this packet or
 establish target durability. This investigation can proceed alongside disjoint
 RUN0 preparation.
 
-The matched shared-export campaign also exposed a new D21 fresh-Save deadline
+The matched shared-export campaign also exposed a D21 fresh-Save deadline
 failure after reopen. Its cause remains unresolved; the old no-permit fence
-does not prove the new epoch's terminal state. The next bounded diagnostic
-packet should retain failure-only current-epoch Store/IO/permit/reply and
-pending-original state, root retention and actual child/join proof, preserving the original
-panic and one-second deadline. Do not infer a runtime fix or classify it as an
-unrelated flake from a later PASS. See the current batch's retained source-bound
-D21 audit; this work can proceed alongside RUN0's next prerequisite.
+does not prove the new epoch's terminal state. Failure-only current-epoch
+Store/IO/permit/reply and pending-owner diagnostics are now implemented, with
+actual child/join proof, retained roots and secondary-error detail. Four Linux
+controls preserve the exact original panic and deadlines; unchanged D21 passes.
+Use this instrumentation for a bounded source-bound reproduction or the next
+observed failure; do not redispatch another diagnostic layer. Child join,
+pending-original count and producer cleanup are separate observations. A later
+PASS does not establish a runtime fix or classify the historical failure as an
+unrelated flake. See the
+[diagnostic batch](docs/plans/debug-firmware-d21-batch-2026-11-06.md). This
+investigation remains independent of RUN0's capture prerequisite.
 
 The first product checkpoint remains one keyboard-first human editing task that
 works without a model. Preserve its in-process and merged Linux process controls,

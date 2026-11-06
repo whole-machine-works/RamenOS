@@ -39,12 +39,12 @@ SOURCE_COLLECTOR = 'tools/ci/native_save_task_sources.py'
 SOURCE_COLLECTOR_SHA = '3fa310f06ee74638944c6dfabd9d70ea2f817b825534f47081a3c45e6b4af671'
 # ROOT MUST FREEZE THESE AFTER INDEPENDENT ASSERTION/INVENTORY/READER REVIEW.
 REGISTRY_PATH = 'tools/ci/native_save_task_sources_v0.json'
-REGISTRY_SHA = '9b0738d77858fde8ca19315baa901cbfeb7a38976434d6c45360423f8de8d7ff'
-ASSERTION_PINS = {'apps/artifact_editor/tests/native_task.rs': '5938215bfa4bc02df4ad3e45391948ef03a36e84699f0d24dd382e4f19621be9', 'apps/artifact_editor/tests/native_task_support/mod.rs': 'ba5f7cc2cc98cfa96167a200a5204a8af24c9ec2b06de74e36cac246716f0f8c', 'apps/artifact_editor/tests/native_task_support/recording.rs': '1aafbf159631da672c3baa314565f22c0a3b71ea76bcee888690ea06171c5d36', 'apps/artifact_editor/tests/native_task_support/protected_goldens.rs': 'f99add25f2aa9b4bf37074fb7a2ae3fca5f78475775c7fe469f649d9dd438d6c'}
+REGISTRY_SHA = '829db7fd9f90ea321b709b362facd125af5bf6dee0a8522aa740ff38820135ae'
+ASSERTION_PINS = {'apps/artifact_editor/tests/native_task.rs': '5938215bfa4bc02df4ad3e45391948ef03a36e84699f0d24dd382e4f19621be9', 'apps/artifact_editor/tests/native_task_support/mod.rs': 'e39e96e82a57d58ad5d11016ab13b52466451406fdaafa89ceb8452c86969f19', 'apps/artifact_editor/tests/native_task_support/recording.rs': 'ab13f1a1d7b6154aa2698de842d949e63ee76f2d72b5924c66afad98525f3727', 'apps/artifact_editor/tests/native_task_support/protected_goldens.rs': 'f99add25f2aa9b4bf37074fb7a2ae3fca5f78475775c7fe469f649d9dd438d6c'}
 RECORDING_CONTRACT_PATH = 'docs/contracts/editor-native-save-recording-v0.json'
 RECORDING_CONTRACT_SHA = 'c011d7ac19bf17ac6aa2fa941f16d6c6fbeac1ebd245eb1b7015d7f94d216bfe'
 SOURCE_INVENTORY_PATH = 'docs/contracts/editor-native-save-source-inventory-v0.json'
-SOURCE_INVENTORY_SHA = 'acb774c96f93d95492119eda33f473924fec33b0c9b7543ea6e8b70a31c5ee99'
+SOURCE_INVENTORY_SHA = 'dde2b7ab10cda96e15aee76489f4b9fea2f6330680ea6655a944935f2cac5468'
 RECORDING_PROPOSAL_SHA = 'b994e45e0841c94508d0c15e3f2f4bb54d4b04f00094fa00af3fc6775d9c5227'
 VERIFIER_SOURCE = 'artifact_store_schema/examples/native_manifest_verifier.rs'
 VERIFIER_SOURCE_SHA = '8700f70d1686359b3eec77cf3ce5a47c6c744055eb8793b4e74d60a51ae32254'

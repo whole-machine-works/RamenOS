@@ -934,6 +934,77 @@ impl Fixture {
             .as_mut()
             .expect("actual source scenario recorder retained")));
     }
+    #[cfg(all(target_os = "linux", feature = "host_editor_process_assertions_v0_dev"))]
+    #[allow(
+        dead_code,
+        reason = "Used by process consumers; native_task compiles the same fixture module."
+    )]
+    pub fn process_failure_observation(
+        &self,
+        app: &artifact_editor::ProcessArtifactEditor,
+        proof: Option<&desktop::OwnedEditorChildExitProof>,
+        now: u64,
+    ) -> serde_json::Value {
+        let observation = match app.observe(now) {
+            Ok(actual) => recording::dto_native_editor_observation(&actual),
+            Err(error) => serde_json::json!({"error":format!("{error:?}")}),
+        };
+        let chrome = match self
+            .dc
+            .save_chrome_observation(&self.drivers[0].s.compositor)
+        {
+            Ok(actual) => recording::dto_native_save_chrome_observation(&actual),
+            Err(error) => serde_json::json!({"error_status":error as u32}),
+        };
+        serde_json::json!({
+            "schema_version":1, "acceptance":false,
+            "scope":"reopened Save failure; observation is not quiescence or qualification",
+            "core_epoch_index":self.core_ordinal,
+            "next_store_snapshot":self.snapshot_ordinal.get(),
+            "observation":observation, "chrome":chrome,
+            "pending_originals":app.assertion_pending_originals(),
+            "producer_counts":recording::dto_producer_counts(&self.h.native_producer_counts()),
+            "recorded_native_join_ids":self.joined.iter().copied().collect::<Vec<_>>(),
+            "root":ok(recording::root_identity(self.root.as_ref().unwrap().path())),
+            "root_disposition":"retained after original assertion failure",
+            "child_exit_proof":proof.map(|p| serde_json::json!({
+                "process_id":p.process_id(), "birth_ticks":p.birth_ticks(),
+                "executable_sha256":p.executable_sha256(),
+                "wait_outcome":format!("{:?}",p.wait_outcome()),
+                "supervisor_joined":p.supervisor_joined(),
+            })),
+        })
+    }
+    #[cfg(all(target_os = "linux", feature = "host_editor_process_assertions_v0_dev"))]
+    #[allow(
+        dead_code,
+        reason = "Used by process consumers; native_task compiles the same fixture module."
+    )]
+    pub fn emit_process_failure_observation(
+        &self,
+        phase: &str,
+        value: &serde_json::Value,
+    ) -> Result<(), recording::RecordingError> {
+        // Persist compact state to the owned command log first. A subsequent
+        // recorder refusal cannot erase this observation or replace the panic.
+        let bytes = serde_json::to_vec(value)
+            .map_err(|_| recording::RecordingError("failure diagnostic serialization"))?;
+        if bytes.len() > 512 * 1024 {
+            return Err(recording::RecordingError("compact failure observation cap"));
+        }
+        let mut stderr = std::io::stderr().lock();
+        let _ = std::io::Write::write_all(&mut stderr, b"D21_FAILURE_DIAGNOSTIC ");
+        let _ = std::io::Write::write_all(&mut stderr, &bytes);
+        let _ = std::io::Write::write_all(&mut stderr, b"\n");
+        drop(stderr);
+        let mut held = self
+            .recording
+            .try_borrow_mut()
+            .map_err(|_| recording::RecordingError("failure recorder already borrowed"))?;
+        held.as_mut()
+            .ok_or(recording::RecordingError("failure recorder unavailable"))?
+            .failure_diagnostic(self.core_ordinal, phase, value)
+    }
     pub fn producer_counts(&self, purpose: &'static str) -> desktop::ProducerCounts {
         let actual = self.h.native_producer_counts();
         self.record(|r| r.producer_counts(purpose, &actual));

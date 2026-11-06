@@ -1,8 +1,9 @@
 # External boot-profile Oracle v0
 
 **Status:** Independently reviewed preparation contract. The entry-input helper
-and a separate bounded capability/prior-diagnostic probe are implemented; see
-the [current probe batch](frame-export-run0-probe-batch-2026-11-06.md). The full
+and a separate bounded capability/prior-diagnostic probe are implemented. The
+[DEBUG prerequisite batch](debug-firmware-d21-batch-2026-11-06.md) supplies an
+actual prior hint and its checked input mapping. The full
 collector, inspection schema, Reference Vault and C0/C1/C2 capture remain open.
 Coordinator registration and failing assertions precede dependent implementation.
 
@@ -149,13 +150,13 @@ Exactly three checkpoint identities form this baseline:
 | C1 `get_memory_map_entry` | Hardware breakpoint on that actual function pointer after C0. Bind the caller return address to the pinned EFI caller's instruction range. Record entry RSP and five ABI argument pointers, input buffer capacity and register state. |
 | C2 `get_memory_map_return` | Hardware breakpoint on the return address saved from C1. Match the same call, actual RIP and output pointers; require EFI_SUCCESS for acceptance. Read returned size, key, stride/version and raw bytes while the returned map buffer is live. Capture registers and complete bounded table frames at this stop. |
 
-Entry-address resolution is a remaining input, not solved by a PE entry RVA.
-Before collector implementation, the coordinator must freeze a bounded method
-that supplies an actual relocated-address candidate soon enough to install C0.
+The reviewed prior-run method now supplies an actual relocated-address candidate;
+the [DEBUG prerequisite batch](debug-firmware-d21-batch-2026-11-06.md) binds its
+complete raw diagnostic and exact inputs. A PE entry RVA alone remains insufficient.
 [EDK II's image loader](https://github.com/tianocore/edk2/blob/edk2-stable202402/MdeModulePkg/Core/Dxe/Image/Image.c)
-contains a debug load-address/entry-point diagnostic; the installed firmware's
-build, enabled diagnostics and delivery timing have not been verified. A
-firmware log or prior run may provide a candidate, but cannot certify this run.
+contains the load-address/entry-point diagnostic; the built DEBUG profile actually
+emits it, unlike the earlier installed RELEASE profile. This prior run supplies
+a candidate but cannot certify the next run or establish delivery before its entry.
 Only this run's actual C0 stop, PE relocation relationship and checked instruction
 bytes accept it. Missing diagnostics, ambiguous identity or a missed entry
 produce `INCOMPLETE`. No full-memory scan, inserted guest spin loop or register
@@ -401,10 +402,12 @@ out/oracle_capture/uefi-boot-profile/<unique-run-id>/
   hashes.json
 ```
 
-Required remaining inputs are actual tool/firmware/artifact hashes, the reviewed
-C0 address-resolution method, verified command/property support, and the frozen
-profile/schema with red assertions. The declared environment alone supplies none
-of these acceptance witnesses. This file authorizes preparation, not a capture.
+The DEBUG prerequisite batch supplies actual tool/firmware/artifact hashes and
+the reviewed prior-hint mapping. Remaining inputs are the frozen collector
+transport/schema, executable denial/failure assertions and actual command/property
+support for the bounded RAM-only C0/C1/C2 inspection. The probe's narrower
+allowlist and input admission do not supply those witnesses. This file authorizes
+preparation, not an unreviewed capture.
 
 Completion is one independently reviewed actual capture of the frozen profile,
 all 16 executable validation cases, verified source/input/output hashes and a
