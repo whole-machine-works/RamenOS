@@ -2275,6 +2275,101 @@ pub fn receipt(reply: &store::NativeSaveReply, op: u64) -> (EditorSaveReceiptV0,
     assert_eq!(record.operation_id, op);
     (record, bytes)
 }
+/// Preserve a named capacity assertion's actual failed observation before its
+/// owners unwind. Success uses the same receipt assertions and adds no IO.
+pub fn receipt_with_failure_diagnostics(
+    fixture: &Fixture,
+    attempt: &Attempt,
+    reply: &store::NativeSaveReply,
+    scenario: &'static str,
+    leg: u32,
+    expected_revision: u64,
+) -> (EditorSaveReceiptV0, Vec<u8>) {
+    // Observe after settle's actual reply and joins, before the panic hook can
+    // spend time formatting a backtrace. This is not the reply-creation time.
+    let after_settle = Instant::now();
+    match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        receipt(reply, attempt.operation)
+    })) {
+        Ok(actual) => actual,
+        Err(original_panic) => {
+            // Diagnostics never supply acceptance. Keep the actual owners,
+            // reply and assertion failure even if a recorder read fails.
+            let diagnostic = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                let observed = Instant::now();
+                let producers = attempt
+                    .alloc_entry
+                    .producer_ids()
+                    .into_iter()
+                    .map(|id| ("allocate_entry", id))
+                    .chain(
+                        attempt
+                            .alloc_reply
+                            .producers()
+                            .iter()
+                            .map(|id| ("allocate_reply", id)),
+                    )
+                    .chain(
+                        attempt
+                            .commit_entry
+                            .producer_ids()
+                            .into_iter()
+                            .map(|id| ("commit_entry", id)),
+                    )
+                    .chain(reply.producers().iter().map(|id| ("commit_reply", id)));
+                let mut joins = Vec::new();
+                for (owner, id) in producers {
+                    assert!(joins.len() < 64, "bounded actual producer diagnostic");
+                    let joined = match fixture.host().native_save_producer_joined(id) {
+                        Ok(actual) => serde_json::json!({"joined": actual}),
+                        Err(status) => serde_json::json!({"error_status": status as u32}),
+                    };
+                    joins.push(serde_json::json!({
+                        "owner": owner,
+                        "producer_id": id.producer_id(),
+                        "actual_join_recorded": fixture.joined.contains(&id.producer_id()),
+                        "authenticated_join_observation": joined,
+                    }));
+                }
+                let counts = fixture.h.native_producer_counts();
+                eprintln!(
+                    "NATIVE_TASK_FAILURE_DIAGNOSTIC {}",
+                    serde_json::json!({
+                        "scope": "receipt assertion failure after settle and producer joins",
+                        "acceptance": false,
+                        "case": "ui1_1_clock_capacity_and_counter_limits_fail_closed",
+                        "scenario": scenario,
+                        "leg": leg,
+                        "operation_id": attempt.operation,
+                        "expected_revision": expected_revision,
+                        "request_wire": ok(desktop::encode_envelope_wire(&attempt.request)).as_slice(),
+                        "reply_wire": ok(desktop::encode_envelope_wire(reply.wire())).as_slice(),
+                        "intent_budget_ns": attempt.intent.deadline().duration_since(attempt.intent.entered()).as_nanos(),
+                        "elapsed_after_settle_before_assertion_ns": after_settle.saturating_duration_since(attempt.intent.entered()).as_nanos(),
+                        "deadline_elapsed_after_settle_before_assertion": after_settle >= attempt.intent.deadline(),
+                        "elapsed_at_diagnostic_ns": observed.saturating_duration_since(attempt.intent.entered()).as_nanos(),
+                        "deadline_elapsed_at_diagnostic": observed >= attempt.intent.deadline(),
+                        "producer_counts": recording::dto_producer_counts(&counts),
+                        "joins": joins,
+                        "next_store_snapshot": fixture.snapshot_ordinal.get(),
+                        "snapshot_is_quiescence_proof": false,
+                    })
+                );
+                // Existing bounded recorder exports genuine Store exchanges,
+                // permits, IO events and journal/raw bytes. No fence, cleanup
+                // record or successful scenario summary is manufactured.
+                fixture.store_snapshot("final", "final_before_cleanup", None, None);
+            }));
+            if diagnostic.is_err() {
+                let _ = std::io::Write::write_all(
+                    &mut std::io::stderr().lock(),
+                    b"NATIVE_TASK_FAILURE_DIAGNOSTIC incomplete; original assertion still failed\n",
+                );
+            }
+            std::panic::resume_unwind(original_panic)
+        }
+    }
+}
 pub fn settle(f: &mut Fixture, attempt: &Attempt) -> store::NativeSaveReply {
     let reply = ok(f.host().execute_native_save(&attempt.commit));
     for id in attempt.commit_entry.producer_ids() {
@@ -3130,7 +3225,15 @@ pub fn native_max_controls(recording: &Arc<recording::CaseRecorder>) {
         raw_replace(&mut f, 0, &raw, NEW, 2);
         let prior = attempt(&mut f, 0, &raw, 2000, 2);
         let settled = settle(&mut f, &prior);
-        let prior_bytes = receipt(&settled, prior.operation).1;
+        let prior_bytes = receipt_with_failure_diagnostics(
+            &f,
+            &prior,
+            &settled,
+            "native_max",
+            counter_index as u32,
+            2,
+        )
+        .1;
         let historical_join = ok(f.h.render_native_editor(&raw.editor, 2));
         let historical = ok(f.h.compose_native_save(&f.drivers[0].s.compositor, 2));
         let before = ok(f.editor_observation(&raw.editor, 2));
