@@ -58,11 +58,13 @@ supplies pinned clean-repeat firmware, a real profile-bound prior hint, and
 Do not redispatch firmware preparation or manufacture another address source.
 The [reset capability packet](docs/plans/run0-c0-inspection-v0.md) now supplies
 bounded RSP, the inspection contract and an actual owned reset observation.
-Use the recorded reply, CPU width and memory layout to finish the offline C0
-checks. Before authorizing a fresh C0 memory read, establish a source-bound
-exclusion or actual witness for hidden nested translation on the selected CPU
-profile. A change of profile requires a fresh matching prior hint and capability
-binding. Then qualify a fresh stopped C0 followed by the same-call C1/C2 capture.
+The [host witness result](docs/plans/run0-host-cpu-witness-result-2026-11-06.md)
+qualifies the owned reader at reset. The offline C0 decoder is independently
+reviewed with complete synthetic replay. Staff the live C0 transport and
+RAM-admitted acquisition in parallel after reviewing their interfaces. Join
+the host witness inside the same stopped interval before guest memory reads.
+Reuse the exact pinned profile. A changed profile requires a fresh matching
+prior hint and capability binding. Qualify C0, then the same-call C1/C2 capture.
 The prior address is only a candidate:
 a missed stop or missing new profile-bound hint remains `INCOMPLETE`; present
 mismatched or malformed inputs are `DENY`. No scan, guessed address or automatic

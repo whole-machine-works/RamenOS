@@ -1,0 +1,808 @@
+{
+  "schema_version": 1,
+  "kind": "run0_host_cpu_witness_contract_v0",
+  "status": "gate_first_freeze_pending_independent_review",
+  "base": "9f343d4cf9a708429aa914a83eeb058dfd266b20",
+  "outcome": "source-bound observation of sole owned CPU0 hidden flags through an inherited read-only original-mm descriptor; first actual execution reset-only; no C0 or guest-read authority",
+  "authority": {
+    "Lang": [
+      "fixed parent proc open and owned helper lifecycle",
+      "fixed metadata descriptor reads",
+      "six identity-gated field phases;14 preads;104 bytes",
+      "existing reset-only QMP/HMP operations plus owned quit/cleanup"
+    ],
+    "ObsContract": [
+      "actual process/peer/map/ABI/raw-field identities",
+      "HF2_NPT,HF_GUEST,HF_SMM and CPL/CS64/LMA derived from raw words",
+      "observed repeated consistency and actual cleanup only"
+    ],
+    "forbidden": [
+      "arbitrary PID/path/offset/length reader",
+      "ptrace attach,process_vm_readv,/proc reopen fallback",
+      "writes through memfd,process_vm_writev,register/memory writes,guest calls",
+      "guest resume,RSP connection,breakpoints or guest-memory reads in first slice",
+      "automatic retry/profilechange/QEMU rebuild"
+    ],
+    "trust": "Trusted observer policy, not OS confinement: O_RDONLY prevents descriptor writes but does not restrict read offsets. FOLL_FORCE and inherited fd authority require exact helper and parent admission."
+  },
+  "provenance": {
+    "evidence_root": "Whole Machine Works workspace/evidence/run0-rsp-ipc-20261106/c0d-preparation",
+    "decision_sha256": "452631ce3f2e2f5248bae920abfcddf62732357304593b891110aab2e2ef6c27",
+    "named_query_sha256": "1d041415cbdd535817cb6f1fbe4f95a3beb355c2c9eedd89fc0e7a04a44a18bd",
+    "named_result_sha256": "b59b981b43a15e1079a2c4457857db96bcce458cf01318a471d2b6c947f69399",
+    "qemu_version": "1:8.2.2+ds-0ubuntu1.18",
+    "qemu_sha256": "8a35ccba41582fc6c38b9df85fc9e35fa1d42f414d2d7d8090ee9b2f5e7c0854",
+    "build_id": "0bbe3fc40f3335f9ccdcd61cd96e02bf871f2449",
+    "dbgsym_package_sha256": "388ab63ff3c36d50bea1a52fd18595be0abc2d7794f6d5b41d51be008e63e0b4",
+    "debug_sha256": "566adc4ebfafd96489ff54c26eb4e163622fbcc1503c1a5dd0f8e8ebbaa465d9",
+    "kernel": "Ubuntu6.8.0-142.142-generic6.8.12",
+    "kernel_source_commit": "53e5d07aac028a1523ab0b115f079d6d1bc831ef",
+    "kernel_source_url_prefix": "https://git.launchpad.net/~ubuntu-kernel/ubuntu/+source/linux/+git/noble/plain/",
+    "kernel_source_suffix": "?h=Ubuntu-6.8.0-142.142",
+    "limits": "Retain exact source bytes, debug/DWZ and source-package correspondence before launch. Official kernel tag/source and matching version are not a reproduced-kernel equality claim. Actual toy receipt establishes only its four-byte owned target/fd/EOF/reap behavior.",
+    "profile_digest": "boot_profile_inputs.profile_digest(parsed probe profile): SHA256 of json.dumps(profile,sort_keys=True,separators=(comma,colon),ensure_ascii=True,allow_nan=False).encode(UTF8), no trailing newline. Distinct from raw profile_ref.sha256 and from entry-admission profile digest."
+  },
+  "sources": [
+    {
+      "path": "fs/proc/base.c",
+      "sha256": "9481f79cada6bbfde39b396e4068b068dd5fb6e5fa6b867fec357f3635599525",
+      "sections": "838-875,901-999",
+      "binding": "mem_open mm_access ATTACH|FSCREDS then mmgrab/file.private_data; read mmget_not_zero; dead mm0; release mmdrop; configured FOLL_FORCE"
+    },
+    {
+      "path": "mm/memory.c",
+      "sha256": "86f884d12f88390d71a8b92818bb1455a88da991f23cb9c9f86a40e5a6e0bcb1",
+      "sections": "6029-6120",
+      "binding": "killable map lock; failed GUP may call vm_ops->access; primitive itself is not restricted to ordinary memory"
+    },
+    {
+      "path": "mm/mmap.c",
+      "sha256": "9fa0f5ec5ef72f9e8976f488dca302283db04e06d7130d60682baa1690fa2207",
+      "sections": "2891,3246",
+      "binding": "ordinary anonymous mmap/brk use vma_set_anonymous"
+    },
+    {
+      "path": "include/linux/mm.h",
+      "sha256": "68742bab5ce2ff98ade08e1e80241c3595369eb11eb88ceec6e8b239c916dcc6",
+      "sections": "877-880",
+      "binding": "vma_set_anonymous sets vm_ops=NULL"
+    },
+    {
+      "path": "fs/ext4/file.c",
+      "sha256": "fe410d6d2fe594f1c0eba95eae3cbe2ab76879cd9147b1d910eb58a338e23040",
+      "sections": "766-805",
+      "binding": "both ext4 file/DAX vm_ops omit access; this profile nevertheless rejects mixed/PFN/IO maps"
+    },
+    {
+      "path": "fs/proc/task_mmu.c",
+      "sha256": "2cbb688cedfd6af2f3c16ad778f8a29129417cb613687948d587049b9d3d7f88",
+      "sections": "VmFlags table",
+      "binding": "io=VM_IO,pf=VM_PFNMAP,mm=VM_MIXEDMAP,um/uw=userfaultfd"
+    },
+    {
+      "path": "QEMU qom/object.c",
+      "sha256": "bef71f240e63dc050e39264d2a3ed8e8499012283d95c5077a29b4c45e177d7f",
+      "sections": "730-757",
+      "binding": "source-derived X86CPU allocation uses g_malloc or qemu_memalign, not guest RAM region allocation"
+    }
+  ],
+  "abi": {
+    "pointer_bytes": 8,
+    "word_bytes": 4,
+    "endian": "little",
+    "cpus_queue_rva": "0x17ddad0",
+    "generation_rva": "0x1930b64",
+    "generation_binding": "exact installed cpu_list_generation_id_get@0x470890 RIP-relative load, not optimized-away DWARF address",
+    "queue_bytes": 16,
+    "X86CPU_bytes": 25888,
+    "CPUState_bytes": 10176,
+    "parent_offset": 0,
+    "env_offset": "0x27c0",
+    "node_offset": "0x238",
+    "cpu_index_offset": "0x2c8",
+    "thread_id_offset": "0xb8",
+    "hflags_offset": "0x2870",
+    "hflags2_offset": "0x2874",
+    "masks": {
+      "NPT": "hflags2 bit6",
+      "SMM": "hflags bit19",
+      "GUEST": "hflags bit21",
+      "CPL": "hflags&3",
+      "LMA": "hflags bit14",
+      "CS64": "hflags bit15"
+    },
+    "queue_rule": "QTAILQ union/circular-prev: head.first=CPU;head.prev=CPU+0x238;CPU.node.next=0;CPU.node.prev=head. No conventional tqh_last assumption."
+  },
+  "parent_binding": {
+    "before_spawn": "Verify native sigaction handler is SIG_DFL and SA_NOCLDWAIT absent; sole owner/no asynchronous or concurrent reaper. Python getsignal alone is insufficient. Pin reviewed Linux ABI acquisition; unknown flags INCOMPLETE. This packet reads policy and does not install a signal handler. No Popen.poll/wait/other thread may reap QEMU during observation.",
+    "before_open": "Same policy still holds; Popen-owned unreaped child, one pidfd, no poll/wait/reap until observation ends. Verify private connected QMP SO_PEERCRED pid/uid/gid equals launched child/credentials, fresh soleCPU0 and hostTID, initialprelaunch status. Verify owned proc dir and stat pid/ppid/starttime, exact launched exe descriptor device/inode/hash/BuildID.",
+    "proc_names": [
+      "stat",
+      "maps",
+      "smaps",
+      "exe",
+      "mem"
+    ],
+    "proc_rules": "Only owned /proc/PID directory; no caller PID. Open fixed members via dirfd; mem O_RDONLY|O_CLOEXEC and F_GETFL O_ACCMODE==O_RDONLY. The kernel exe magic symlink is the sole explicit file-follow exception. Fresh before/after descriptors; never treat an old maps/exe descriptor as current after exec. pidfd is corroboration, not permission to allow reaping. Separate fixed /proc/self/mountinfo read-only descriptor is allowed only to bind the executable filesystem; no general proc reader.",
+    "control_brackets": "Fresh QMP status and soleCPU0/TID plus source-audited HMP info registers before/after. Firstslice prelaunch throughout; unexpected state/event INCOMPLETE. Retain identity-only proc equality, complete maps geometry/permissions/backing equality and per-admitted-map VmFlags equality; smaps RSS/accounting bytes need not equal. At reset require derived CPL0,CS64false,LMAfalse and consistency with source-audited HMP reset mode; fields remain exact observations, not executed CPUID.",
+    "qmp_allowlist": {
+      "plain": [
+        "qmp_capabilities",
+        "query-commands",
+        "query-status",
+        "query-cpus-fast",
+        "quit"
+      ],
+      "qom_get": "realized and phys-bits only on sole query-cpus-fast returnedCPU0 path",
+      "hmp": [
+        "info registers"
+      ],
+      "forbidden": "all other commands, including cont/stop/reset/migration/hotplug/expansion, and all RSP traffic"
+    }
+  },
+  "mapping_policy": {
+    "parse": "Strict bounded maps/smaps; every row associates uniquely by (start,end,permissions,offset,dev,inode,path). One VmFlags per row, no duplicate tokens; flags on unselected rows are retained without granting read authority. Only admitted rows use the exact whitelist. Check u64 ranges/alignment/nonoverlap; no deleted or ambiguously escaped admitted path. Retain full raw before/after.",
+    "permissions": "rw-p only for read spans; require VmFlags rd,wr,mr,mw,me,ac,sd; optional hg,nh only; every other flag unsupported, including io,pf,mm,um,uw,ex,sh. Unknown=>INCOMPLETE; malformed/contradictory=>DENY.",
+    "categories": {
+      "elf_data": "same launched executable dev/inode/hash, actual fstype ext4 from bounded mountinfo plus fd statfs0xef53; magic alone does not distinguish ext-family. Match one PT_LOAD and unique PIE bias using page-aligned file offsets. Global complete span within p_memsz and actual admitted VMA.",
+      "elf_bss": "zero-filled final PT_LOAD file tail or contiguous anonymous continuation with exact segment extent/bias; anonymous dev0/inode0/empty path and approved flags. Do not guess .bss from arbitrary anonymous VMA.",
+      "cpu_allocation": "head-derived CPU pointer only; full25888-byte X86CPU fits one approved private anonymous map with dev0/inode0/path empty or [heap]; reject guest RAM roles/named anonymous/device/file/stack maps. No map scan to search for a CPU."
+    },
+    "side_effect_boundary": "Fixed target/source/control history and these ordinary mapping categories exclude access callbacks; FOLL_FORCE never relaxes observed VM_READ. An unexplained mapping or source-category mismatch prevents field reads. The fd pins mm identity, not pages/layout; equality is observed consistency, not atomicity or arbitrary concurrent remap protection."
+  },
+  "phases": [
+    {
+      "id": 1,
+      "name": "head_before",
+      "reads": [
+        [
+          "bias+0x17ddad0",
+          16
+        ],
+        [
+          "bias+0x1930b64",
+          4
+        ]
+      ],
+      "gate": "head_ready only after exact reads; parent validates full head-derived object map and sends admit_cpu"
+    },
+    {
+      "id": 2,
+      "name": "identity_before",
+      "reads": [
+        [
+          "CPU+0x238",
+          16
+        ],
+        [
+          "CPU+0x2c8",
+          4
+        ],
+        [
+          "CPU+0xb8",
+          4
+        ]
+      ],
+      "gate": "exact queue links/index0/freshQMP hostTID before any state read"
+    },
+    {
+      "id": 3,
+      "name": "state_before",
+      "reads": [
+        [
+          "CPU+0x2870",
+          4
+        ],
+        [
+          "CPU+0x2874",
+          4
+        ]
+      ],
+      "gate": "NPT/GUEST/SMM all0; retain full words"
+    },
+    {
+      "id": 4,
+      "name": "state_after",
+      "reads": [
+        [
+          "CPU+0x2870",
+          4
+        ],
+        [
+          "CPU+0x2874",
+          4
+        ]
+      ],
+      "gate": "exact phase3 bytes"
+    },
+    {
+      "id": 5,
+      "name": "identity_after",
+      "reads": [
+        [
+          "CPU+0x238",
+          16
+        ],
+        [
+          "CPU+0x2c8",
+          4
+        ],
+        [
+          "CPU+0xb8",
+          4
+        ]
+      ],
+      "gate": "exact phase2 bytes"
+    },
+    {
+      "id": 6,
+      "name": "head_after",
+      "reads": [
+        [
+          "bias+0x17ddad0",
+          16
+        ],
+        [
+          "bias+0x1930b64",
+          4
+        ]
+      ],
+      "gate": "exact phase1 bytes; helper finishes, actual wait; fresh final metadata and QMP bracket before ADMIT"
+    }
+  ],
+  "helper_protocol": {
+    "processes": "One before metadata reader, one field reader, one fresh after metadata reader; at most one active. Parent retains only actual Popen ownership; no QMP/RSP/VARS/device descriptors inherited by helpers. Internal worker fd roles must be distinct and valid; close_fds plus explicit pass_fds. Inherited result pipe is the only output besides capped stderr; no QMP/RSP/guest input descriptors.",
+    "metadata": "Private internal --metadata-reader with exactly stat/maps/smaps/exe readonly target fd roles plus readonly parent-namespace mountinfo fd; no PID/path/offset. Fixed output order: u32be length+raw stat, maps, smaps, mountinfo, then u32be length+strict ExeIdentity JSON. Stream-hash bounded exe descriptor against pinned launch bytes with stable initial/final fstat; output identity, not executable copy. Exact EOF after fifth frame. Parent opens fresh /proc/self/mountinfo for the unchanged shared mount namespace and binds the deepest matching mount to exe device/path; fstype must ext4. No supplied arbitrary metadata role. Helper derives the unique fstype among mountinfo rows matching exe st_dev; ambiguity fails. Parent additionally checks the deepest mount covering the fixed launch path from the frozen plan; both must agree, with no path argument accepted by the helper.",
+    "field_input": "Two newline-delimited strict JSON frames only, aggregate8192 bytes: Begin then AdmitCPU after head_ready. No trailing frame/byte, external filenames or caller-directed read offset/length. Helper validates nonce/source ABI/compiled constants and read-only mem fd; parent admits maps.",
+    "Begin": {
+      "kind": "begin",
+      "version": 1,
+      "nonce": "64hex",
+      "source_sha256": "64hex",
+      "deadline_ns": "u63 absolute monotonic",
+      "load_bias": "u64 pagealigned",
+      "expected_cpu_index": 0,
+      "expected_thread_id": "positive signed32",
+      "global_maps": "array1..2 HostMapGrant"
+    },
+    "AdmitCPU": {
+      "kind": "admit_cpu",
+      "version": 1,
+      "nonce": "same64hex",
+      "cpu": "u64 exactly phase1 head pointer",
+      "map": "HostMapGrant containing complete X86CPU extent"
+    },
+    "field_output": "Strict newlineJSON<=16384total: read_started before each pread, read_finished after each, one head_ready after phase1, one finished. No fictitious dispatch; pending remains pending on death. Read rows emitted before later syscalls. Duplicate/reordered/extra output invalidates. All channel lengths are charged before allocation; fixed request/result pipes close on error. Worker stderr is a separately capped retained stream.",
+    "ReadStarted": {
+      "kind": "read_started",
+      "seq": "1..14",
+      "phase": "1..6",
+      "address": "u64 derived",
+      "length": "4|16",
+      "started_ns": "u63"
+    },
+    "ReadFinished": {
+      "kind": "read_finished",
+      "seq": "same pending seq",
+      "finished_ns": "u63",
+      "returned": "signed64",
+      "errno": "null|1..4095",
+      "hex": "exact returned bytes lowercasehex; never padded"
+    },
+    "HeadReady": {
+      "kind": "head_ready",
+      "nonce": "same64hex",
+      "completed_phase": 1
+    },
+    "Finished": {
+      "kind": "finished",
+      "status": "ADMIT|INCOMPLETE|DENY",
+      "reason": "closed ascii identifier1..96"
+    },
+    "failure": "Any zero/short/error pread or protocol failure stops; no retry/completion read. Parent validates every row and derived result independently. Cancellation/first failure is never overwritten by teardown error.",
+    "cancellation": "Parent keeps request writer open through normal helper completion and closes it on cancellation. Before every pread and before terminal success, helper checks nonblocking input for cancellation EOF/any extra byte and checks the one aggregate deadline. After it observes EOF/extra byte/failure it dispatches no later pread. A parent close racing after the last check may leave one dispatch in flight; retain actual or pending outcome, never claim retroactive cancellation. No third request frame and no wait for normal input EOF."
+  },
+  "limits": {
+    "vm_seconds": 60,
+    "teardown_reserve_seconds": 5,
+    "aggregate_witness_seconds": 5,
+    "witness_deadline": "min(now+5s, originalVMdeadline-5s); includes both metadata readers, field handshake,14preads and all helper waits; never reset per phase",
+    "pread_calls": 14,
+    "pread_bytes": 104,
+    "pread_max_bytes": 16,
+    "metadata_readers": 2,
+    "field_readers": 1,
+    "concurrent_helpers": 1,
+    "stat_bytes": 4096,
+    "maps_bytes": 65536,
+    "smaps_bytes": 1048576,
+    "map_rows": 1024,
+    "exe_bytes": 67108864,
+    "exe_hash_chunk_bytes": 65536,
+    "metadata_identity_json_bytes": 4096,
+    "field_input_bytes": 8192,
+    "field_output_bytes": 16384,
+    "helper_stderr_bytes": 16384,
+    "report_bytes": 1048576,
+    "shared_retained_bytes": 33554432,
+    "kernel_limit": "All open/fstat/sigaction/proc/syscall entries checked against remaining deadline; none has a proved hard kernel-return guarantee. Supervision keeps parent responsive to helper stalls; attempted TERM/KILL is not actual reap. Never conceal a pending child.",
+    "mountinfo_bytes": 262144,
+    "metadata_output_bytes": 1572864,
+    "mountinfo_rows": 2048,
+    "shared_message_count": 128
+  },
+  "api": {
+    "future_worker_owner_files": [
+      "tools/trace/run0_host_cpu_reader.py",
+      "tools/trace/test_run0_host_cpu_reader.py"
+    ],
+    "future_parent_owner_files": [
+      "tools/trace/run0_host_cpu_witness.py",
+      "tools/trace/test_run0_host_cpu_witness.py"
+    ],
+    "pure": "admit_host_maps(raw_maps:bytes,raw_smaps:bytes,exe:ExeIdentity,abi:HostABI)->HostMapSet; admit_cpu(head:bytes,maps:HostMapSet,abi:HostABI)->HostMapGrant; validate_report(report_ref:BlobRef,blobs:Mapping[str,bytes])->ValidatedHostState. Mapping is immutable already supplied exact bytes keyed by safe relative path; no callback or file/proc/network acquisition, no mutable bytearray. No validated return on nonPASS.",
+    "parent": "observe_owned_cpu(child:Popen,qmp:typedresetclient,budget:sharedBudget,evidence,source:HostABI,binding:StopBinding)->partialWitness; parent owns proc/pidfd/helpers. This API does not launch or resume QEMU.",
+    "cli": [
+      "python tools/trace/run0_host_cpu_witness.py plan --inputs DIR --source-dossier FILE --host-abi FILE --run DIR --output FILE",
+      "python tools/trace/run0_host_cpu_witness.py collect --inputs DIR --source-dossier FILE --host-abi FILE --run DIR --plan FILE --plan-sha256 HEX"
+    ],
+    "cli_scope": "reset-only; no --pid,--address,--length,--context=c0 or helper-fd options on public CLI. Internal workers are fixed implementation dispatch, not a general user reader."
+  },
+  "artifact": {
+    "rules": "All objects closed. StrictUTF8 JSON,no duplicate/unknown/nonfinite/bool-int. Exact bounded lengths/hash refs; null means unobserved. BlobRef inherits run0-c0-inspection-v0. Stable finalized digest external to report.",
+    "HostMapGrant": {
+      "start": "u64",
+      "end": "u64 exclusive",
+      "category": "elf_data|elf_bss|cpu_allocation",
+      "permissions": "rw-p",
+      "offset": "u64",
+      "dev_major": "u32",
+      "dev_minor": "u32",
+      "inode": "u64",
+      "path": "boundedASCII",
+      "vm_flags": "unique sorted approved strings",
+      "maps_row": "u32",
+      "smaps_row": "u32",
+      "metadata_sha256": "64hex"
+    },
+    "ExeIdentity": {
+      "device": "u64",
+      "inode": "u64",
+      "size": "u64<=64MiB",
+      "sha256": "64hex",
+      "build_id": "40hex",
+      "elf_class": 64,
+      "elf_machine": 62,
+      "mount_fstype": "ext4",
+      "statfs_magic": "0xef53"
+    },
+    "StopBinding": {
+      "context": "reset|c0",
+      "run_id": "[a-z0-9-]{1,64}",
+      "profile_sha256": "canonical probeprofile64hex",
+      "cpu_index": 0,
+      "qmp_thread_id": "positive signed32",
+      "rsp_thread": "null|01",
+      "stop_id": "reset|C0",
+      "stop_ref": "null|BlobRef",
+      "resume_seq": "null|positiveu64",
+      "breakpoint_seq": "null|positiveu64",
+      "control_before_seq": "positiveu64",
+      "control_after_seq": "positiveu64"
+    },
+    "State": {
+      "hflags": "u32",
+      "hflags2": "u32",
+      "cpl": "0..3",
+      "cs64": "bool",
+      "lma": "bool",
+      "no_npt": "bool derived",
+      "no_svm_guest": "bool derived",
+      "no_smm": "bool derived",
+      "observed_consistent": "bool"
+    },
+    "WaitResult": {
+      "role": "metadata_before|fields|metadata_after|qemu",
+      "pid": "positive signed32",
+      "started": "bool",
+      "reaped": "bool",
+      "returncode": "signed32|null",
+      "actions": "array<=8 actual bounded strings",
+      "grace": "not_attempted|exited|timeout|error"
+    },
+    "Report": {
+      "schema_version": 1,
+      "kind": "run0_host_cpu_witness_v0",
+      "run_id": "same binding",
+      "binding": "StopBinding",
+      "profile_ref": "BlobRef",
+      "observer_ref": "BlobRef",
+      "source_ref": "BlobRef",
+      "abi_ref": "BlobRef",
+      "plan_ref": "BlobRef",
+      "metadata_before_ref": "BlobRef|null raw/identity index",
+      "metadata_after_ref": "BlobRef|null",
+      "peer_ref": "BlobRef|null",
+      "sigchld_ref": "BlobRef|null",
+      "process_ref": "BlobRef|null",
+      "reads_ref": "BlobRef|null closed14-row stream/index",
+      "state": "State|null",
+      "admission": "{status:ADMIT|INCOMPLETE|DENY,reason:identifier}",
+      "termination": "{status:PASS|INCOMPLETE|DENY,first_failure:identifier|null,secondary_failures:array<=16identifier,waits:array<=4WaitResult,streams_ref:BlobRef|null of StreamsIndex}",
+      "claims": "same nine FalseClaims as inspection contract, allfalse",
+      "fresh_c0_verified": false,
+      "origin": "synthetic_fixture|retained_runtime; evidence producer scope, not caller override",
+      "control_ref": "BlobRef|null of ControlIndex resolving all StopBinding seqs"
+    },
+    "accepted": "Final PASS requires ADMIT, all actual helper and QEMU waits/required stream EOF, unchanged pins and complete evidence. Parent may use the live ADMIT only inside the same stopped interval for separately authorized C0 collection; final artifact remains pending until actual cleanup.",
+    "classification": "Malformed/mismatched input or identity=>DENY before dependent read. Missing/unsupported map/permission/source or incomplete/changed/short actual evidence=>INCOMPLETE. First failure retained even if cleanup also fails.",
+    "HostABI": {
+      "schema_version": 1,
+      "kind": "run0_host_cpu_abi_v0",
+      "contract_abi_sha256": "canonical exact ABI subsection64hex",
+      "qemu_ref": "BlobRef",
+      "debug_ref": "BlobRef",
+      "dwz_ref": "BlobRef",
+      "debug_package_ref": "BlobRef",
+      "query_script_ref": "BlobRef",
+      "query_result_ref": "BlobRef",
+      "static_getter_ref": "BlobRef",
+      "kernel_observation_ref": "BlobRef",
+      "kernel_source_refs": "array of exactly six unique Linux source roles listed in sources, each with BlobRef; QEMU allocation separate",
+      "qemu_allocation_source_ref": "BlobRef",
+      "runtime_dependencies_ref": "BlobRef with unchanged launch loader/library/env pins; no injected allocator/preload",
+      "source_dossier_ref": "BlobRef",
+      "native_abi_ref": "BlobRef to exact native_abi layout/constants and eleven pinned header refs, actual glibc/LinuxUAPI package/library binding plus retained native-layout probe result"
+    },
+    "PrelaunchFailure": {
+      "schema_version": 1,
+      "kind": "run0_host_cpu_prelaunch_failure_v0",
+      "status": "INCOMPLETE|DENY",
+      "reason": "identifier1..96",
+      "child_spawned": false
+    },
+    "ValidatedHostState": {
+      "origin": "synthetic_fixture|retained_runtime from validated report",
+      "report_ref": "BlobRef of that exact report",
+      "binding": "StopBinding",
+      "state": "State nonnull",
+      "final_status": "literal PASS after admissionADMIT+finalPASS; opaque validated value, no bare caller-supplied flags"
+    },
+    "HostCPUWitnessRef": "Alias of BlobRef only; no additional authority or data type.",
+    "SliceRef": {
+      "blob": "BlobRef",
+      "offset": "u64",
+      "length": "u64>0; checked exact subrange; bounded by role"
+    },
+    "MetadataIndex": {
+      "schema_version": 1,
+      "phase": "before|after",
+      "reader_pid": "positive signed32",
+      "started_ns": "u63",
+      "finished_ns": "u63",
+      "stat_ref": "BlobRef<=4096",
+      "maps_ref": "BlobRef<=65536",
+      "smaps_ref": "BlobRef<=1048576",
+      "mountinfo_ref": "BlobRef<=262144",
+      "exe_identity_ref": "BlobRef<=4096 of ExeIdentity",
+      "wire_ref": "BlobRef<=1572864 of five actual framed outputs",
+      "stderr_ref": "BlobRef<=16384",
+      "wait_role": "metadata_before|metadata_after"
+    },
+    "NativeSigaction": {
+      "observed_ns": "u63",
+      "raw_ref": "BlobRef of exact native struct from reviewed sigaction ABI",
+      "abi_ref": "BlobRef to same HostABI native_abi_ref; struct size152, not kernel rt_sigaction layout",
+      "handler": "u64 exact SIG_DFL",
+      "flags": "u64",
+      "no_cld_wait_mask": "u64 source constant",
+      "observer_pid": "positive signed32"
+    },
+    "SigchldIndex": {
+      "schema_version": 1,
+      "before_spawn": "NativeSigaction",
+      "before_open": "NativeSigaction",
+      "sole_reaper_pid": "positive signed32",
+      "no_concurrent_reaper": true,
+      "policy_ref": "BlobRef of pinned parent source/launch ownership record; observational policy assertion, not kernel attestation"
+    },
+    "PeerIndex": {
+      "schema_version": 1,
+      "socket_role": "qmp",
+      "socket_path": "safe private relative socket path",
+      "observed_ns": "u63",
+      "raw_ref": "BlobRef length12 of actual SO_PEERCRED ucred",
+      "pid": "positive signed32",
+      "uid": "u32",
+      "gid": "u32",
+      "abi_ref": "BlobRef to same HostABI native_abi_ref; native ucred size12"
+    },
+    "PidfdCheck": {
+      "observed_ns": "u63",
+      "readable": "bool",
+      "hangup": "bool",
+      "error": "null|integer1..4095"
+    },
+    "ProcessIndex": {
+      "schema_version": 1,
+      "observer_pid": "positive signed32",
+      "qemu_pid": "positive signed32",
+      "ppid": "positive signed32 equals observer",
+      "starttime_ticks": "u64 parsed from raw stat bothbrackets",
+      "pidfd_opened_ns": "u63",
+      "pidfd_before": "PidfdCheck",
+      "pidfd_after": "PidfdCheck|null",
+      "procdir_identity": "{dev:u64,inode:u64,mode:u32,statfs_magic:u64 equalsPROC_SUPER_MAGIC}",
+      "mem_open": "{at_ns:u63,fd:i32>=0,flags:u32,access_mode:literalO_RDONLY,cloexec:true}",
+      "mem_closed_ns": "u63|null",
+      "exe_before_ref": "BlobRef of exact MetadataIndex ExeIdentity",
+      "exe_after_ref": "BlobRef|null",
+      "lifecycle_ref": "BlobRef of LifecycleIndex"
+    },
+    "LifecycleIndex": {
+      "schema_version": 1,
+      "rows": "array<=64 LifecycleRow in actual order"
+    },
+    "LifecycleRow": {
+      "seq": "contiguous1..N",
+      "role": "qemu|metadata_before|fields|metadata_after",
+      "pid": "positive signed32",
+      "operation": "spawn|signal_term|signal_kill|wait|close",
+      "started_ns": "u63",
+      "finished_ns": "u63|null",
+      "result": "ok|error|timeout|pending",
+      "returncode": "signed32|null only actual wait",
+      "errno": "null|1..4095"
+    },
+    "ReadIndex": {
+      "schema_version": 1,
+      "nonce": "64hex",
+      "begin_ref": "BlobRef<=8192 exact first input frame",
+      "admit_cpu_ref": "BlobRef|null exact second frame",
+      "output_ref": "BlobRef<=16384 exact helper output",
+      "stderr_ref": "BlobRef<=16384",
+      "helper_pid": "positive signed32",
+      "deadline_ns": "u63 same aggregate deadline",
+      "reads": "array0..14 ReadRow in source order",
+      "wait_role": "fields"
+    },
+    "ReadRow": {
+      "seq": "1..14",
+      "phase": "1..6",
+      "role": "head|generation|node|cpu_index|thread_id|hflags|hflags2",
+      "address": "u64 exact derived",
+      "length": "4|16",
+      "started_ns": "u63",
+      "finished_ns": "u63|null",
+      "result": "ok|error|timeout|pending",
+      "returned": "signed64|null",
+      "errno": "null|1..4095",
+      "raw_hex": "lowercase hex exactly actual returned bytes, <=32chars; pending empty",
+      "started_wire": "SliceRef of read_started",
+      "finished_wire": "SliceRef|null of read_finished"
+    },
+    "ControlIndex": {
+      "schema_version": 1,
+      "scope": "reset_witness|shared_c0",
+      "run_id": "same binding",
+      "profile_sha256": "same canonicalprobe digest",
+      "clock": "host_monotonic_ns",
+      "raw_qmp_in_ref": "BlobRef",
+      "raw_qmp_out_ref": "BlobRef",
+      "raw_rsp_in_ref": "null|BlobRef futureonly",
+      "raw_rsp_out_ref": "null|BlobRef futureonly",
+      "operations": "array<=128 ControlOperation for reset; future sharedC0 uses existing512 cap",
+      "events": "array<=128 ControlEvent",
+      "before": "ControlBracket",
+      "after": "ControlBracket"
+    },
+    "ControlOperation": {
+      "seq": "positiveu64 unique ordered in single session namespace",
+      "protocol": "qmp|rsp",
+      "operation": "exact typed allowlisted command; reset qmp only",
+      "request": "SliceRef",
+      "response": "SliceRef|null",
+      "started_ns": "u63",
+      "finished_ns": "u63|null",
+      "result": "ok|error|timeout|pending"
+    },
+    "ControlEvent": {
+      "seq": "positiveu64 in retained event order",
+      "protocol": "qmp|rsp",
+      "received_ns": "u63",
+      "wire": "SliceRef",
+      "name": "exact decoded event/stop name"
+    },
+    "ControlBracket": {
+      "status_seq": "positiveu64",
+      "cpu_seq": "positiveu64",
+      "hmp_seq": "positiveu64",
+      "realized_seq": "positiveu64|null",
+      "phys_bits_seq": "positiveu64|null"
+    },
+    "control_validation": "Reparse raw complete QMP wire and exact ID/response/event correspondence, not only labels. All before replies finish before first metadata worker; all after queries follow field-reader wait and final metadata. StopBinding.control_before_seq/after_seq equal respective status_seq. No hidden resume/stop/reset/migration/hotplug events. FutureC0 shares the exact C0 operation sequence namespace/rawindex, including originalresume/breakpoint/asyncstop; no independently renumbered join. Index is independently finalized, avoiding report hash cycles.",
+    "StreamsIndex": {
+      "schema_version": 1,
+      "rows": "array<=12 StreamEnd"
+    },
+    "StreamEnd": {
+      "name": "qmp|serial|debug|qemu_stdout|qemu_stderr|metadata_before_stdout|metadata_before_stderr|fields_stdout|fields_stderr|metadata_after_stdout|metadata_after_stderr",
+      "raw_ref": "BlobRef",
+      "eof": "bool actual read0 only",
+      "error": "null|{operation:read|write|close,errno:1..4095}"
+    },
+    "read_validation": "Recompute field addresses/values/queue links/masks using exact ABI and raw frame refs, report context and raw metadata. Phase1 completion plus valid parent grant must precede phase2; identity admission must precede phase3. Actual clock/order and preserved pending state required. All selected map grants must independently match retained metadata."
+  },
+  "later_c0": "Separate reviewed integration only: context=c0/stop_idC0, same exact run/profile/CPU0/TID/RSP01/stop/ref/originalresume+breakpoint/control interval. Fresh flags repeat within this stop before guest reads; CPL0/CS64/LMA agree with independently decoded HMP/selectedRSP. A20=1 comes separately from actual HMP, not these fields. Reset report, old priorhint, bare booleans or synthetic fixtures cannot satisfy it. No C0/C1/C2/fullprofile claim follows from this packet.",
+  "assertions": [
+    {
+      "id": "HC01",
+      "name": "Strict immutable inputs",
+      "assert": "Pin exact profile/argv/ELF/debug+DWZ/ABI/kernel/source/observer files before child creation; missing=>INCOMPLETE, malformed/mismatch=>DENY. Strict JSON rejects duplicate keys, unknowns, NaN, bool integers, overflow and over-budget input before dependent action. Native layout fixture must match sigaction/ucred/statfs exact sizes/alignments/offsets/constants; mismatch has no libc query or dependent read."
+    },
+    {
+      "id": "HC02",
+      "name": "True parent and process identity",
+      "assert": "Verify SIGCHLD disposition and sigaction flags before Popen and before proc open: not SIG_IGN, no SA_NOCLDWAIT, no handler/thread/other reaper. Wrong parent/PID/starttime/exe/peer credentials or unknown flags causes no mem open. pidfd alone cannot substitute."
+    },
+    {
+      "id": "HC03",
+      "name": "Fresh proc descriptors",
+      "assert": "Only fixed names stat/maps/smaps/exe/mem through owned proc directory; mem O_RDONLY|O_CLOEXEC verified F_GETFL. Wrong modes/path/fd roles deny. Real owned fixture confirms write denial with unchanged target and actual waits."
+    },
+    {
+      "id": "HC04",
+      "name": "Supervised metadata",
+      "assert": "Actual bounded readers retain raw stat/maps/smaps/exe digest from fresh before/after descriptors. Stall/oversize/partial framing/unknown or duplicate VmFlags/extra output stops under shared deadline. No arbitrary path/offset interface. Fresh unrelated metadata fixture succeeds after failure."
+    },
+    {
+      "id": "HC05",
+      "name": "Source-backed mapping categories",
+      "assert": "Exact maps/smaps row association, ext4 mountinfo+descriptor identity, unique ELF load bias and PT_LOAD file/BSS bounds. Admit only enumerated ordinary mappings; no reads for IO/PFNMAP/mixed/userfaultfd/nonprivate/unreadable/unknown mapping, false ext4 magic-only proof, changed category or boundary overlap."
+    },
+    {
+      "id": "HC06",
+      "name": "Two-frame handshake",
+      "assert": "One begin then one admit_cpu after exact head progress. Unknown/replayed/out-of-order/oversize frame or caller-selected offset/length denies before dependent pread; head-derived CPU base must match admit_cpu. A fresh independent session succeeds after rejection."
+    },
+    {
+      "id": "HC07",
+      "name": "Identity before state",
+      "assert": "Bad/null/misaligned/overflowing head or full object outside one admitted map stops after phase1; wrong next/prev/headprev/index/TID stops after phase2. Spy proves no hflags read in either case and no list scan."
+    },
+    {
+      "id": "HC08",
+      "name": "Exact read inventory",
+      "assert": "Six phases,14 preads,104 bytes only; addresses and sizes independently recomputed from fixed ABI/head. Each read_started precedes syscall; read_finished retains exact return/errno/raw bytes. No retry, merged bulk object read, write or arbitrary address request."
+    },
+    {
+      "id": "HC09",
+      "name": "Partial and state failures",
+      "assert": "At every pread position, zero/short/errno retains actual bytes, first failure and no later read. Set each NPT/GUEST/SMM bit independently; changed repeated flags/identity/head/generation prevents ADMIT. Decode CPL/CS64/LMA from same retained hflags."
+    },
+    {
+      "id": "HC10",
+      "name": "Original mm lifetime",
+      "assert": "Real owned exit and exec fixtures show retained fd remains old mm; fresh identity/exe/maps or EOF invalidates it. Never infer current QEMU state from old fd, partial data, pidfd alone or reused PID. Retain actual target/helper waits."
+    },
+    {
+      "id": "HC11",
+      "name": "One immutable deadline",
+      "assert": "One5s aggregate window covers metadata/handshake/all reads/helper waits, clipped to original VM deadline minus5s reserve. Parent independently supervises stalled/TERM-ignoring helper, preserves first failure/cancellation and bounded TERM/KILL attempts. A requested signal is not a reap; uncertainty remainsINCOMPLETE. Targeted pipe-close race control proves observed cancellation prevents later dispatch, while an already-dispatched read stays actual/pending; normal completion requires no input EOF and remains usable."
+    },
+    {
+      "id": "HC12",
+      "name": "Reset-only live scope",
+      "assert": "Actual first invocation remains -S/prelaunch, QMP brackets and CPU0/HMP agree, no RESUME/STOP surprise; no RSP connection, guest memory, breakpoint, register writes, calls or profile change. Source/fixture records cannot satisfy live state."
+    },
+    {
+      "id": "HC13",
+      "name": "Ownership cleanup and recovery",
+      "assert": "Every started helper and QEMU has a separately retained actual wait result; no concurrent helpers and no descriptor/socket/VARS leaks. After cancellation/failure a fresh unrelated owned fixture succeeds. No actual pending child is labeled reaped."
+    },
+    {
+      "id": "HC14",
+      "name": "Artifact validation",
+      "assert": "Pure validator recomputes all14reads, queue/ABI/map/field links and derived flags from retained raw bytes. Tampered/mislinked/duplicate/missing evidence or missing final bracket cannot PASS. All nine inherited claims plus fresh_c0_verified remainfalse."
+    },
+    {
+      "id": "HC15",
+      "name": "Same-stop future dependency",
+      "assert": "Reset/synthetic/partial/cleanup-unknown report cannot certify C0. Futurecontext=c0 must match exact run/profile/CPU/TID/stop/ref/resume/breakpoint/control interval and hflags CPL/CS64/LMA with separate actual HMP A20; no cross-stop/reused hint promotion."
+    },
+    {
+      "id": "HC16",
+      "name": "Bounded terminal evidence",
+      "assert": "All streams/frame/log/report/metadata/VARS bytes charge shared32MiB before growth. Report persistence/cleanup errors retain first failure and bounded terminal report where possible; missing EOF or truncation cannot PASS. No fallback to readv/ptrace/changedprofile/customQEMU."
+    }
+  ],
+  "release_gates": [
+    "Independent exact contract review and coordinator assignment before handlers/tests",
+    "Green maintained main baseline before implementation authorization",
+    "Gate-first red then meaningful pure/real-owned-child controls; no QEMU from fixture authority",
+    "Source/ABI/observer/input/argv/plan review and coordinator one-run authorization before first reset observation",
+    "Separate same-stop C0 contract/collector admission remains held"
+  ],
+  "native_abi": {
+    "platform": "Linux x86_64 LP64 little-endian glibc2.39-0ubuntu8.9 only; validate pointer8,long8,int4/alignment8 before native call",
+    "query": "libc sigaction(SIGCHLD=17,NULL,&old) only; not raw rt_sigaction syscall; no handler installation",
+    "sigaction": {
+      "size": 152,
+      "handler_offset": 0,
+      "handler_bytes": 8,
+      "mask_offset": 8,
+      "mask_bytes": 128,
+      "flags_offset": 136,
+      "flags_bytes": 4,
+      "restorer_offset": 144,
+      "restorer_bytes": 8,
+      "SIG_DFL": 0,
+      "SA_NOCLDWAIT": 2
+    },
+    "ucred": {
+      "size": 12,
+      "pid_offset": 0,
+      "uid_offset": 4,
+      "gid_offset": 8,
+      "field_bytes": 4
+    },
+    "headers": [
+      {
+        "path": "/usr/include/x86_64-linux-gnu/bits/sigaction.h",
+        "sha256": "b2f76a26bbfa3668859e8e8a93af9321e14083914df0aa0367cdffaabf4ece81"
+      },
+      {
+        "path": "/usr/include/x86_64-linux-gnu/bits/types/__sigset_t.h",
+        "sha256": "05291a7d38bb1d0da1ed01c09fe85fa2b1f4d5bc708e06bb930efec672db08d5"
+      },
+      {
+        "path": "/usr/include/x86_64-linux-gnu/bits/socket.h",
+        "sha256": "0d54fcf79ed8111df5d3580eb4bb662b744f8ffae03206c624ebec84d43f0ea0"
+      },
+      {
+        "path": "/usr/include/x86_64-linux-gnu/bits/signum-generic.h",
+        "sha256": "0a27898a4f720aeabcafb45eba42b0cd6b9593a6e77bd87019969eda94cf435b"
+      },
+      {
+        "path": "/usr/include/x86_64-linux-gnu/bits/signum-arch.h",
+        "sha256": "ef1475e1546024be5b12edea07ed215ce3a9b004b1266ba7a3b5e40fb7bbe986"
+      },
+      {
+        "path": "/usr/include/x86_64-linux-gnu/bits/statfs.h",
+        "sha256": "063abffe73524326242b3e46d1d13912d35462e758c41f7658959fd76f7ab70b"
+      },
+      {
+        "path": "/usr/include/x86_64-linux-gnu/sys/statfs.h",
+        "sha256": "3e01283fc2e908ee350239e290a1c6d002c6199d854a6f23b94cc5ff98a9ac40"
+      },
+      {
+        "path": "/usr/include/x86_64-linux-gnu/bits/types.h",
+        "sha256": "371847ed3adab1c19db392034f6a22407d321b1dc5f2440563f4b0b8b6c5386b"
+      },
+      {
+        "path": "/usr/include/x86_64-linux-gnu/bits/wordsize.h",
+        "sha256": "716d8459074e2a082d65a28192b32eddbfd7587348372395b1c283a723ae4c18"
+      },
+      {
+        "path": "/usr/include/x86_64-linux-gnu/bits/typesizes.h",
+        "sha256": "047ee5ab17a95364c4b0f14c3eb0750e84e457c408f9a65a6c225ece585e0c14"
+      },
+      {
+        "path": "/usr/include/linux/magic.h",
+        "sha256": "223b3af6647ffa78cdd83678b8e5b53f92dc7105837556f10629cacbd6e6918e"
+      }
+    ],
+    "provenance": "derived from actual installed headers and LP64 layout, not a native-query execution claim; exact header/library bytes join reviewed HostABI before native reads",
+    "statfs": {
+      "query": "libc fstatfs(fd,&buffer), only bound procdir/exe descriptors; no guessed buffer",
+      "size": 120,
+      "alignment": 8,
+      "f_type_offset": 0,
+      "f_type_bytes": 8,
+      "f_type_type": "signed __fsword_t / signed long under LP64",
+      "PROC_SUPER_MAGIC": "0x9fa0",
+      "EXT4_SUPER_MAGIC": "0xef53",
+      "closure": "source-derived installed header layout; coordinator native-layout probe must confirm actual sizeof/alignment/offset/width/constants before implementation execution"
+    }
+  }
+}
