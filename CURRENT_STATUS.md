@@ -1,6 +1,6 @@
 # Current Status
 
-**Last Updated:** 2026-11-05
+**Last Updated:** 2026-11-06
 **Status:** Active and authoritative for landed state
 **Current Slice:** RUN0 target runtime preparation after merged UI1.1d host process delivery
 **Physical Lane:** S12.4 HIL appliance observation/actuation awaits setup
@@ -114,11 +114,23 @@ The full public-selection diagnostic completed D09 successfully with its precedi
 corpus. Scans grew from about 150 ms to 1.390 s as the observed file counts grew
 from 193–455 to 2371–2633; both compositions grew from 1.695 s to 2.882 s. Nested
 scan time is part of composition, not additional time. This is measured current
-overhead, not proof of the historical hosted cause. Next review a joint reservation
-and census for both complete frame exports, preserving path checks, caps and
-independent Host assertions. No optimization or relaxed bound is implemented. The
-[batch record](docs/plans/runtime-next-batch-2026-11-05.md) owns tested scope and
-resource/evidence locations.
+overhead, not proof of the historical hosted cause. The successor now shares one
+fresh census and exclusive reservation across both complete frame/chrome exports.
+It preserves first-frame evidence before the second composition, every original
+path/cap/identity check and independent Host assertion. Errors after admission permanently prevent
+that reservation from settling; each write rechecks marker ownership. Eight
+separate Linux controls and strict Clippy pass, including actual partial writes,
+capacity refusals, replacement and fresh successful operations. Original eighteen
+assertions, Reader93, all thirty process families and deadlines remain required.
+The [successor batch record](docs/plans/frame-export-run0-probe-batch-2026-11-06.md)
+owns the matched measurements, source identity, failed attempts and qualification.
+
+The candidate's diagnostic campaign also failed D21's fresh Save after reopen:
+the correct draft remained Unsaved at its unchanged one-second deadline. Its
+cause remains unresolved and reopened-epoch terminal evidence is missing. Complete
+hosted qualification is required on the fixed candidate, including unchanged D21;
+a later PASS does not explain this retained failure. The queue names the bounded
+failure-only diagnostic follow-up.
 
 The separate earlier local D19 second-Save failure remains unresolved with its
 cause unknown; the later hosted PASS does not explain it. The ready queue retains
@@ -184,11 +196,21 @@ The external entry-input prerequisite now has a strict PE/input/prior-diagnostic
 admission CLI and 22 independently reviewed synthetic controls, executed by the
 existing CI tooling stage. It distinguishes malformed inputs from unavailable
 evidence and preserves explicit false capture, profile-completion and guest
-claims. A read-only existing EFI parse supplies no build/capture provenance.
-No usable retained prior loaded-entry diagnostic is available in the inspected
-project evidence; the complete profile and actual three-checkpoint capture remain
-open. The [entry preparation](docs/plans/run0-relocated-entry-preparation-v0.md)
-owns this subset and its next inputs.
+claims. The successor prepares a real source-built EFI with matching PDB identity,
+tool/firmware provenance and an independently checked read-only boot image. A
+separate owned-VM probe has 25 controls in the required tooling stage: bounded
+allowlisted observation, actual teardown/EOF, immutable inputs and explicit false
+capture claims. Its first run exposed the default IDE attachment's rejection of
+read-only media and exited before resume; that failure is retained. The revised
+profile explicitly names its read-only virtio-blk attachment and actually boots
+the guest through init checks and kernel idle. The final probe exits during its
+bounded quit grace without supervisor signals, but QMP still resets; other streams,
+including the empty debug stream, reached EOF. Global retention remains incomplete.
+Actual observations and remaining prerequisites are recorded in the
+[probe batch](docs/plans/frame-export-run0-probe-batch-2026-11-06.md).
+No actual C0/C1/C2 capture is claimed. The
+[entry preparation](docs/plans/run0-relocated-entry-preparation-v0.md) owns the
+remaining capture and guest-access dependencies.
 Actual relocated-entry capture, complete retained-range collection, final firmware
 exit map, allocator installation and target application execution remain pending.
 Native USB/HID input and device-backed storage also remain pending. Independent
