@@ -56,10 +56,14 @@ The separately reviewed
 supplies pinned clean-repeat firmware, a real profile-bound prior hint, and
 `ADMIT` from the existing input helper using the complete original diagnostic.
 Do not redispatch firmware preparation or manufacture another address source.
-Use the retained exact inputs and explicit admission mapping to freeze the
-bounded RSP transport, inspection schema and RAM-only reader assertions. Then
-implement/review the collector and offline validation for a fresh stopped C0,
-followed by the same-call C1/C2 capture. The prior address is only a candidate:
+The [reset capability packet](docs/plans/run0-c0-inspection-v0.md) now supplies
+bounded RSP, the inspection contract and an actual owned reset observation.
+Use the recorded reply, CPU width and memory layout to finish the offline C0
+checks. Before authorizing a fresh C0 memory read, establish a source-bound
+exclusion or actual witness for hidden nested translation on the selected CPU
+profile. A change of profile requires a fresh matching prior hint and capability
+binding. Then qualify a fresh stopped C0 followed by the same-call C1/C2 capture.
+The prior address is only a candidate:
 a missed stop or missing new profile-bound hint remains `INCOMPLETE`; present
 mismatched or malformed inputs are `DENY`. No scan, guessed address or automatic
 retry supplies the missing witness. Input admission and the probe do not release guest-access or
