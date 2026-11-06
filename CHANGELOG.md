@@ -1,5 +1,17 @@
 # CHANGELOG
 
+## 2026-11-05 — checked RUN0 entry inputs
+
+- Add a bounded PE32+ AMD64 EFI entry/input and prior-diagnostic admission CLI.
+  Check exact input identities, executable entry mapping, supported relocations
+  and a retained candidate bound to the profile digest. Malformed inputs deny;
+  missing or ambiguous evidence remains incomplete.
+- Run 22 independently reviewed synthetic controls through a focused recipe and
+  the existing required CI tooling stage. Preserve explicit false profile,
+  capture, fresh-entry and guest-access claims; the existing EFI smoke proves
+  parsing only. Actual prior diagnostic/profile provenance and C0/C1/C2 capture
+  remain prerequisites for guest ownership work.
+
 ## 2026-11-05 — merged Linux editor process and original Save recovery
 
 - Merge [PR52](https://github.com/whole-machine-works/RamenOS/pull/52) as

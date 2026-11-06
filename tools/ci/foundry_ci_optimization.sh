@@ -25,5 +25,6 @@ python3 -m unittest discover -s tools/ci -p "test_editor_process_reader*.py"
 python3 tools/ci/test_editor_process_parent_join.py
 python3 tools/ci/test_editor_process_stage_receipts.py
 python3 tools/ci/test_qemu_boot_observation.py
+python3 tools/trace/test_boot_profile_inputs.py
 cargo test --locked -p idl_codegen --test content_stable
 printf '%s\n' 'FOUNDRY_CI_OPTIMIZATION: PASS scope=tooling'

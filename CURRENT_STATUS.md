@@ -157,6 +157,15 @@ source before reusing historical evidence; the old 217-row task closure is not a
 permanent count requirement after legitimate dependency additions.
 
 RUN0.0 has a reviewed 17-case allocation-free map/retention admission gate.
+The external entry-input prerequisite now has a strict PE/input/prior-diagnostic
+admission CLI and 22 independently reviewed synthetic controls, executed by the
+existing CI tooling stage. It distinguishes malformed inputs from unavailable
+evidence and preserves explicit false capture, profile-completion and guest
+claims. A read-only existing EFI parse supplies no build/capture provenance.
+No usable retained prior loaded-entry diagnostic is available in the inspected
+project evidence; the complete profile and actual three-checkpoint capture remain
+open. The [entry preparation](docs/plans/run0-relocated-entry-preparation-v0.md)
+owns this subset and its next inputs.
 Actual relocated-entry capture, complete retained-range collection, final firmware
 exit map, allocator installation and target application execution remain pending.
 Native USB/HID input and device-backed storage also remain pending. Independent

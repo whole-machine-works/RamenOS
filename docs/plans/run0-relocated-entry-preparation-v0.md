@@ -4,6 +4,25 @@ Source-derived preparation reviewed on 2026-10-06. The collector, profile and sc
 
 The smallest first packet is the existing external Oracle's three-checkpoint capture, with a bounded candidate-address admission rule. It must finish before production page-table dereferences are added. The next packet collects actual retained extents and the final successful firmware-exit map, masks interrupts, validates access, and installs the admitted pool once. Passing either packet does not establish target application execution.
 
+## Implemented entry-input prerequisite
+
+`tools/trace/boot_profile_inputs.py` implements the checked entry-input subset,
+with twenty-two synthetic controls in `test_boot_profile_inputs.py`. Run the
+focused controls with `just foundry-boot-profile-inputs-run0-0`; the existing
+required CI tooling stage also executes them. Use the CLI with `--packet` and
+`--inputs-root` for a prepared input packet. Its strict fields and bounds are
+defined in the helper; it returns `ADMIT` (exit 0), `DENY` (2), or `INCOMPLETE` (3).
+
+Admission checks bounded file identities, PE32+ AMD64 EFI entry mapping and
+supported relocations, and one retained prior diagnostic bound to the exact
+profile digest. It supplies only a prior address candidate. Opaque invocation
+and CPU bytes, matching symbols, ESP-to-EFI binding and a fresh C0 stop remain
+unverified; all profile/capture and broader guest claims stay false. Missing or
+ambiguous prior diagnostics remain incomplete, with no guessed-address fallback.
+The existing EFI parser smoke is labelled `PARSE_ONLY`, with unverified build
+provenance. The full collector/profile/CPU decoder and actual C0/C1/C2 capture
+remain future work under the contract below.
+
 ## Resolve the relocated entry without changing the guest
 
 Choose a supplied **prior-run candidate** as a hint, not a receipt. The hint must reference an actual retained diagnostic from the exact pinned EFI, OVMF, machine/CPU and initial VARS/ESP profile. Freeze one candidate loaded base and entry address before the fresh VM's first resume. Do not scan RAM, try an address list, install a software breakpoint, patch the guest, disable relocation, insert a spin loop, rewrite registers or silently retry after a miss.

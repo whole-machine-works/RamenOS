@@ -466,6 +466,10 @@ foundry-agent-task-requestable-authority:
 foundry-boot-frame-pool-run0-0:
 	bash ./tools/ci/foundry_boot_frame_pool_run0_0.sh
 
+# Pure external-Oracle entry input admission; no capture or guest-access claim.
+foundry-boot-profile-inputs-run0-0:
+	python3 tools/trace/test_boot_profile_inputs.py
+
 # Inspection is read-only; retirement requires an exact completed entry and context.
 compiler-cache-inspect scope="acceptance":
 	python3 tools/ci/compiler_cache_control.py inspect --scope {{quote(scope)}}
