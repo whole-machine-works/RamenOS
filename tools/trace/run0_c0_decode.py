@@ -18,9 +18,12 @@ import boot_profile_inputs as entry
 import boot_profile_capture as capture
 import run0_rsp_capability as capability
 import run0_rsp as rsp
+from run0_c0_paging import (
+    C0DecodeError, NeedFrame, PageWalk, U64, canonical_span as _span,
+    integer as _integer, require as _require,
+)
 
 
-U64 = (1 << 64) - 1
 U63 = (1 << 63) - 1
 REPORT_LIMIT = 1 << 20
 LIMITS = MappingProxyType({"frames": 32, "objects": 32, "translations": 128,
@@ -31,46 +34,8 @@ FALSE_CLAIMS = MappingProxyType({name: False for name in
 _MAPPING = (dict, MappingProxyType)
 
 
-class C0DecodeError(Exception):
-    """Stable first failure; the exception's diagnostic fields are immutable."""
-    def __init__(self, status, reason):
-        super().__init__(reason)
-        self._status, self._reason = status, reason
-
-    @property
-    def status(self):
-        return self._status
-
-    @property
-    def reason(self):
-        return self._reason
-
-    def __setattr__(self, name, value):
-        if name in ("status", "reason", "_status", "_reason") and hasattr(self, name):
-            raise AttributeError("immutable decoder failure")
-        super().__setattr__(name, value)
-
-
-def _require(condition, reason, status="DENY"):
-    if not condition:
-        raise C0DecodeError(status, reason)
-
-
-def _integer(value, low=0, high=U64):
-    _require(type(value) is int and low <= value <= high, "integer_range")
-    return value
-
-
 def _fields(value, names, reason="object_fields"):
     _require(type(value) in _MAPPING and set(value) == set(names), reason)
-
-
-def _span(start, length):
-    _integer(start); _integer(length, 1)
-    _require(length - 1 <= U64 - start, "span_overflow")
-    last = start + length - 1
-    _require(last < (1 << 47) or start >= (1 << 64) - (1 << 47), "span_noncanonical")
-    return start, last + 1
 
 
 def _json(data, limit=REPORT_LIMIT):
@@ -549,40 +514,21 @@ class _Walker:
         output = []
         while length:
             self.counts.charge("translations", 1)
-            physical = self.root
-            path, all_rw, all_us, any_nx = [], True, True, False
-            page_bytes = None
-            for level, shift in ((4, 39), (3, 30), (2, 21), (1, 12)):
-                raw = self._frame(physical, level)
-                index = (virtual >> shift) & 511
-                value = struct.unpack_from("<Q", raw, index * 8)[0]
-                path.append({"frame": physical, "index": index, "entry": value})
-                _require(value & 1, "unmapped", "INCOMPLETE")
-                reserved = ((1 << 52) - 1) & (U64 ^ self.width_mask)
-                if not self.state["efer"] & (1 << 11):
-                    reserved |= 1 << 63
-                if level == 4:
-                    reserved |= 0x80
-                if level == 2 and value & 0x80:
-                    reserved |= 0x1fe000
-                _require(not value & reserved, "entry_reserved")
-                _require(not (level == 3 and value & 0x80), "one_gib_unsupported", "INCOMPLETE")
-                all_rw = all_rw and bool(value & 2)
-                all_us = all_us and bool(value & 4)
-                any_nx = any_nx or bool(value & (1 << 63))
-                if level == 1 or level == 2 and value & 0x80:
-                    page_bytes = 4096 if level == 1 else 1 << 21
-                    offset = virtual & (page_bytes - 1)
-                    physical = (value & self.width_mask & (U64 ^ (page_bytes - 1))) + offset
-                    break
-                physical = value & ((1 << 52) - 1) & self.width_mask & (U64 ^ 4095)
-            chunk = min(length, page_bytes - offset, 2048)
-            boundary = self._ram(physical, chunk)
-            chunk = min(chunk, boundary - physical)
-            output.append({"translation": {"virtual": virtual, "physical": physical,
-                "length": chunk, "path": path, "writable": all_rw, "executable": not any_nx,
-                "user": all_us, "page_bytes": page_bytes}, "cpl0_readable": True,
-                "cpl0_writable": not bool(self.state["cr0"] & (1 << 16)) or all_rw})
+            walk = PageWalk(virtual, self.root, self.state["phys_bits"],
+                            bool(self.state["efer"] & (1 << 11)))
+            step = walk.next_frame
+            while type(step) is NeedFrame:
+                step = walk.accept(self._frame(step.physical, step.level))
+            chunk = min(length, step.page_bytes - step.page_offset, 2048)
+            boundary = self._ram(step.physical, chunk)
+            chunk = min(chunk, boundary - step.physical)
+            path = [{"frame": row.frame, "index": row.index, "entry": row.entry}
+                    for row in step.path]
+            output.append({"translation": {"virtual": virtual, "physical": step.physical,
+                "length": chunk, "path": path, "writable": step.writable,
+                "executable": step.executable, "user": step.user, "page_bytes": step.page_bytes},
+                "cpl0_readable": True,
+                "cpl0_writable": not bool(self.state["cr0"] & (1 << 16)) or step.writable})
             virtual += chunk; length -= chunk
         return output
 
@@ -1154,6 +1100,7 @@ def _retained_accounting(report_ref, report, host_ref, host, store, control, pro
         if type(value) in _MAPPING:
             if set(value) == {"path", "sha256", "length"}:
                 reference = _ref(value, LIMITS["retained_bytes"])
+                _require(reference["path"].split("/", 1)[0] != "prior-cap1", "output_namespace")
                 _require(reference["path"] not in refs or refs[reference["path"]] == reference,
                          "output_identity")
                 refs[reference["path"]] = reference
@@ -1198,23 +1145,31 @@ def _retained_accounting(report_ref, report, host_ref, host, store, control, pro
 
 
 def _capability_binding(report, store, profile):
-    previous = _json(store.get(report["capability_ref"], REPORT_LIMIT))
+    reference = _ref(report["capability_ref"], REPORT_LIMIT)
+    _require(reference["path"] == "prior-cap1/report.json", "capability_namespace")
+    previous = _json(store.get(reference, REPORT_LIMIT))
     capability.validate_report(previous)
     _termination(previous["termination"])
-    _require(_same(_json(store.get(previous["profile_ref"], 65536), 65536), profile) and
-             store.get(previous["source_dossier_ref"], 65536) ==
+
+    def prior_blob(reference, limit):
+        # CAP1 validates all nested names as flat paths. Prefix only the lookup,
+        # preserving the original report bytes and keeping current files separate.
+        return store.get({**reference, "path": "prior-cap1/" + reference["path"]}, limit)
+
+    _require(_same(_json(prior_blob(previous["profile_ref"], 65536), 65536), profile) and
+             prior_blob(previous["source_dossier_ref"], 65536) ==
              store.get(report["source_dossier_ref"], 65536), "capability_profile_binding")
-    store.get(previous["observer_ref"], 65536)
-    argv = _json(store.get(previous["argv_ref"], 65536), 65536)
+    prior_blob(previous["observer_ref"], 65536)
+    argv = _json(prior_blob(previous["argv_ref"], 65536), 65536)
     capability.validate_invocation_argv(argv, profile["invocation_profile"])
     for ref in previous["raw_refs"]:
-        store.get(ref, LIMITS["retained_bytes"])
+        prior_blob(ref, LIMITS["retained_bytes"])
     for key in capability.OBS_REFS:
-        store.get(previous["observations"][key], 65536)
+        prior_blob(previous["observations"][key], 65536)
     for row in previous["operations"]:
-        store.get(row["request_ref"], 65536)
+        prior_blob(row["request_ref"], 65536)
         if row["response_ref"] is not None:
-            store.get(row["response_ref"], 65536)
+            prior_blob(row["response_ref"], 65536)
 
 
 def decode_c0(origin, report_ref, blobs, prerequisites):

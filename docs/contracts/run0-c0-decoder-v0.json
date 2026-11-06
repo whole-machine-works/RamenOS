@@ -34,6 +34,7 @@
   "pure_interface": {
     "module": "tools/trace/run0_c0_decode.py",
     "tests": "tools/trace/test_run0_c0_decode.py",
+    "paging_transition": "tools/trace/run0_c0_paging.py consumes one supplied 4096-byte frame per transition and returns the next frame address and level or the translated leaf. The decoder retains ordinary-RAM, ancestry and budget checks before each lookup. Controls live in tools/trace/test_run0_c0_paging.py.",
     "entry_point": "decode_c0(origin:synthetic_fixture|retained_runtime, report_ref:BlobRef, blobs:Mapping[str,bytes], prerequisites:ValidatedHostState|null)->C0DecodeResult",
     "local_error": "Before origin/report_ref can be structurally bound, malformed invocation raises C0DecodeError with immutable {status:DENY,reason:ASCII[a-z0-9_],1..96}; do not fabricate a valid BlobRef or origin to construct a report. Once that envelope is valid, missing/malformed recorded evidence produces the corresponding structured C0DecodeResult. Both paths leave inputs unchanged and permit a fresh independent invocation.",
     "effects": "Deterministic decoding of supplied immutable bytes only: no filesystem, network, subprocess, clock, sleep, debugger, host-memory read, guest-memory read or callback that acquires bytes. Missing recorded data returns INCOMPLETE; the API emits no read request or future read authority. Tests may observe in-memory lookups to prove that rejection never follows another table pointer.",

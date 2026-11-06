@@ -1278,14 +1278,14 @@ def checked_process(report, blobs, abi_index, plan, before, after, field):
     return process, peer, signal_times
 
 
-def validate_control_index(ref, blobs, binding):
+def validate_control_index(ref, blobs, binding, *, retained_runtime=False):
     index = json_index(ref, blobs, (
         "schema_version", "scope", "run_id", "profile_sha256", "clock",
         "raw_qmp_in_ref", "raw_qmp_out_ref", "raw_rsp_in_ref", "raw_rsp_out_ref",
         "operations", "events", "before", "after",
     ), "control_index")
     if binding["context"] == "c0":
-        return shared_control_index(index, blobs, binding)
+        return shared_control_index(index, blobs, binding, retained_runtime=retained_runtime)
     deny(index["scope"] == "reset_witness" and index["raw_rsp_in_ref"] is None
          and index["raw_rsp_out_ref"] is None, "reset_control_scope")
     ops, events = index["operations"], index["events"]
@@ -1465,7 +1465,8 @@ def validate_complete_report(report_ref, report, blobs):
     else:
         deny(plan["observer_ref"] == report["observer_ref"], "observer_plan_binding")
         retained_blob(report["observer_ref"], blobs, 65536)
-    control, tid = validate_control_index(report["control_ref"], blobs, binding)
+    control, tid = validate_control_index(report["control_ref"], blobs, binding,
+                                          retained_runtime=runtime)
     before, bvalue = metadata_index(report["metadata_before_ref"], blobs, "before")
     after, avalue = metadata_index(report["metadata_after_ref"], blobs, "after")
     for metadata in (bvalue, avalue):
@@ -1604,7 +1605,27 @@ def retain_fields(put, pid, begin_raw, admit_raw, output, stderr, reads):
     return put("fields.json", canonical(index)), index
 
 
-def verify_shared_qmp(index, blobs, binding, rsp):
+def shared_qmp_event_timestamp(value):
+    timestamp = value.get("timestamp")
+    return (type(timestamp) is dict and set(timestamp) == {"seconds", "microseconds"}
+            and exact_int(timestamp["seconds"], 0, (1 << 63) - 1)
+            and exact_int(timestamp["microseconds"], 0, 999999))
+
+
+def shared_qmp_boot_event(value):
+    if not shared_qmp_event_timestamp(value):
+        return False
+    if value["event"] in ("RESUME", "STOP"):
+        return set(value) == {"event", "timestamp"}
+    if value["event"] != "RTC_CHANGE" or set(value) != {"event", "timestamp", "data"}:
+        return False
+    data = value["data"]
+    return (type(data) is dict and set(data) == {"offset", "qom-path"}
+            and exact_int(data["offset"], -(1 << 63), (1 << 63) - 1)
+            and data["qom-path"] == "/machine/unattached/device[2]/rtc")
+
+
+def verify_shared_qmp(index, blobs, binding, rsp, *, retained_runtime):
     """Validate all QMP bytes without letting the RSP evidence stand in for QMP."""
     from run0_rsp_capability import parse_flatview
 
@@ -1619,11 +1640,53 @@ def verify_shared_qmp(index, blobs, binding, rsp):
     deny(len(qmp_ops) == len(requests) and 5 <= len(qmp_ops) <= 32
          and qmp_ops[0]["operation"] == "qmp_capabilities"
          and qmp_ops[1]["operation"] == "query_commands"
-         and qmp_ops[-1]["operation"] == "quit" and len(qmp_events) <= 1,
-         "shared_qmp_inventory")
+         and qmp_ops[-1]["operation"] == "quit", "shared_qmp_inventory")
     path = None
     replies, response_pos, event_count = {}, 1, 0
     shutdown_seq = None
+    resume = rsp["operations"][rsp["resume_seq"]]
+    boot_events = retained_runtime or any(
+        value.get("event") in ("RESUME", "STOP", "RTC_CHANGE") for value, _, _ in incoming[1:]
+    )
+    initial_status = debug_status = resumed = stopped = False
+    previous_reply_ns = 0
+
+    def consume_event(value, offset, length, op, *, tail=False):
+        nonlocal event_count, resumed, stopped, shutdown_seq
+
+        name = value.get("event")
+        deny(event_count < len(qmp_events), "shared_qmp_event_binding")
+        event = qmp_events[event_count]
+        deny(event["name"] == name
+             and canonical(event["wire"]) == canonical(slice_ref(in_ref, offset, length)),
+             "shared_qmp_event_binding")
+        event_count += 1
+        upper = (1 << 63) - 1 if tail else op["finished_ns"]
+        if name == "SHUTDOWN":
+            deny(op["operation"] == "quit" and shutdown_seq is None and is_qmp_shutdown(value)
+                 and (not boot_events or shared_qmp_event_timestamp(value)),
+                 "shared_qmp_event_forbidden")
+            deny(exact_int(event["received_ns"], max(previous_reply_ns, op["started_ns"]), upper),
+                 "shared_qmp_event_clock")
+            shutdown_seq = op["seq"]
+            return
+
+        deny(initial_status and resume["seq"] < op["seq"] and shared_qmp_boot_event(value),
+             "shared_qmp_event_forbidden")
+        lower = max(previous_reply_ns, resume["started_ns"])
+        deny(exact_int(event["received_ns"], lower, upper), "shared_qmp_event_clock")
+        if name == "RESUME":
+            deny(not resumed and not debug_status and not tail, "shared_qmp_event_forbidden")
+            resumed = True
+        elif name == "STOP":
+            deny(resumed and not stopped and not debug_status and not tail,
+                 "shared_qmp_event_forbidden")
+            stopped = True
+        else:
+            # The RTC monitor timer can deliver a queued notification after STOP
+            # or during quit. Its wall-clock timestamp is not a stop receipt.
+            deny(resumed, "shared_qmp_event_forbidden")
+
     for qid, (op, (request, offset, length)) in enumerate(zip(qmp_ops, requests, strict=True), 1):
         name = op["operation"]
         execute = {"qmp_capabilities": "qmp_capabilities", "query_commands": "query-commands",
@@ -1648,27 +1711,15 @@ def verify_shared_qmp(index, blobs, binding, rsp):
         incomplete(response_pos < len(incoming), "shared_qmp_reply_missing")
         result, offset, length = incoming[response_pos]
         response_pos += 1
-        if "event" in result:
-            deny(name == "quit" and event_count == 0 and len(qmp_events) == 1
-                 and result["event"] == "SHUTDOWN" and set(result) == {
-                     "event", "timestamp", "data",
-                 } and type(result["timestamp"]) is dict
-                 and canonical(result["data"]) == canonical({
-                     "guest": False, "reason": "host-qmp-quit",
-                 }), "shared_qmp_event_forbidden")
-            event = qmp_events[0]
-            deny(event["name"] == "SHUTDOWN"
-                 and canonical(event["wire"]) == canonical(slice_ref(in_ref, offset, length))
-                 and exact_int(event["received_ns"], op["started_ns"], op["finished_ns"]),
-                 "shared_qmp_event_binding")
-            event_count += 1
-            shutdown_seq = op["seq"]
+        while "event" in result:
+            consume_event(result, offset, length, op)
             incomplete(response_pos < len(incoming), "shared_qmp_reply_missing")
             result, offset, length = incoming[response_pos]
             response_pos += 1
         deny(set(result) == {"id", "return"} and exact_int(result["id"], qid, qid)
              and canonical(op["response"]) == canonical(slice_ref(in_ref, offset, length)),
              "shared_qmp_response_binding")
+        previous_reply_ns = op["finished_ns"]
         value = result["return"]
         if name in ("qmp_capabilities", "quit"):
             deny(value == {}, "shared_qmp_empty_reply")
@@ -1679,6 +1730,14 @@ def verify_shared_qmp(index, blobs, binding, rsp):
         elif name == "query_status":
             incomplete(type(value) is dict and value.get("running") is False
                        and value.get("status") in ("prelaunch", "debug"), "shared_qmp_running")
+            if value["status"] == "debug":
+                deny(not boot_events or resume["seq"] < op["seq"], "shared_qmp_debug_order")
+                incomplete(not boot_events or stopped, "shared_qmp_boot_events_missing")
+                debug_status = True
+            elif op["seq"] < resume["seq"]:
+                initial_status = True
+            else:
+                deny(not boot_events, "shared_qmp_debug_order")
         elif name == "query_cpus_fast":
             path = cpu_path(value)
         elif name == "qom_realized":
@@ -1693,7 +1752,10 @@ def verify_shared_qmp(index, blobs, binding, rsp):
                  "shared_qmp_registers")
         replies[op["seq"]] = name, value
 
-    deny(response_pos == len(incoming) and event_count == len(qmp_events), "shared_qmp_unindexed")
+    for value, offset, length in incoming[response_pos:]:
+        deny("event" in value, "shared_qmp_unindexed")
+        consume_event(value, offset, length, qmp_ops[-1], tail=True)
+    deny(event_count == len(qmp_events), "shared_qmp_unindexed")
     ack_seq = rsp["acknowledge_stop_seq"]
     memory_sequences = [seq for seq, op in rsp["operations"].items()
                         if op["operation"] == "physical_read"]
@@ -1757,7 +1819,7 @@ def c0_registers(raw, values):
         deny(len(found) == 1 and int(found[0], 16) == values[register], "c0_hmp_rsp_mismatch")
 
 
-def shared_control_index(index, blobs, binding):
+def shared_control_index(index, blobs, binding, *, retained_runtime=False):
     from run0_c0_decode import validate_c0_rsp
 
     deny(index["scope"] == "shared_c0" and index["clock"] == "host_monotonic_ns"
@@ -1794,7 +1856,7 @@ def shared_control_index(index, blobs, binding):
     offset, size = event["offset"], event["length"]
     deny(retained_blob(binding["stop_ref"], blobs, 8192) == raw_rsp[offset:offset + size],
          "shared_stop_binding")
-    tid = verify_shared_qmp(index, blobs, binding, rsp)
+    tid = verify_shared_qmp(index, blobs, binding, rsp, retained_runtime=retained_runtime)
     return index, tid
 
 

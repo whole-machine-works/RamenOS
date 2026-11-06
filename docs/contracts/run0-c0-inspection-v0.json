@@ -24,7 +24,8 @@
     },
     {
       "slice": "C0D",
-      "files": ["tools/trace/run0_c0_decode.py", "tools/trace/test_run0_c0_decode.py"],
+      "files": ["tools/trace/run0_c0_decode.py", "tools/trace/test_run0_c0_decode.py",
+                "tools/trace/run0_c0_paging.py", "tools/trace/test_run0_c0_paging.py"],
       "behavior": "Later pure strict C0 artifact, ordinary-RAM layout, paging and public EFI decoder. Implementation remains held for source-bitmask/schema review and actual CAP1 result."
     },
     {
@@ -240,7 +241,7 @@
       "profile_ref":"BlobRef",
       "observer_ref":"BlobRef",
       "source_dossier_ref":"BlobRef",
-      "capability_ref":"BlobRef of same-profile capability; capability is not a fresh snapshot",
+      "capability_ref":"BlobRef at prior-cap1/report.json for the unchanged same-profile CAP1 report. Resolve its validated flat nested references only under prior-cap1/. Reserve that directory for prior CAP1 and keep current outputs separate. CAP1 is reset evidence only.",
       "prior_admission_ref":"BlobRef",
       "profile_mapping_ref":"BlobRef",
       "argv_ref":"BlobRef",

@@ -3,7 +3,7 @@
   "kind": "run0_shared_c0_control_v0",
   "scope": "shared_c0",
   "host_contract_sha256": "640acef5b1437c2871f302a2f2592d682e0456cf0d289626aded3c1e9104d089",
-  "decoder_contract_sha256": "8ac6ec114177d1234ed7e60a7a50234bc1758e1d5cef318d84c743bfa0184cda",
+  "decoder_contract_sha256": "d62df435e70aaff8f960945065d569b3ef8bbea6b7cf4eae256ba681c6e7b0b4",
   "rsp_operations_added": [
     "hardware_breakpoint_set",
     "hardware_breakpoint_clear",
@@ -20,6 +20,15 @@
     "response": null,
     "clock": "Actual send starts strictly after receipt of the complete validated stop and finishes before any following RSP request.",
     "success": "Only a completed one-byte write is ok. A missing, failed or pending acknowledgment prevents PASS. Early, duplicate, overlapping, wrong-slice or intervening output is DENY."
+  },
+  "qmp_events": {
+    "runtime": "One raw RESUME followed by one raw STOP on the same QMP stream after a prelaunch status reply and before the first debug status reply. Both actual receipt clocks are at or after dispatch of the sole RSP continue and at or before the containing QMP reply observation. No cross-socket receipt order is required relative to the RSP stop or its acknowledgment.",
+    "receipt_order": "A successful C0 QMP operation records finished_ns at the actual observation of the complete reply frame. An indexed QMP event may share a coalesced-read timestamp with adjacent replies but cannot precede the prior same-stream reply observation or follow the next one. A retained tail follows the quit reply observation and remains bounded by lifecycle close.",
+    "shape": "RESUME and STOP contain only event and timestamp. A timestamp has exact integer seconds and microseconds with microseconds in 0 through 999999. Each accepted event has its own indexed raw SliceRef and actual monotonic receipt.",
+    "rtc_change": "After RESUME, optional RTC_CHANGE notifications from the pinned q35 profiles carry only event, timestamp and data. Data has signed int64 offset and exact qom-path /machine/unattached/device[2]/rtc. The QEMU monitor can delay RTC_CHANGE past STOP, debug queries and quit. The retained tail may carry RTC_CHANGE but supplies no new stop or read authority. The wall-clock timestamp establishes payload shape only.",
+    "shutdown": "The optional single SHUTDOWN carries guest=false and reason=host-qmp-quit, following the quit request and appearing before or after its reply. Actual tail event receipts remain bounded by the existing QMP lifecycle close.",
+    "synthetic": "Legacy synthetic replay may omit all boot events. A transcript that includes RESUME, STOP or RTC_CHANGE must satisfy the complete boot pair and ordering. Reset accepts only its existing host-quit shutdown policy.",
+    "bounds": "The existing QMP raw byte and frame limits and the shared 128-event cap remain in force."
   },
   "register_index": {
     "schema_version": 1,
