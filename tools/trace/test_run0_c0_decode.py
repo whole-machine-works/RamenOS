@@ -318,12 +318,17 @@ def full_fixture(folder, invocation_profile=capture.INVOCATION_PROFILE):
         "streams": [{"name": name, "eof": True, "error": None} for name in cap.STREAMS]}
     # CAP1 is prior-profile evidence, never a substitute for this fixture's fresh
     # raw C0 transcript and actual validated synthetic host-state record.
+    def cap_blob(name, value):
+        return put_blob("prior-cap1/" + name, value) | {"path": name}
+
     observations = cap.empty_observations()
-    observations.update({key: put_blob("prior-"+key, b"synthetic prior capability") for key in cap.OBS_REFS})
+    observations.update({key: cap_blob(key, b"synthetic prior capability") for key in cap.OBS_REFS})
     observations.update(realized=True, phys_bits=40, rsp_thread="01", physical_mode=1)
     capability_report = {"schema_version": 1, "kind": "run0_reset_capability_v0", "run_id": "prior-cap",
-        "profile_ref": host["profile_ref"], "observer_ref": host["observer_ref"],
-        "source_dossier_ref": host["source_ref"], "argv_ref": argv_ref, "raw_refs": [],
+        "profile_ref": cap_blob("profile.json", profile),
+        "observer_ref": cap_blob(host["observer_ref"]["path"], b"synthetic prior observer"),
+        "source_dossier_ref": cap_blob("source-dossier.json", blobs[host["source_ref"]["path"]]),
+        "argv_ref": cap_blob("argv.json", plan["argv"]), "raw_refs": [],
         "observations": observations, "operations": [], "termination": copy.deepcopy(end),
         "claims": dict(cap.FALSE_CLAIMS), "fresh_c0_verified": False}
     operations = []
@@ -335,7 +340,7 @@ def full_fixture(folder, invocation_profile=capture.INVOCATION_PROFILE):
         operations.append(row)
     report = {"schema_version": 1, "kind": "run0_c0_inspection_subset_v0", "run_id": "witness",
         "profile_ref": host["profile_ref"], "observer_ref": host["observer_ref"],
-        "source_dossier_ref": host["source_ref"], "capability_ref": put_blob("prior-capability.json", capability_report),
+        "source_dossier_ref": host["source_ref"], "capability_ref": put_blob("prior-cap1/report.json", capability_report),
         "prior_admission_ref": put_blob("admission.json", admission),
         "profile_mapping_ref": put_blob("mapping.json", mapping), "argv_ref": argv_ref,
         "raw_refs": [control[name] for name in ("raw_qmp_in_ref", "raw_qmp_out_ref", "raw_rsp_in_ref", "raw_rsp_out_ref")]+
@@ -667,12 +672,45 @@ class DecoderControls(unittest.TestCase):
                 Path(directory), capture.SATA_OFF_INVOCATION_PROFILE,
             )
             previous = json.loads(blobs[report["capability_ref"]["path"]])
-            argv = json.loads(blobs[previous["argv_ref"]["path"]])
+            argv = json.loads(blobs["prior-cap1/" + previous["argv_ref"]["path"]])
             argv[2] = "pc-q35-8.2,accel=tcg"
-            previous["argv_ref"] = put("wrong-cap-argv.json", argv)
-            bad = report | {"capability_ref": put("wrong-cap.json", previous)}
+            previous["argv_ref"] = put("prior-cap1/argv.json", argv) | {"path": "argv.json"}
+            bad = report | {"capability_ref": put("prior-cap1/report.json", previous)}
             self.assertEqual(d.decode_c0("synthetic_fixture", put("wrong-c0.json", bad),
                                          blobs, host)["reason"], "retained_argv")
+
+    def test_prior_capability_namespace_has_no_current_fallback(self):
+        with tempfile.TemporaryDirectory() as directory:
+            report, ref, blobs, host, put = full_fixture(Path(directory))
+            prior = json.loads(blobs["prior-cap1/report.json"])
+            name = prior["observer_ref"]["path"]
+            prior_name = "prior-cap1/" + name
+            self.assertNotEqual(blobs[prior_name], blobs[name])
+            self.assertEqual(d.decode_c0("synthetic_fixture", ref, blobs, host)["status"], "PASS")
+
+            prior_bytes = blobs.pop(prior_name)
+            current_bytes = blobs[name]
+            # Even an exact match at the flat name must not supply prior bytes.
+            self.reject("INCOMPLETE", "blob_missing", d._capability_binding, report,
+                        d._Blobs(blobs | {name: prior_bytes}), json.loads(blobs[report["profile_ref"]["path"]]))
+            blobs[prior_name] = prior_bytes
+            self.assertEqual(blobs[name], current_bytes)
+
+            for path in ("other/report.json", "prior-cap1/nested/report.json"):
+                bad = report | {"capability_ref": put(path, prior)}
+                result = d.decode_c0("synthetic_fixture", put("bad-top.json", bad), blobs, host)
+                self.assertEqual((result["status"], result["reason"]), ("DENY", "capability_namespace"))
+            for path in ("../" + name, "prior-cap1/" + name, "subdir/" + name):
+                bad_prior = prior | {"observer_ref": prior["observer_ref"] | {"path": path}}
+                bad = report | {"capability_ref": put("prior-cap1/report.json", bad_prior)}
+                result = d.decode_c0("synthetic_fixture", put("bad-nested.json", bad), blobs, host)
+                self.assertEqual((result["status"], result["reason"]), ("DENY", "blob_ref_value"))
+            put("prior-cap1/report.json", prior)
+            for path in ("prior-cap1", "prior-cap1/current.json"):
+                current_in_prior = put(path, report)
+                result = d.decode_c0("synthetic_fixture", current_in_prior, blobs, host)
+                self.assertEqual((result["status"], result["reason"]), ("DENY", "output_namespace"))
+            self.assertEqual(d.decode_c0("synthetic_fixture", ref, blobs, host)["status"], "PASS")
 
     def test_c0d16_strict_refs_and_incomplete_claims(self):
         for raw in (b'{"x":1,"x":2}', b'{"x":NaN}', b'{"x":1e400}', b'\xff'):

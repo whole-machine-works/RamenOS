@@ -442,7 +442,8 @@ def synthetic_qmp(tid, first, last):
     return b"".join(replies), b"".join(requests), times, events
 
 
-def synthetic_shared_control(put, rsp_index, blobs, profile_sha, first, last, sequence_map):
+def synthetic_shared_control(put, rsp_index, blobs, profile_sha, first, last, sequence_map,
+                             *, qmp_events=None, qmp_tail=()):
     from run0_c0_decode import validate_c0_rsp
     from test_run0_c0_decode import synthetic_c0_hmp
 
@@ -459,10 +460,19 @@ def synthetic_shared_control(put, rsp_index, blobs, profile_sha, first, last, se
     outgoing = bytearray()
     incoming = bytearray(b'{"QMP":{}}\r\n')
     qmp, all_ops = [], []
-    refs = []
+    refs, events = [], []
+
+    def qevent(raw, at, received_ns):
+        wire = {"blob": None, "offset": len(incoming), "length": len(raw)}
+        incoming.extend(raw + b"\r\n")
+        events.append({"protocol": "qmp", "name": json.loads(raw)["event"], "wire": wire,
+                       "received_ns": at if received_ns is None else received_ns})
 
     def qop(at, label, execute, result, args=None):
         request = {"execute": execute, "id": len(qmp) + 1}
+        if qmp_events is not None:
+            for raw, received_ns in qmp_events.get(request["id"], ()):
+                qevent(raw, at + 5, received_ns)
         if args is not None:
             request["arguments"] = args
         delimit = b"" if label == "quit" else b"\r\n"
@@ -523,6 +533,8 @@ def synthetic_shared_control(put, rsp_index, blobs, profile_sha, first, last, se
     qop(final_at+20, "hmp_flatview", "human-monitor-command", layout,
         {"command-line": "info mtree -f"})
     qop(final_at+40, "quit", "quit", {})
+    for raw, received_ns in qmp_tail:
+        qevent(raw, final_at + 55, received_ns)
     in_ref = put("qmp.bin", bytes(incoming))
     out_ref = put("qmp-requests.bin", bytes(outgoing))
     for tx, rx in refs:
@@ -537,6 +549,12 @@ def synthetic_shared_control(put, rsp_index, blobs, profile_sha, first, last, se
     raw = blobs[event_wire["blob"]["path"]]
     offset, length = event_wire["offset"], event_wire["length"]
     stop_ref = put("c0-stop.bin", raw[offset:offset+length])
+    for qmp_event in events:
+        qmp_event["wire"]["blob"] = in_ref
+    events.append(event)
+    events.sort(key=lambda row: row["received_ns"])
+    for seq, row in enumerate(events, 1):
+        row["seq"] = seq
     before = {key: None if row is None else row["seq"] for key, row in before.items()}
     after = {key: None if row is None else row["seq"] for key, row in after.items()}
     index = {"schema_version": 1, "scope": "shared_c0", "run_id": "witness",
@@ -544,13 +562,143 @@ def synthetic_shared_control(put, rsp_index, blobs, profile_sha, first, last, se
              "raw_qmp_in_ref": in_ref, "raw_qmp_out_ref": out_ref,
              "raw_rsp_in_ref": rsp_index["raw_rsp_in_ref"],
              "raw_rsp_out_ref": rsp_index["raw_rsp_out_ref"],
-             "operations": all_ops, "events": [event], "before": before, "after": after}
+             "operations": all_ops, "events": events, "before": before, "after": after}
     binding = {"context": "c0", "run_id": "witness", "profile_sha256": profile_sha,
                "cpu_index": 0, "qmp_thread_id": 123, "rsp_thread": "01", "stop_id": "C0",
                "stop_ref": stop_ref, "resume_seq": rsp_ops[rsp["resume_seq"]]["seq"],
                "breakpoint_seq": rsp_ops[rsp["breakpoint_seq"]]["seq"],
                "control_before_seq": before["status_seq"], "control_after_seq": after["status_seq"]}
     return index, binding, last + 1095, final_at + 100
+
+
+class SharedQMPEventControls(unittest.TestCase):
+    # RESUME and both RTC notifications retain the exact raw probe bytes.
+    RESUME = b'{"timestamp": {"seconds": 1794004326, "microseconds": 654469}, "event": "RESUME"}'
+    RTC = (
+        b'{"timestamp": {"seconds": 1794004327, "microseconds": 497505}, '
+        b'"event": "RTC_CHANGE", "data": {"offset": -1, '
+        b'"qom-path": "/machine/unattached/device[2]/rtc"}}'
+    )
+    LATE_RTC = (
+        b'{"timestamp": {"seconds": 1794004327, "microseconds": 825108}, '
+        b'"event": "RTC_CHANGE", "data": {"offset": 0, '
+        b'"qom-path": "/machine/unattached/device[2]/rtc"}}'
+    )
+    STOP = b'{"event":"STOP","timestamp":{"seconds":1794004327,"microseconds":600000}}'
+    SHUTDOWN = (
+        b'{"timestamp": {"seconds": 1794004346, "microseconds": 655387}, '
+        b'"event": "SHUTDOWN", "data": {"guest": false, "reason": "host-qmp-quit"}}'
+    )
+
+    def control(self, qmp_events=None, qmp_tail=(), *, before_rsp_stop=False):
+        from test_run0_c0_decode import blob, rsp_fixture
+
+        rsp_index, blobs = rsp_fixture()
+        first = 200000
+        if before_rsp_stop:
+            resume = next(row for row in rsp_index["operations"] if row["operation"] == "resume")
+            resume_at = first - 80000 + 100 * resume["seq"]
+            qmp_events = {4: ((self.RESUME, resume_at + 1), (self.STOP, resume_at + 2))}
+        index, binding, _, _ = synthetic_shared_control(
+            lambda name, raw: blob(blobs, name, raw), rsp_index, blobs,
+            "1" * 64, first, 300000, None,
+            qmp_events=qmp_events, qmp_tail=qmp_tail,
+        )
+        return index, blobs, binding
+
+    def test_shared_qmp_boot_events_and_delayed_rtc_through_quit(self):
+        before_debug = {4: ((self.RESUME, None), (self.RTC, None), (self.STOP, None))}
+        cases = (
+            (before_debug | {5: ((self.LATE_RTC, None),)}, ()),
+            (before_debug, ((self.SHUTDOWN, None), (self.LATE_RTC, None))),
+            (before_debug | {15: ((self.LATE_RTC, None), (self.SHUTDOWN, None))}, ()),
+        )
+        for qmp_events, tail in cases:
+            with self.subTest(qmp_events=qmp_events, tail=tail):
+                self.assertEqual(witness.shared_control_index(*self.control(qmp_events, tail))[1], 123)
+        self.assertEqual(witness.shared_control_index(*self.control(before_rsp_stop=True))[1], 123)
+
+    def test_shared_qmp_requires_complete_boot_bracket_for_runtime(self):
+        self.assertEqual(witness.shared_control_index(*self.control())[1], 123)
+        with self.assertRaisesRegex(base.ProbeError, "shared_qmp_boot_events_missing"):
+            witness.shared_control_index(*self.control(), retained_runtime=True)
+        with self.assertRaisesRegex(base.ProbeError, "shared_qmp_boot_events_missing"):
+            witness.shared_control_index(*self.control({4: ((self.RESUME, None),)}))
+        both = {4: ((self.RESUME, None), (self.STOP, None))}
+        self.assertEqual(witness.shared_control_index(*self.control(both), retained_runtime=True)[1],
+                         123)
+
+    def test_shared_qmp_denies_wrong_payload_phase_clock_and_wire(self):
+        before_debug = ((self.RESUME, None), (self.STOP, None))
+        for events, tail, reason in (
+            ({3: before_debug}, (), "shared_qmp_event_forbidden"),
+            ({4: tuple(reversed(before_debug))}, (), "shared_qmp_event_forbidden"),
+            ({4: (before_debug[0], *before_debug)}, (), "shared_qmp_event_forbidden"),
+            ({4: (*before_debug, before_debug[1])}, (), "shared_qmp_event_forbidden"),
+            ({4: before_debug, 5: ((self.STOP, None),)}, (), "shared_qmp_event_forbidden"),
+            ({4: ((self.RTC, None), *before_debug)}, (), "shared_qmp_event_forbidden"),
+            ({4: ((self.RESUME, 1), before_debug[1])}, (), "shared_qmp_event_clock"),
+            ({4: ((self.RESUME, 999999), (self.STOP, 999999))}, (), "shared_qmp_event_clock"),
+            ({4: before_debug}, ((self.RESUME, None),), "shared_qmp_event_forbidden"),
+            ({4: before_debug}, ((self.SHUTDOWN, None), (self.SHUTDOWN, None)),
+             "shared_qmp_event_forbidden"),
+        ):
+            with self.subTest(events=events, tail=tail), self.assertRaisesRegex(base.ProbeError, reason):
+                witness.shared_control_index(*self.control(events, tail))
+        for raw in (
+            self.STOP.replace(b'"STOP"', b'"RESET"'),
+            self.STOP.replace(b'"STOP",', b'"STOP","data":{},'),
+            self.STOP.replace(b'600000', b'1000000'),
+            self.RTC.replace(b'offset": -1', b'offset": false'),
+            self.RTC.replace(b'offset": -1', b'offset": 9223372036854775808'),
+            self.RTC.replace(b'device[2]', b'device[3]'),
+            self.RTC.replace(b'"qom-path"', b'"unknown"'),
+        ):
+            with self.subTest(raw=raw), self.assertRaisesRegex(base.ProbeError, "shared_qmp_event_forbidden"):
+                witness.shared_control_index(*self.control({4: (before_debug[0], (raw, None),
+                                                               before_debug[1])}))
+        for change in ("index_offset", "missing_event"):
+            index, blobs, binding = self.control({4: before_debug})
+            event = next(row for row in index["events"] if row["protocol"] == "qmp")
+            if change == "index_offset":
+                event["wire"]["offset"] += 1
+            else:
+                index["events"].remove(event)
+                for seq, row in enumerate(index["events"], 1):
+                    row["seq"] = seq
+            with self.subTest(change=change), self.assertRaisesRegex(base.ProbeError,
+                                                                    "shared_qmp_event_binding"):
+                witness.shared_control_index(index, blobs, binding)
+
+    def test_shared_qmp_receipts_follow_preceding_reply_or_share_its_time(self):
+        pair = {4: ((self.RESUME, 175000), (self.STOP, 175000))}
+        cases = (
+            self.control(pair | {5: ((self.LATE_RTC, None),)}),
+            self.control(pair, ((self.LATE_RTC, None),)),
+            self.control(pair, ((self.SHUTDOWN, None),)),
+        )
+        for index, blobs, binding in cases:
+            event = [row for row in index["events"] if row["protocol"] == "qmp"][-1]
+            replies = [row for row in index["operations"] if row["protocol"] == "qmp"
+                       and row["response"]["offset"] < event["wire"]["offset"]]
+            reply_end = replies[-1]["finished_ns"]
+            with self.subTest(event=event["name"], reply=replies[-1]["operation"]):
+                event["received_ns"] = reply_end - 1
+                with self.assertRaisesRegex(base.ProbeError, "shared_qmp_event_clock"):
+                    witness.shared_control_index(index, blobs, binding)
+                event["received_ns"] = reply_end
+                self.assertEqual(witness.shared_control_index(index, blobs, binding)[1], 123)
+
+    def test_reset_qmp_keeps_rejecting_boot_events(self):
+        raw_in, raw_out, times, event_times = synthetic_qmp(123, 20000, 40000)
+        split = raw_in.index(b"\r\n") + 2
+        mutated = raw_in[:split] + self.RESUME + b"\r\n" + raw_in[split:]
+        with self.assertRaisesRegex(base.ProbeError, "qmp_unexpected_event"):
+            witness.reset_control_index(
+                "witness", "1" * 64, mutated, raw_out,
+                witness.CaptureEvidence.ref("qmp.bin", mutated),
+                witness.CaptureEvidence.ref("qmp-requests.bin", raw_out), times, event_times,
+            )
 
 
 def synthetic_host_report(folder, *, rsp_index=None, rsp_blobs=None, profile=None,

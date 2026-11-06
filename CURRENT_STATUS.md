@@ -249,8 +249,11 @@ nested translation before it can inspect ordinary RAM.
 The [SATA-disabled requalification](docs/plans/run0-sata-off-requalification-2026-11-06.md)
 supplies a fresh DEBUG entry hint and admission, a paused CAP1 pass and a separate
 paused host CPU witness pass. The diagnostic and CAP1 reset memory views contain
-no AHCI region. The live C0 collector still needs its own same-stop witness and
-RAM acquisition evidence.
+no AHCI region. The offline C0 decoder verifies the unchanged prior CAP1
+report and artifacts in a reserved namespace and uses a pure bounded paging
+step. Shared C0 replay covers QMP boot transitions and delayed RTC events.
+The live C0 collector still needs its own same-stop witness, source closure
+for ordinary-RAM persistence and RAM acquisition evidence.
 
 The IPC diagnostic reproduced two zero-byte timeouts before a later valid
 reply on the same VM. The separate single-client run succeeded immediately.

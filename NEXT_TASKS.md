@@ -60,13 +60,16 @@ The [reset capability packet](docs/plans/run0-c0-inspection-v0.md) now supplies
 bounded RSP, the inspection contract and an actual owned reset observation.
 The [host witness result](docs/plans/run0-host-cpu-witness-result-2026-11-06.md)
 qualifies the owned reader at reset. The offline C0 decoder is independently
-reviewed with complete synthetic replay. Staff the live C0 transport and
-RAM-admitted acquisition in parallel after reviewing their interfaces. Join
-the host witness inside the same stopped interval before guest memory reads.
+reviewed with complete synthetic replay. The prior CAP1 resolver keeps its
+artifacts separate from current outputs. The retained decoder uses the pure
+paging step planned for acquisition. Shared C0 replay checks the QMP boot
+transitions and handles the pinned RTC notifications.
 Use the [requalified SATA-disabled profile](docs/plans/run0-sata-off-requalification-2026-11-06.md)
-with its fresh prior hint, entry admission, CAP1 and host reset witness. Account
-for the observed boot-time RTC events in the live transport policy. Qualify C0,
-then the same-call C1/C2 capture.
+with its fresh prior hint, entry admission, CAP1 and host reset witness. Review
+the shared wire and operation ledger, then staff the typed transport and
+RAM-admitted acquisition in parallel. The live collector needs a fresh host
+witness within the same stop and a reviewed ordinary-RAM persistence condition
+before any guest-memory read. Qualify C0, then the same-call C1/C2 capture.
 The prior address is only a candidate:
 a missed stop or missing new profile-bound hint remains `INCOMPLETE`; present
 mismatched or malformed inputs are `DENY`. No scan, guessed address or automatic
