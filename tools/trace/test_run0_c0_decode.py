@@ -12,6 +12,7 @@ import unittest
 from unittest.mock import patch
 import zlib
 
+import boot_profile_capture as capture
 from test_boot_profile_inputs import pe_fixture, put
 
 try:
@@ -228,8 +229,7 @@ def synthetic_c0_hmp(values):
     return "\r\n".join(lines)+"\r\n"
 
 
-def full_fixture(folder):
-    import boot_profile_capture as capture
+def full_fixture(folder, invocation_profile=capture.INVOCATION_PROFILE):
     import boot_profile_inputs as entry
     import run0_host_cpu_witness as witness
     import run0_rsp_capability as cap
@@ -242,7 +242,7 @@ def full_fixture(folder):
                                              else b"synthetic input "+name.encode())
         inputs[name] = blob(blobs, "7z.so" if name == "seven_zip_module" else name, data)
     profile = {"schema_version": 1, "kind": "boot_profile_probe_inputs_v0",
-        "invocation_profile": capture.INVOCATION_PROFILE, "source_commit": "1"*40,
+        "invocation_profile": invocation_profile, "source_commit": "1"*40,
         "assembled_patch_sha256": hashlib.sha256(b"").hexdigest(), "diagnostic_image_name": "fixture.efi",
         "inputs": inputs, "provenance": {name: blob(blobs, "provenance/"+name, b"synthetic "+name.encode())
                                        for name in capture.PROVENANCE_KEYS}}
@@ -283,7 +283,8 @@ def full_fixture(folder):
     for name in ("expanded_cpu", "invocation"):
         artifacts[name] = put_blob("prior/"+name+".json", {"scope": "synthetic prior hint only"})
     admission_profile = {key: profile[key] for key in ("source_commit", "assembled_patch_sha256", "diagnostic_image_name")}
-    admission_profile.update(machine="pc-q35-8.2", accelerator="tcg", cpu="qemu64", vcpus=1,
+    admission_profile.update(machine=capture.admission_machine(invocation_profile),
+                             accelerator="tcg", cpu="qemu64", vcpus=1,
                              ram_bytes=512 << 20, artifacts=artifacts)
     pe = entry.parse_pe(pinned, 32)
     admission = {**entry.report("ADMIT", "prior_candidate_inputs_checked"),
@@ -297,7 +298,9 @@ def full_fixture(folder):
         "reset_register_text retained_stream_bytes schema_version started_utc status stream_errors streams_complete_to_eof "
         "transport_eof_observations").split()
     prior = dict.fromkeys(prior_keys)
+    plan = json.loads(blobs[host["plan_ref"]["path"]])
     prior.update(schema_version=1, kind="boot_profile_probe_v0", status="CANDIDATE_RETAINED",
+        argv=plan["argv"],
         profile=profile, profile_sha256=entry.profile_digest(profile), capture_complete=False,
         profile_preconditions_met=False, claims={name: False for name in entry.CLAIM_NAMES},
         candidate={key: value for key, value in admitted_candidate.items() if key not in ("prior_run_id", "diagnostic_ref")},
@@ -309,7 +312,6 @@ def full_fixture(folder):
         "probe_report_ref": put_blob("prior/report.json", prior),
         "scope": "field-by-field mapping of the actual prior probe to existing admission subset; no fresh C0 or runtime qualification",
         "whole_unmodified_diagnostic_ref": diagnostic_ref}
-    plan = json.loads(blobs[host["plan_ref"]["path"]])
     argv_ref = put_blob("c0-argv.json", plan["argv"])
     end = {"status": "PASS", "reason": "synthetic_complete", "reaped": True, "returncode": 0,
         "actions": [], "grace": "exited",
@@ -645,6 +647,32 @@ class DecoderControls(unittest.TestCase):
             bad = bytearray(original); put(bad, 0x608, 'H', 0xa000 | (target-0x1000))
             self.reject("DENY", "partial_relocation", d._loaded_pe,
                       bytes(bad), base, base+0x1020, headers, bytes(entry))
+
+    def test_sata_off_replay_denies_legacy_prior_probe_or_capability_argv(self):
+        with tempfile.TemporaryDirectory() as directory:
+            report, ref, blobs, host, put = full_fixture(
+                Path(directory), capture.SATA_OFF_INVOCATION_PROFILE,
+            )
+            self.assertEqual(d.decode_c0("synthetic_fixture", ref, blobs, host)["status"], "PASS")
+            mapping = json.loads(blobs[report["profile_mapping_ref"]["path"]])
+            prior_path = mapping["probe_report_ref"]["path"]
+            prior = json.loads(blobs[prior_path])
+            prior["argv"][2] = "pc-q35-8.2,accel=tcg"
+            mapping["probe_report_ref"] = put(prior_path, prior)
+            bad = report | {"profile_mapping_ref": put("wrong-mapping.json", mapping)}
+            self.assertEqual(d.decode_c0("synthetic_fixture", put("wrong-probe.json", bad),
+                                         blobs, host)["reason"], "retained_argv")
+        with tempfile.TemporaryDirectory() as directory:
+            report, _, blobs, host, put = full_fixture(
+                Path(directory), capture.SATA_OFF_INVOCATION_PROFILE,
+            )
+            previous = json.loads(blobs[report["capability_ref"]["path"]])
+            argv = json.loads(blobs[previous["argv_ref"]["path"]])
+            argv[2] = "pc-q35-8.2,accel=tcg"
+            previous["argv_ref"] = put("wrong-cap-argv.json", argv)
+            bad = report | {"capability_ref": put("wrong-cap.json", previous)}
+            self.assertEqual(d.decode_c0("synthetic_fixture", put("wrong-c0.json", bad),
+                                         blobs, host)["reason"], "retained_argv")
 
     def test_c0d16_strict_refs_and_incomplete_claims(self):
         for raw in (b'{"x":1,"x":2}', b'{"x":NaN}', b'{"x":1e400}', b'\xff'):

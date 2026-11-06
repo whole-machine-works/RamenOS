@@ -63,8 +63,10 @@ qualifies the owned reader at reset. The offline C0 decoder is independently
 reviewed with complete synthetic replay. Staff the live C0 transport and
 RAM-admitted acquisition in parallel after reviewing their interfaces. Join
 the host witness inside the same stopped interval before guest memory reads.
-Reuse the exact pinned profile. A changed profile requires a fresh matching
-prior hint and capability binding. Qualify C0, then the same-call C1/C2 capture.
+Use the [requalified SATA-disabled profile](docs/plans/run0-sata-off-requalification-2026-11-06.md)
+with its fresh prior hint, entry admission, CAP1 and host reset witness. Account
+for the observed boot-time RTC events in the live transport policy. Qualify C0,
+then the same-call C1/C2 capture.
 The prior address is only a candidate:
 a missed stop or missing new profile-bound hint remains `INCOMPLETE`; present
 mismatched or malformed inputs are `DENY`. No scan, guessed address or automatic

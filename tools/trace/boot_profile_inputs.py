@@ -301,7 +301,9 @@ def validate_packet(packet):
     require(type(profile['source_commit']) is str and
             re.fullmatch('[0-9a-f]{40}', profile['source_commit']), 'source_commit')
     sha(profile['assembled_patch_sha256'], 'assembled_patch_sha256')
-    for key, expected in [('machine', 'pc-q35-8.2'), ('accelerator', 'tcg'), ('cpu', 'qemu64')]:
+    require(type(profile['machine']) is str and
+            profile['machine'] in ('pc-q35-8.2', 'pc-q35-8.2,sata=off'), 'unsupported_machine')
+    for key, expected in [('accelerator', 'tcg'), ('cpu', 'qemu64')]:
         require(profile[key] == expected, 'unsupported_' + key)
     integer(profile['vcpus'], 1, 1, 'vcpus')
     integer(profile['ram_bytes'], 512 * 1024 * 1024, 512 * 1024 * 1024, 'ram_bytes')

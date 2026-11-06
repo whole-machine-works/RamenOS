@@ -19,6 +19,7 @@ import boot_profile_inputs as entry
 
 
 PROFILE_SHA256 = "3e5916da4e1ec79eda8d967f4bd2fc26909fb509479c086db4576baa506a910e"
+SATA_OFF_PROFILE_SHA256 = "b3c4bd6caa30641a0f1859f4fbc88cad64254f602c7190108cb223ff0c32feef"
 QEMU_SHA256 = "8a35ccba41582fc6c38b9df85fc9e35fa1d42f414d2d7d8090ee9b2f5e7c0854"
 SOURCE_DOSSIER_SHA256 = "f2dbb099816cc1dfad09f2ea2a938c4127a63e7985f8c363070ecab590973db9"
 CAPTURE_LIMIT = 32 * 1024 * 1024
@@ -54,8 +55,37 @@ def exact_int(value, low, high):
     return type(value) is int and low <= value <= high
 
 
-def capability_argv(inputs, run):
-    return base.build_argv(inputs, run)
+def capability_argv(inputs, run, invocation_profile=base.INVOCATION_PROFILE):
+    return base.build_argv(inputs, run, invocation_profile)
+
+
+def profile_pin(profile):
+    deny(type(profile) is dict, "profile_identity")
+    invocation = profile.get("invocation_profile")
+    if invocation == base.INVOCATION_PROFILE:
+        return PROFILE_SHA256
+    deny(invocation == base.SATA_OFF_INVOCATION_PROFILE, "invocation_profile")
+    return SATA_OFF_PROFILE_SHA256
+
+
+def decode_pinned_profile(raw):
+    digest = hashlib.sha256(raw).hexdigest()
+    deny(digest in (PROFILE_SHA256, SATA_OFF_PROFILE_SHA256), "pinned_file_digest")
+    profile = entry.decode_packet(raw)
+    deny(digest == profile_pin(profile), "profile_identity")
+    return profile
+
+
+def validate_invocation_argv(argv, invocation_profile):
+    """Bind a retained argv to the exact builder and profile without filesystem reads."""
+    deny(type(argv) is list and all(type(arg) is str for arg in argv)
+         and argv and "-qmp" in argv[:-1], "retained_argv")
+    qmp = argv[argv.index("-qmp") + 1]
+    suffix = "/qmp.sock,server=on,wait=off"
+    deny(qmp.startswith("unix:") and qmp.endswith(suffix), "retained_argv")
+    run = Path(qmp[len("unix:"):-len(suffix)])
+    deny(argv == capability_argv(Path(argv[0]).parent, run, invocation_profile),
+         "retained_argv")
 
 
 def cpu_path(cpus):
@@ -409,16 +439,20 @@ def prepare_plan(inputs, run, dossier):
     deny(re.fullmatch(r"[a-z0-9-]{1,64}", run.name) is not None, "run_id")
     deny(run.parent.resolve() == run.parent and not os.path.lexists(run),
          "run_parent_or_freshness")
-    profile_bytes = read_exact(inputs / "profile.json", PROFILE_SHA256, MAX_OPERATION_BYTES)
-    profile = entry.decode_packet(profile_bytes)
+    path = inputs / "profile.json"
+    base.private_regular(path)
+    with path.open("rb") as stream:
+        profile_bytes = stream.read(MAX_OPERATION_BYTES + 1)
+    incomplete(len(profile_bytes) <= MAX_OPERATION_BYTES, "pinned_file_size")
+    profile = decode_pinned_profile(profile_bytes)
     base.validate_profile(profile, inputs)
     deny(profile["inputs"]["qemu"]["sha256"] == QEMU_SHA256, "qemu_package_pin")
     dossier_bytes = read_exact(dossier, SOURCE_DOSSIER_SHA256, MAX_OPERATION_BYTES)
     esp = base.check_esp(inputs, profile)
-    argv = capability_argv(inputs, run)
+    argv = capability_argv(inputs, run, profile["invocation_profile"])
     plan = {"schema_version": 1, "kind": "run0_reset_capability_plan_v0",
             "inputs": str(inputs), "run": str(run), "argv": argv, "esp_validation": esp,
-            "profile_sha256": PROFILE_SHA256, "source_dossier_sha256": SOURCE_DOSSIER_SHA256,
+            "profile_sha256": profile_pin(profile), "source_dossier_sha256": SOURCE_DOSSIER_SHA256,
             "observer": observer_manifest()}
     return plan, profile, profile_bytes, dossier_bytes
 
@@ -447,7 +481,7 @@ def collect(plan_path, digest, inputs, run, dossier=None):
     return run_capability(plan, profile, profile_bytes, dossier_bytes, inputs, run)
 
 
-def observe(qmp, rsp, evidence, observation):
+def observe(qmp, rsp, evidence, observation, invocation_profile=base.INVOCATION_PROFILE):
     commands = qmp.request("query-commands")
     incomplete(type(commands) is list and all(type(row) is dict and
                set(row) == {"name"} and type(row["name"]) is str for row in commands),
@@ -469,6 +503,8 @@ def observe(qmp, rsp, evidence, observation):
     deny(type(layout) is str, "flatview_reply_shape")
     observation["layout_ref"] = evidence.put("flatview.txt", layout.encode())
     parse_flatview(layout)
+    if invocation_profile == base.SATA_OFF_INVOCATION_PROFILE:
+        deny("ahci" not in layout.casefold(), "sata_off_ahci_visible")
     rsp.query_supported()
     rsp.query_threads()
     rsp.select_thread()
@@ -619,7 +655,8 @@ def _run_capability(plan, profile, profile_bytes, dossier_bytes, inputs, run, cl
         qmp = CapabilityQMP(wire, budget)
         qmp.negotiate()
         rsp = RSPClient(wire, budget)
-        observe(qmp, rsp, evidence, report["observations"])
+        observe(qmp, rsp, evidence, report["observations"],
+                profile.get("invocation_profile", base.INVOCATION_PROFILE))
         termination.update(status="PASS", reason="reset_capability_observed")
     except (base.ProbeError, OSError, KeyboardInterrupt) as exc:
         failure(exc)
@@ -667,7 +704,7 @@ def _run_capability(plan, profile, profile_bytes, dossier_bytes, inputs, run, cl
         termination["streams"] = stream_results(wire)
     try:
         base.validate_profile(profile, inputs)
-        deny(read_exact(inputs / "profile.json", PROFILE_SHA256, MAX_OPERATION_BYTES)
+        deny(read_exact(inputs / "profile.json", plan["profile_sha256"], MAX_OPERATION_BYTES)
              == profile_bytes and observer_manifest() == plan["observer"], "pins_changed")
     except (base.ProbeError, OSError) as exc:
         failure(exc)

@@ -27,9 +27,9 @@ from types import MappingProxyType
 import boot_profile_capture as base
 import boot_profile_inputs as entry
 from run0_rsp_capability import (
-    FALSE_CLAIMS, PROFILE_SHA256, QEMU_SHA256, SOURCE_DOSSIER_SHA256,
+    FALSE_CLAIMS, QEMU_SHA256, SOURCE_DOSSIER_SHA256,
     CapabilityQMP, CapabilityWire, canonical, cpu_path, defer_cleanup_interrupt, realized_width,
-    read_exact, write_private,
+    decode_pinned_profile, profile_pin, read_exact, write_private,
 )
 
 
@@ -1436,10 +1436,11 @@ def validate_complete_report(report_ref, report, blobs):
     else:
         deny(binding["stop_id"] == "C0" and binding["rsp_thread"] == "01", "c0_stop_binding")
     runtime = report["origin"] == "retained_runtime"
-    profile = strict_json(retained_blob(report["profile_ref"], blobs, 65536), 65536)
-    deny(type(profile) is dict and entry.profile_digest(profile) == binding["profile_sha256"]
-         and (not runtime or report["profile_ref"]["sha256"] == PROFILE_SHA256),
+    profile_bytes = retained_blob(report["profile_ref"], blobs, 65536)
+    profile = decode_pinned_profile(profile_bytes) if runtime else strict_json(profile_bytes, 65536)
+    deny(type(profile) is dict and entry.profile_digest(profile) == binding["profile_sha256"],
          "profile_binding")
+    invocation = profile.get("invocation_profile", base.INVOCATION_PROFILE)
     if runtime:
         incomplete(reset and REVIEWED_LAUNCH_ABI_SHA256 is not None,
                    "runtime_provenance_pending")
@@ -1455,7 +1456,7 @@ def validate_complete_report(report_ref, report, blobs):
         base.safe_path(Path(plan[name]))
     deny(plan["kind"] == "run0_host_cpu_witness_plan_v0"
          and Path(plan["run"]).name == report["run_id"]
-         and plan["argv"] == base.build_argv(Path(plan["inputs"]), Path(plan["run"]))
+         and plan["argv"] == base.build_argv(Path(plan["inputs"]), Path(plan["run"]), invocation)
          and plan["profile_sha256"] == report["profile_ref"]["sha256"]
          and plan["abi_sha256"] == report["abi_ref"]["sha256"]
          and plan["source_dossier_sha256"] == report["source_ref"]["sha256"], "plan_binding")
@@ -2188,7 +2189,7 @@ def run_reset_capture(prepared, run):
             incomplete(observation is not None and observation.state is not None
                        and not observation.secondary_failures, "observation_incomplete")
             base.validate_profile(profile, Path(plan["inputs"]))
-            deny(read_exact(Path(plan["inputs"]) / "profile.json", PROFILE_SHA256, 65536)
+            deny(read_exact(Path(plan["inputs"]) / "profile.json", plan["profile_sha256"], 65536)
                  == profile_bytes and observer_source_bytes() == observer_bytes,
                  "capture_pins_changed")
             recheck_receipts = {}
@@ -2358,7 +2359,8 @@ def verify_runtime_observer(report, blobs, profile, plan, abi):
                                           for alias in row["aliases"]]}
         for row in module_rows
     ]
-    deny(post["checked_absences"] == modules["checked_absences"]
+    absences = runtime_module_absences(modules, Path(plan["inputs"]), profile["invocation_profile"])
+    deny(post["checked_absences"] == absences
          and post["module_observations_sha256"] ==
          hashlib.sha256(canonical(observations)).hexdigest(), "runtime_module_recheck_binding")
     actual = post["module_raw_listing_sha256"]
@@ -2680,16 +2682,28 @@ def _static_tool(argv, env, deadline):
     return owner.returncode, bytes(streams["stdout"]), bytes(streams["stderr"])
 
 
-def require_module_closure(inputs, abi_index, abi_blobs, *, deadline=None, receipts=None, run=None):
+def runtime_module_absences(modules, inputs, invocation_profile):
+    fixed = ["/etc/ld.so.preload", "/etc/qemu/qemu.conf",
+             "/var/run/qemu/Debian_1_8.2.2+ds-0ubuntu1.18"]
+    legacy_bundle = "/tmp/wmw-debug-d21-YFXXNEg5/run0/inputs/qemu-bundle"
+    deny(modules["checked_absences"] == [*fixed, legacy_bundle], "module_absence_profile")
+    base.safe_path(inputs)
+    bundle = str(inputs / "qemu-bundle")
+    if invocation_profile != base.SATA_OFF_INVOCATION_PROFILE:
+        deny(invocation_profile == base.INVOCATION_PROFILE and bundle == legacy_bundle,
+             "module_absence_profile")
+    return [*fixed, bundle]
+
+
+def require_module_closure(inputs, abi_index, abi_blobs, invocation_profile, *,
+                           deadline=None, receipts=None, run=None):
     incomplete('runtime_dependencies_ref' in abi_index,'runtime_module_closure_pending')
     deadline=time.monotonic()+5 if deadline is None else deadline
     runtime=strict_json(retained_blob(abi_index['runtime_dependencies_ref'],abi_blobs,1024*1024),1024*1024)
     incomplete('module_closure_ref' in runtime,'runtime_module_closure_pending')
     deny(runtime['module_closure_ref']['sha256']==MODULE_CLOSURE_SHA256,'module_closure_pin')
     modules=strict_json(retained_blob(runtime['module_closure_ref'],abi_blobs,1024*1024),1024*1024)
-    absences=['/etc/ld.so.preload','/etc/qemu/qemu.conf',
-              '/var/run/qemu/Debian_1_8.2.2+ds-0ubuntu1.18',str(inputs/'qemu-bundle')]
-    deny(modules['checked_absences']==absences,'module_absence_profile')
+    absences=runtime_module_absences(modules,inputs,invocation_profile)
     for path in absences: deny(not os.path.lexists(path),'module_injection_path_present')
     directory=Path(modules['directory'])
     for target in (directory,Path('/etc'),Path('/var/run/qemu')):
@@ -2759,7 +2773,8 @@ def recheck_runtime(inputs, profile, abi_index, abi_blobs, expected_identity=Non
     deny(parse_loader_aliases(out,inspection['interpreter']['path']) ==
          [(r['alias'],r['listed_path']) for r in inspection['aliases']], 'runtime_loader_alias_changed')
     collected={}
-    require_module_closure(inputs,abi_index,abi_blobs,deadline=deadline,receipts=collected,run=run)
+    require_module_closure(inputs,abi_index,abi_blobs,profile['invocation_profile'],
+                           deadline=deadline,receipts=collected,run=run)
     if receipts is not None:
         deny(type(receipts) is dict and not receipts,'runtime_receipts_not_empty')
         receipts.update(schema_version=1,kind='run0_host_cpu_runtime_recheck_v0',
@@ -2791,8 +2806,8 @@ def prepare_launch(inputs,run,dossier,host_abi):
     deny(re.fullmatch('[a-z0-9-]{1,64}',run.name) is not None,'run_id')
     deny(run.parent.resolve()==run.parent and run.parent.is_dir()
          and not os.path.lexists(run),'run_parent_or_freshness')
-    profile_bytes,_=_pinned_read(inputs/'profile.json',PROFILE_SHA256,65536)
-    profile=strict_json(profile_bytes,65536)
+    profile_bytes,_=_read_regular(inputs/'profile.json',65536,private=True)
+    profile=decode_pinned_profile(profile_bytes)
     base.validate_profile(profile,inputs)
     deny(profile['inputs']['qemu']['sha256']==QEMU_SHA256,'qemu_package_pin')
     abi_ref,abi_blobs,index,layout,abi=load_launch_abi(host_abi)
@@ -2803,8 +2818,8 @@ def prepare_launch(inputs,run,dossier,host_abi):
     observer_bytes=observer_source_bytes()
     observer_ref={'path':'observer.json','length':len(observer_bytes),'sha256':hashlib.sha256(observer_bytes).hexdigest()}
     plan={'schema_version':1,'kind':'run0_host_cpu_witness_plan_v0','inputs':str(inputs),'run':str(run),
-          'argv':base.build_argv(inputs,run),'uid':os.getuid(),'gid':os.getgid(),'launch_identity':launch_identity,
-          'profile_sha256':PROFILE_SHA256,'abi_sha256':abi_ref['sha256'],
+          'argv':base.build_argv(inputs,run,profile['invocation_profile']),'uid':os.getuid(),'gid':os.getgid(),'launch_identity':launch_identity,
+          'profile_sha256':profile_pin(profile),'abi_sha256':abi_ref['sha256'],
           'source_dossier_sha256':index['source_dossier_ref']['sha256'],'observer_ref':observer_ref,'esp_validation':esp}
     return plan,profile,profile_bytes,observer_bytes,abi_ref,abi_blobs,layout,abi
 
