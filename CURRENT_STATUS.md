@@ -82,6 +82,21 @@ owner and assertion; do not accept Unknown as the expected successful receipt.
 Retain every failed attempt. This investigation can proceed alongside independent
 RUN0 preparation and does not change the accepted dispatch dependencies.
 
+Post-PR53 main [run 42153799717, attempt 1](https://github.com/whole-machine-works/RamenOS/actions/runs/42153799717/attempts/1)
+on `65d45be` failed the separate D09 positive cursor/selection/scroll scenario:
+41 public tests passed, one failed and four were filtered out.
+`D09FrozenCursorSelectionScrollGolden-123` exhausted its original five-second
+child lifetime and returned `Some(Timeout)` instead of `Some(Ok)`. The child was
+killed with SIGKILL, actually reaped and its supervisor joined. Why the scenario
+overran remains unknown, distinct from the capacity and D19 failures. Reproduce
+it in a bounded fresh source-bound Linux snapshot without relaxing budgets or
+assertions; this investigation does not block independent RUN0 preparation.
+Retained control timestamps place about 4.55 seconds in 66 PublishAck-to-next-Input
+gaps that include reference rendering, both compositions and synchronous recording;
+they do not isolate the cause. Measure those parent phases before optimizing,
+preserving every step and frame, the original five-second lifetime and exact
+pixel comparisons.
+
 The separate earlier local D19 second-Save failure remains unresolved with its
 cause unknown; the later hosted PASS does not explain it. The ready queue retains
 a bounded reproduction/instrumentation follow-up without renewing deadlines or

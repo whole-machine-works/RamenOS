@@ -24,6 +24,11 @@
   original panic resumes. Keep assertions and budgets unchanged. The authenticated
   CandidateBlobWrite control still fails with exit 101 and no success summary;
   use the diagnostics for bounded reproduction, without claiming a runtime fix.
+- Retain the separate [post-PR53 main D09 failure](https://github.com/whole-machine-works/RamenOS/actions/runs/42153799717/attempts/1):
+  the positive golden cursor/selection/scroll scenario exhausted its original
+  five-second child lifetime, with actual SIGKILL/reap and supervisor join.
+  The overrun's cause remains unknown; bounded reproduction preserves budgets
+  and assertions without blocking independent RUN0 preparation.
 - Advance dispatch to RUN0 and the IN0/STORE0/UI2 target joins. Preserve the earlier
   local D19 failure as unresolved with a bounded reproduction follow-up. Host
   acceptance does not establish target persistence or physical durability.
