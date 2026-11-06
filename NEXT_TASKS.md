@@ -22,7 +22,7 @@ Assembled local suites, both-architecture S8 assertions, original task18/Reader9
 all affected editor consumers and S11/S12/S13/org-governance pass. PR #42's push,
 PR and post-merge hosted runs each pass all nine jobs and 68 canonical records on
 the first attempt. Preserve that accepted predecessor, existing consumers and
-reviewed source registries while starting the existing process sequence. PR #40/41
+reviewed source registries as the target task advances. PR #40/41
 qualify preceding source only; PR #42 evidence likewise cannot qualify later
 changed inputs. PR #43 fixture repairs and PR #44/#45 timeout evidence/test recovery
 have separate qualification and failure history in the plan.
@@ -36,34 +36,45 @@ fixture success.
 
 ## Ready work front
 
-**Now:** qualify the Desktop entry ownership correction and complete authorized
-repository delivery of the P0–P3 Linux editor workflow in
-[PR52](https://github.com/whole-machine-works/RamenOS/pull/52). P0 and the private
-handoff released the completed parent carrier, child and Store integration work.
-The `0d449c9` predecessor passed complete hosted CI and independent archival
-review. Focused Linux tests pass for real Desktop capacity rejection followed by
-a fresh Save on the same child, and for failed Read cleanup waiting for the
-actual dispatcher join. Require complete hosted CI, independent evidence
-review and a direct check of that run's own archived binaries before handoff to
-A3. Preserve the earlier local D19 failure with its unknown cause.
-The [qualification record](docs/plans/editor-process-delivery-qualification-2026-11-05.md)
-owns source, review and failure evidence. Integration requires separate A3 approval
-and merge.
+**Now:** advance RUN0.0 → RUN0 from the existing relocated-entry preparation,
+then join target runtime with IN0 and UI2 for the same editing task in QEMU;
+STORE0 supplies persistent target save/reopen. Assign independent input, storage
+and display contract/Vault preparation only where its inputs are ready. Freeze
+the missing RUN0 capture/profile handoff before dependent adapter work; missing
+physical setup does not block ready host/QEMU preparation.
+
+P0–P3 is merged through
+[PR52](https://github.com/whole-machine-works/RamenOS/pull/52) as
+`c9ed54a5b69a1a279d7014929bf932288aa86ec6`, following separate A3 approval of
+`59723ffe198019fa847f34777269b4da543758c4`. All nine checks passed in
+[run 42098888792](https://github.com/whole-machine-works/RamenOS/actions/runs/42098888792);
+independent review verified 57 canonical stages, eight preservation stages and
+that run's three archived binaries. Do not redispatch P0–P3 or its corrected
+Desktop capacity/partial-Read paths as unfinished work. Preserve the default-off
+Linux host scope and the source-bound
+[qualification record](docs/plans/editor-process-delivery-qualification-2026-11-05.md).
+
+Keep a separate reliability packet for the earlier local D19 second-Save failure,
+whose cause remains unknown. Retain its original artifacts, reproduce the named
+scenario on a fresh source-bound Linux snapshot, and instrument the original
+permit/Store publication/reply timeline before proposing a fix. Preserve the
+original Save and cleanup deadlines, owners and assertions; retain every failed
+attempt. A later PASS alone does not close this packet or establish target
+durability. This investigation can proceed alongside disjoint RUN0 preparation.
 
 The first product checkpoint remains one keyboard-first human editing task that
-works without a model. Preserve its in-process control, then cross a real process
-boundary, target/QEMU, persistent target storage and one qualified machine. The
+works without a model. Preserve its in-process and merged Linux process controls,
+then advance target/QEMU, persistent target storage and one qualified machine. The
 October 8 review supplied concrete regression scenarios, now covered by thirteen
 new maintained assertions with fresh macOS/Linux repair evidence. No paid study
 or physical actuation is needed for host qualification.
 
-Dispatch the next packet by its contribution to that task. P0–P3 owns the first
-priority: a real editor process with authorized access and original-outcome Save
-recovery. Use independent capacity for the named RUN0, IN0, STORE0 and UI2 joins
-below, keeping their review and integration ready for the same task on RamenOS.
+Dispatch the next packet by its contribution to that task. The accepted P0–P3
+host workflow is the preservation control for the RUN0, IN0, STORE0 and UI2 joins
+below. Prioritize their dependencies, review and integration for the same task on RamenOS.
 Broader apps/hardware, generic deployment machinery and model studies follow
 demonstrated needs. Newcomputer compiler or recovery preparation must not delay
-the existing process sequence, and the human task has no compiler-speedup gate.
+the target task, and the human task has no compiler-speedup gate.
 
 Before the first interactive UI evaluation, freeze a walkthrough and expected
 outcomes under the [roadmap](ROADMAP.md#shortest-path-to-a-useful-dependable-computer):
@@ -88,11 +99,10 @@ inputs require fresh checks and reviewed source-registry successors. Complete P0
 authoring, independent handoff review and actual strict Linux API RED released
 P1/P2. The later complete hosted runtime is recorded separately from that release.
 
-### Process successor: split at real ownership boundaries
+### Accepted process sequence and preservation ownership
 
-Repair acceptance joins here. Assertion/contract work can proceed in a disjoint
-scope while qualification runs, but dependent runtime integration waits for
-complete R1–R4 qualification and CI0. Preserve the [process contract](docs/contracts/editor-process-v0.json),
+The following sequence is complete for the merged default-off Linux host scope.
+Preserve the [process contract](docs/contracts/editor-process-v0.json),
 [API inventory](docs/DESKTOP_EDITOR_PROCESS_API_V0.md),
 [process plan](docs/plans/editor-process-v0.md) and live Save contracts. The shared
 pure core and adapters are already accepted; do not reimplement them.
@@ -104,18 +114,19 @@ pure core and adapters are already accepted; do not reimplement them.
 | **P2 — child author; implemented** | Accepted P0 and the same frozen P1 handoff; existing pure editor core/wire | Implemented `apps/artifact_editor/src/bin/editor-process.rs`, built with child-only features, edits bounded text and publishes immutable frames. Reuses the accepted pure core. Authored concurrently with P1; complete hosted checks exercise combined Linux runtime and exclude Desktop/Store from the child's active graph. |
 | **P3 — integration author; implemented** | Accepted combined P1+P2 and qualified R1–R4/CI0 | Implemented `apps/artifact_editor/src/native.rs` common SaveChains plus reassigned process consumers: genuine Store/recording binds current Core, original Save owners and full receipt. Complete hosted checks exercise denial, child death, original-only recovery, unrelated-session progress and a fresh Save, with unchanged in-process controls and the process gate on one candidate. |
 
-The coordinator binds literal private-assertion paths and unique outputs before
-P0 dispatch, verifies the actual Linux prerequisites early, and owns shared Cargo
+For successor work, the coordinator binds literal assertion paths and unique
+outputs, verifies the actual prerequisites early, and owns shared Cargo
 features, IDL/generated output, source registries, `editor_dev/mod.rs` and
 `editor_dev/host.rs` bridges, gate registration/reader and status. A worker sends
 a bounded shared-file change to that owner instead of editing a sibling's inputs.
-The P1/P2 paths come from the existing process plan. Their normal combined runtime
-has complete hosted Linux qualification and independent runtime review in the delivery
-record; archival-successor qualification and authorized integration remain open. A PID, record or source inclusion alone
+The P1/P2 paths come from the existing process plan. Their combined runtime,
+archival successor and corrected Desktop entry paths have complete hosted Linux
+qualification, independent review and authorized integration through PR52. A PID, record or source inclusion alone
 does not establish process execution.
 
 The following dispatch and preparation paragraphs describe the historical sequence
-before complete P0 release; the successor above owns current delivery work.
+before complete P0 release; they are not current assignments. The ready work front
+above owns current dispatch.
 
 Use the next available author for P0; the other may prepare one ready target or
 recovery prerequisite while the reviewer checks P0 assertions. Once the complete
@@ -158,9 +169,9 @@ handoff, registered held-ELF barrier and actual parent-death/Save controls above
 
 ### Independent frontier and target joins
 
-Use spare capacity only when it does not delay review/integration of the human task.
-Keep Oracle/profile preparation and target memory ownership moving during host
-repairs; neither waits for a process-runtime merge or model study.
+Staff RUN0's next ready prerequisite first, preserving review capacity. Keep
+independent Oracle/profile, input, storage and display preparation moving while
+the target-memory handoff is resolved; no model study gates these packets.
 
 | Packet | Ready scope | Completion / join |
 |--------|-------------|-------------------|
@@ -172,13 +183,16 @@ repairs; neither waits for a process-runtime merge or model study.
 | SW-A / SW-E | Remaining authority or provider-supervision controls in separate assigned files | Run named Linux/Docker gates; preserve unknown authority, failed/pending attempts, original cleanup and private bank/funded-work-order controls. Avoid repeating landed canary/accounting controls. Full A2 precedes paid model collection; no agent-study barrier on desktop work. |
 
 The first proposed component replacement is the Newcomputer decision for the
-outcome of an uncertain Save. Prepare the language/compiler output, bounded Rust
-adapter and independently derived cases against the shared frozen contract while
-P0–P3 proceeds. The Rust parent retains every effectful handle and validates
+outcome of an uncertain Save. Newcomputer's R0/L0 preparation is ready in
+[PR3](https://github.com/whole-machine-works/newcomputer/pull/3), still awaiting
+its own review and merge; no compiled candidate is qualified. Prepare the next
+language/compiler and bounded Rust adapter handoffs against the shared frozen
+contract alongside target work, after their own acceptance dependencies clear.
+The Rust parent retains every effectful handle and validates
 terminal receipts; a denied or uncertain observation must never trigger another
 Commit. RamenOS integration joins the accepted genuine P0–P3 process task.
 
-After that prerequisite, compare on identical authorized observations in shadow
+After callable-module and adapter qualification, compare on identical authorized observations in shadow
 mode, with independent review and registered benefit/overhead criteria. Activation
 must preserve original-operation identity, owners and deadlines, honor revocation
 and expiry, allow an unrelated human task to progress, and demonstrate a fresh

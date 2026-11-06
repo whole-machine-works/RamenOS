@@ -2,7 +2,7 @@
 
 **Last Updated:** 2026-11-05
 **Status:** Active and authoritative for landed state
-**Current Slice:** UI1.1d Linux editor process qualification and repository delivery
+**Current Slice:** RUN0 target runtime preparation after merged UI1.1d host process delivery
 **Physical Lane:** S12.4 HIL appliance observation/actuation awaits setup
 **Software Lane:** SW0 foundations through A2.9; full A2 and comparison pending
 
@@ -23,8 +23,10 @@ on macOS/Linux. That landed result is a trusted in-process host consumer. Models
 are unnecessary for the task. Target execution and target persistence remain
 unfinished.
 
-The default-off Linux process implementation is delivered on
-[PR52](https://github.com/whole-machine-works/RamenOS/pull/52). Complete P0 review,
+The default-off Linux process implementation merged through
+[PR52](https://github.com/whole-machine-works/RamenOS/pull/52) on November 5 as
+`c9ed54a5b69a1a279d7014929bf932288aa86ec6`, after separate A3 approval of reviewed
+head `59723ffe198019fa847f34777269b4da543758c4`. Complete P0 review,
 the private assertion handoff and source-bound Linux missing-API RED closed the
 P1/P2 authoring dependencies before their concurrent implementation. P1/P2 then
 released P3's common Store Save/original-recovery integration. The workflow uses
@@ -34,18 +36,22 @@ It exercises Save denial, newer-draft Unsaved, lost-reply recovery without mutat
 replay, issued-writer survival after child death/revoke, unrelated-session progress
 and a subsequent successful Save.
 
-The `0d449c9` predecessor passed all five complete hosted CI lanes and their
-Foundry and merge aggregates, including all thirty public families, strict
-profiles, genuine Store controls and the eight preservation stages. Independent
-review matched the three archived binaries to that run's own receipts. A further
-source review identified two Desktop entry ownership gaps that those checks did
-not cover: a Save rejected before admission could leave an unrecoverable app
-chain, and a failed startup Read could lose the identity of a dispatcher that
-was already installed. The correction carries Desktop's admission disposition
-to the app and retains the actual partial Read owner until joined. Focused
-Linux regressions cover both paths. Fresh hosted qualification of the corrected
-candidate is required before A3 review.
-The separate earlier local D19 failure remains unresolved. The
+The reviewed head passed all nine checks in
+[hosted run 42098888792](https://github.com/whole-machine-works/RamenOS/actions/runs/42098888792).
+Independent audits verified 57 canonical stages, all eight preservation stages,
+244 complete recording Runs and parent joins, and that run's own three archived
+binaries. The final correction releases an exact unadmitted Save intent when
+Desktop producer capacity rejects it, and retains a partially started Read's
+actual dispatcher until its join. Linux regressions prove zero Store work on
+the rejected Save followed by a fresh Save on the same child, and Pending before
+the Read dispatcher's join followed by Complete and a fresh authorized Read.
+These are host results; target/runtime, device input, persistent target storage
+and physical qualification remain pending.
+
+The separate earlier local D19 second-Save failure remains unresolved with its
+cause unknown; the later hosted PASS does not explain it. The ready queue retains
+a bounded reproduction/instrumentation follow-up without renewing deadlines or
+discarding failed attempts. The
 [qualification record](docs/plans/editor-process-delivery-qualification-2026-11-05.md)
 keeps these sources, failures and host evidence distinct from target and physical
 qualification.
@@ -96,8 +102,8 @@ The core has no Desktop, Store, Focus or Save authority. Its 26 pure assertions
 and four explicit required-feature adapter assertions passed on macOS/Linux;
 strict Linux55 preserves original13/18, strict3 and Reader93 requirements.
 Protocol384/version1 and the process contracts alone establish no runtime result.
-The successor above supplies bounded Linux evidence; historical private smoke and
-cleanup experiments do not substitute for its remaining complete qualification. Re-freeze current
+The merged successor above supplies complete bounded Linux host qualification;
+historical private smoke and cleanup experiments do not substitute for it. Re-freeze current
 source before reusing historical evidence; the old 217-row task closure is not a
 permanent count requirement after legitimate dependency additions.
 
