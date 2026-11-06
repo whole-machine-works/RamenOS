@@ -5,6 +5,10 @@ use super::*;
 
 pub(super) struct ReferenceFixture {
     parents: Option<ParentOwners<(Fixture, Option<artifact_editor::NativeArtifactEditor>)>>,
+    phases: recording::PhaseTimingLog,
+    process_recording: recording::PhaseTimingLog,
+    reference_recording: recording::PhaseTimingLog,
+    completed_steps: usize,
 }
 
 impl ReferenceFixture {
@@ -14,6 +18,22 @@ impl ReferenceFixture {
         let fixture = fixture::fixture_with_contents("d09_cursor_reference", &[body]);
         let mut reference = Self {
             parents: Some(ParentOwners::new((fixture, None))),
+            phases: recording::PhaseTimingLog::new([
+                "reference_render",
+                "process_compose_including_recording",
+                "reference_compose_including_recording",
+            ]),
+            process_recording: recording::PhaseTimingLog::new([
+                "inventory_scan",
+                "raw_write_hash_and_identity_checks",
+                "crop_hash_and_frame_row",
+            ]),
+            reference_recording: recording::PhaseTimingLog::new([
+                "inventory_scan",
+                "raw_write_hash_and_identity_checks",
+                "crop_hash_and_frame_row",
+            ]),
+            completed_steps: 0,
         };
         let parents = reference.parents.as_mut().unwrap().borrow();
         parents.1 = Some(parents.0.app(0, 101, 1));
@@ -28,6 +48,18 @@ impl ReferenceFixture {
     }
 
     pub(super) fn drive(&mut self, group: &mut ChildGroup, index: usize) {
+        // Buffers were allocated before child admission. Only this corpus opts
+        // into timing; the two already-rendered initial frames stay unchanged.
+        group.fixture().record(|recorder| {
+            recorder.enable_frame_timings(self.process_recording.clone());
+            Ok(())
+        });
+        let reference_recording = self.reference_recording.clone();
+        self.parts().0.record(|recorder| {
+            recorder.enable_frame_timings(reference_recording);
+            Ok(())
+        });
+        let phases = self.phases.clone();
         {
             let (reference, _) = self.parts();
             let process = group.fixture();
@@ -61,7 +93,11 @@ impl ReferenceFixture {
             // composition and independent reference composition below remain.
             ok(request_without_compose(group, index, 2));
             let (reference_fixture, reference) = self.parts();
+            let render_timing = phases.start(0);
             ok(reference.render(2));
+            if let Some(timer) = render_timing {
+                timer.complete();
+            }
             let (process_fixture, child) = group.borrow(index);
             let actual = ok(process_fixture.h.observe_process_editor(child, 2));
             let expected = ok(reference.observe(2));
@@ -71,8 +107,16 @@ impl ReferenceFixture {
             assert_eq!(actual.first_visible_line, expected.first_visible_line);
             assert_eq!(actual.text_generation, expected.text_generation);
             assert_eq!(actual.view_version, expected.view_version);
+            let process_timing = phases.start(1);
             let process_frame = ok(process_fixture.compose(0, 2));
+            if let Some(timer) = process_timing {
+                timer.complete();
+            }
+            let reference_timing = phases.start(2);
             let reference_frame = ok(reference_fixture.compose(0, 2));
+            if let Some(timer) = reference_timing {
+                timer.complete();
+            }
             // Both actual full frames and their crop hashes are already
             // retained by compose's recorder. Compare every application byte
             // directly here rather than hashing the same two crops again.
@@ -83,6 +127,7 @@ impl ReferenceFixture {
             );
             saw_selection |= actual.selection.is_some();
             saw_scroll |= actual.first_visible_line > 0;
+            self.completed_steps += 1;
         }
         assert!(!shift_down);
         assert!(
@@ -91,6 +136,38 @@ impl ReferenceFixture {
         );
         assert_eq!(group.fixture().counts(101), (0, 0, 0));
         assert_eq!(self.parts().0.counts(101), (0, 0, 0));
+    }
+
+    // Called only after the original ChildGroup cleanup returned authentic
+    // exit proofs. This is diagnostic data, never a successful scenario receipt.
+    pub(super) fn emit_phase_timings(&self, proofs: &[desktop::OwnedEditorChildExitProof]) {
+        let _ = catch_unwind(AssertUnwindSafe(|| {
+            let owners: Vec<_> = proofs
+                .iter()
+                .map(|proof| {
+                    serde_json::json!({
+                        "process_id": proof.process_id(), "birth_ticks": proof.birth_ticks(),
+                        "supervisor_joined": proof.supervisor_joined(),
+                        "wait_outcome": format!("{:?}", proof.wait_outcome()),
+                    })
+                })
+                .collect();
+            let report = serde_json::json!({
+                "schema_version": 1, "acceptance": false,
+                "scope": "D09 diagnostic phases after actual child cleanup; not qualification",
+                "coverage": "66 corpus steps; initial process/reference frames are not timed",
+                "completed_corpus_steps": self.completed_steps,
+                "timing": "monotonic wall time includes observer overhead; nested recorder phases are not additive with compose totals",
+                "owners": owners, "outer": self.phases.observation(),
+                "process_recording": self.process_recording.observation(),
+                "reference_recording": self.reference_recording.observation(),
+            });
+            let mut bytes = b"D09_PHASE_TIMINGS ".to_vec();
+            if serde_json::to_writer(&mut bytes, &report).is_ok() {
+                bytes.push(b'\n');
+                let _ = std::io::Write::write_all(&mut std::io::stderr().lock(), &bytes);
+            }
+        }));
     }
 
     pub(super) fn finish(mut self) {

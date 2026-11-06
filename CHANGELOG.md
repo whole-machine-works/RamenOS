@@ -1,5 +1,22 @@
 # CHANGELOG
 
+## 2026-11-05 — checked RUN0 entry inputs and editor phase diagnostics
+
+- Add a bounded PE32+ AMD64 EFI entry/input and prior-diagnostic admission CLI.
+  Check exact input identities, executable entry mapping, supported relocations
+  and a retained candidate bound to the profile digest. Malformed inputs deny;
+  missing or ambiguous evidence remains incomplete.
+- Run 22 independently reviewed synthetic controls through a focused recipe and
+  the existing required CI tooling stage. Preserve explicit false profile,
+  capture, fresh-entry and guest-access claims; the existing EFI smoke proves
+  parsing only. Actual prior diagnostic/profile provenance and C0/C1/C2 capture
+  remain prerequisites for guest ownership work.
+- Add bounded in-memory D09 phase timing, emitted after actual child exit/join.
+  Preserve all corpus steps, real frames, exact comparisons and the original
+  lifetime. Focused Linux D09/capacity and strict Clippy pass; an actual recorder
+  refusal preserves the original panic and incomplete parent-owner disposition.
+  Measurements do not identify a historical root cause or supply a runtime fix.
+
 ## 2026-11-05 — merged Linux editor process and original Save recovery
 
 - Merge [PR52](https://github.com/whole-machine-works/RamenOS/pull/52) as

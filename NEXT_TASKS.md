@@ -43,6 +43,15 @@ and display contract/Vault preparation only where its inputs are ready. Freeze
 the missing RUN0 capture/profile handoff before dependent adapter work; missing
 physical setup does not block ready host/QEMU preparation.
 
+The strict external entry-input admission helper and its 22 synthetic controls
+are implemented and independently reviewed. Use it to validate a prepared
+profile's input identities, PE entry/relocations and retained prior diagnostic;
+do not reimplement this subset. Next supply the actual source/tool/firmware/ESP
+provenance, independently checked profile semantics and prior address diagnostic,
+then implement/review the bounded collector and actual C0/C1/C2 capture. Missing
+inputs remain `INCOMPLETE`; input admission does not release guest-access or
+ownership adapter work by itself.
+
 P0–P3 is merged through
 [PR52](https://github.com/whole-machine-works/RamenOS/pull/52) as
 `c9ed54a5b69a1a279d7014929bf932288aa86ec6`, following separate A3 approval of
@@ -54,13 +63,18 @@ Desktop capacity/partial-Read paths as unfinished work. Preserve the default-off
 Linux host scope and the source-bound
 [qualification record](docs/plans/editor-process-delivery-qualification-2026-11-05.md).
 
-Keep a separate reliability packet for the earlier local D19 second-Save failure,
-whose cause remains unknown. Retain its original artifacts, reproduce the named
-scenario on a fresh source-bound Linux snapshot, and instrument the original
-permit/Store publication/reply timeline before proposing a fix. Preserve the
-original Save and cleanup deadlines, owners and assertions; retain every failed
-attempt. A later PASS alone does not close this packet or establish target
-durability. This investigation can proceed alongside disjoint RUN0 preparation.
+Keep a separate reliability packet for the retained capacity, D19 and D09
+failures, whose historical causes remain unknown. Save receipt-failure diagnostics
+and D09 parent-phase timings are implemented; use them before adding another
+instrumentation layer. The full-corpus D09 comparison records substantially more
+time in repeated directory scans. Review a joint reservation/census for both
+complete frame exports before implementing that optimization; preserve every
+path check, cap and independent Host assertion. Retain the original permit/Store
+publication/reply timeline for Save failures before proposing a fix. Preserve
+original deadlines, owners, every frame and exact assertions;
+retain every failed attempt. A later PASS alone does not close this packet or
+establish target durability. This investigation can proceed alongside disjoint
+RUN0 preparation.
 
 The first product checkpoint remains one keyboard-first human editing task that
 works without a model. Preserve its in-process and merged Linux process controls,
@@ -175,7 +189,7 @@ the target-memory handoff is resolved; no model study gates these packets.
 
 | Packet | Ready scope | Completion / join |
 |--------|-------------|-------------------|
-| RUN0.0 → RUN0 | Freeze relocated-entry capture/profile and executable raw-map/retention assertions using the [entry preparation](docs/plans/run0-relocated-entry-preparation-v0.md) | Obtain actual initial table access, complete retained ranges and final firmware-exit map; prove allocation/write/read/reuse plus S8 in QEMU. Then one target application with grants, denial, failure/restart. Pure selector or external memory reads do not prove guest access/runtime. |
+| RUN0.0 → RUN0 | Use the reviewed entry-input helper; supply actual profile/diagnostic provenance and complete bounded capture/profile and raw-map/retention assertions under the [entry preparation](docs/plans/run0-relocated-entry-preparation-v0.md) | Obtain actual initial table access, complete retained ranges and final firmware-exit map; prove allocation/write/read/reuse plus S8 in QEMU. Then one target application with grants, denial, failure/restart. Pure selector, entry-input admission or external memory reads do not prove guest access/runtime. |
 | IN0 | Select one input controller and obtain Reference Vault + Oracle protocol_trace, then freeze typed keyboard/failure contract | Actual device-backed keyboard reports with malformed/reset/unplug/bounded-queue/denied delivery assertions. Host injection supports consumer work but cannot qualify the driver. Physical execution waits for H0/H1. |
 | STORE0 | Use selected block Vault/Oracle; freeze actual QEMU block read/write/flush and bounded Store durability assertions | Implement one device-backed path and named Store consumer. Target save/reopen joins this evidence; embedded vectors and firmware NVMe detection do not supply it. |
 | UI2 | Freeze target compositor/display and service adapter boundaries after host contracts | Port exact required services, then join RUN0+IN0+display with unchanged human task in QEMU; join STORE0 for persistent save/reopen. Name every remaining host service. Qualified machine repeat needs H0/H1, device evidence and relevant S12/S13. |

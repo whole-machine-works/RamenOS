@@ -40,11 +40,11 @@ SOURCE_COLLECTOR_SHA = '3fa310f06ee74638944c6dfabd9d70ea2f817b825534f47081a3c45e
 # ROOT MUST FREEZE THESE AFTER INDEPENDENT ASSERTION/INVENTORY/READER REVIEW.
 REGISTRY_PATH = 'tools/ci/native_save_task_sources_v0.json'
 REGISTRY_SHA = '6c5fd0e9d9a3bbf997135f41af452beae2e23592341f75f3976ec0031837123f'
-ASSERTION_PINS = {'apps/artifact_editor/tests/native_task.rs': '5938215bfa4bc02df4ad3e45391948ef03a36e84699f0d24dd382e4f19621be9', 'apps/artifact_editor/tests/native_task_support/mod.rs': '3f0590c99d5bfa1d3955aaa2eaa057fead14e7cbe2b8151e9e07c70144ce8e18', 'apps/artifact_editor/tests/native_task_support/recording.rs': '69844fffb1b8b3bbb1d7fa9e4bbe2218c59e5e0adb99457383032bf749b848fd', 'apps/artifact_editor/tests/native_task_support/protected_goldens.rs': 'f99add25f2aa9b4bf37074fb7a2ae3fca5f78475775c7fe469f649d9dd438d6c'}
+ASSERTION_PINS = {'apps/artifact_editor/tests/native_task.rs': '5938215bfa4bc02df4ad3e45391948ef03a36e84699f0d24dd382e4f19621be9', 'apps/artifact_editor/tests/native_task_support/mod.rs': '3f0590c99d5bfa1d3955aaa2eaa057fead14e7cbe2b8151e9e07c70144ce8e18', 'apps/artifact_editor/tests/native_task_support/recording.rs': '99d9dde156f00711c334326c12ad8f4cae33a7eaf3f1947cb0e25b97bd886970', 'apps/artifact_editor/tests/native_task_support/protected_goldens.rs': 'f99add25f2aa9b4bf37074fb7a2ae3fca5f78475775c7fe469f649d9dd438d6c'}
 RECORDING_CONTRACT_PATH = 'docs/contracts/editor-native-save-recording-v0.json'
 RECORDING_CONTRACT_SHA = 'c011d7ac19bf17ac6aa2fa941f16d6c6fbeac1ebd245eb1b7015d7f94d216bfe'
 SOURCE_INVENTORY_PATH = 'docs/contracts/editor-native-save-source-inventory-v0.json'
-SOURCE_INVENTORY_SHA = '6b6c724ae82f56f1831af3639769fdb2395eb526ad28a4085dabb6b2d96754db'
+SOURCE_INVENTORY_SHA = 'c4b5ffdae62aaa154b6959959a4ea0430201d312ac4af8b4b1adf003a787a547'
 RECORDING_PROPOSAL_SHA = 'b994e45e0841c94508d0c15e3f2f4bb54d4b04f00094fa00af3fc6775d9c5227'
 VERIFIER_SOURCE = 'artifact_store_schema/examples/native_manifest_verifier.rs'
 VERIFIER_SOURCE_SHA = '8700f70d1686359b3eec77cf3ce5a47c6c744055eb8793b4e74d60a51ae32254'

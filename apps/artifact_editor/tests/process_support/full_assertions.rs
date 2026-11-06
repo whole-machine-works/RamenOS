@@ -1118,6 +1118,9 @@ fn run_native(
         };
         (checked, (parents, proofs))
     });
+    if let Some(reference) = reference.as_ref() {
+        reference.emit_phase_timings(&proofs);
+    }
     let checked = catch_unwind(AssertUnwindSafe(|| {
         let evidence = match run.finish_recording() {
             Ok(evidence) => evidence,
