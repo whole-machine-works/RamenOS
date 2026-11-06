@@ -20,6 +20,117 @@ use std::{
 };
 use store_service::editor_store as store;
 
+// Optional test diagnostics. Three fixed phases, each bounded to the D09
+// corpus length. No serialization or file IO occurs while a timer is live.
+#[derive(Clone)]
+pub struct PhaseTimingLog(Arc<PhaseTimingState>);
+struct PhaseTimingState {
+    names: [&'static str; 3],
+    samples: std::sync::Mutex<[Vec<PhaseTimingSample>; 3]>,
+    omitted: std::sync::atomic::AtomicU32,
+}
+#[derive(Default)]
+struct PhaseTimingSample {
+    elapsed_ns: Option<u64>,
+    completed: bool,
+    scanned_files: Option<usize>,
+    scanned_entries: Option<usize>,
+}
+pub struct PhaseTimer {
+    log: PhaseTimingLog,
+    phase: usize,
+    index: usize,
+    started: std::time::Instant,
+    completed: bool,
+    scanned: Option<(usize, usize)>,
+}
+impl PhaseTimingLog {
+    pub fn new(names: [&'static str; 3]) -> Self {
+        Self(Arc::new(PhaseTimingState {
+            names,
+            samples: std::sync::Mutex::new(std::array::from_fn(|_| Vec::with_capacity(66))),
+            omitted: std::sync::atomic::AtomicU32::new(0),
+        }))
+    }
+    pub fn start(&self, phase: usize) -> Option<PhaseTimer> {
+        let started = std::time::Instant::now();
+        let index = self.0.samples.try_lock().ok().and_then(|mut phases| {
+            let samples = phases.get_mut(phase)?;
+            if samples.len() == 66 {
+                return None;
+            }
+            let index = samples.len();
+            samples.push(PhaseTimingSample::default());
+            Some(index)
+        });
+        let Some(index) = index else {
+            self.omit();
+            return None;
+        };
+        Some(PhaseTimer {
+            log: self.clone(),
+            phase,
+            index,
+            started,
+            completed: false,
+            scanned: None,
+        })
+    }
+    fn omit(&self) {
+        let _ = self.0.omitted.fetch_update(
+            std::sync::atomic::Ordering::Relaxed,
+            std::sync::atomic::Ordering::Relaxed,
+            |value| Some(value.saturating_add(1)),
+        );
+    }
+    pub fn observation(&self) -> Value {
+        let samples = self.0.samples.lock().unwrap();
+        let phases: Vec<_> =
+            self.0
+                .names
+                .iter()
+                .zip(samples.iter())
+                .map(|(name, rows)| {
+                    let values: Vec<_> = rows.iter().map(|r| json!({
+                "elapsed_ns": r.elapsed_ns, "completed": r.completed,
+                "scanned_files": r.scanned_files, "scanned_entries": r.scanned_entries,
+            })).collect();
+                    json!({"phase": name, "observations": values})
+                })
+                .collect();
+        json!({"maximum_observations_per_phase": 66,
+            "omitted_observations": self.0.omitted.load(std::sync::atomic::Ordering::Relaxed), "phases": phases})
+    }
+}
+impl PhaseTimer {
+    fn scanned(&mut self, files: usize, entries: usize) {
+        self.scanned = Some((files, entries));
+    }
+    pub fn complete(mut self) {
+        self.completed = true;
+    }
+}
+impl Drop for PhaseTimer {
+    fn drop(&mut self) {
+        let elapsed_ns = u64::try_from(self.started.elapsed().as_nanos()).unwrap_or(u64::MAX);
+        // An original error/panic must survive diagnostics. Drop neither
+        // allocates nor asserts, and a lock conflict is explicit omission.
+        if let Ok(mut phases) = self.log.0.samples.try_lock() {
+            if let Some(row) = phases
+                .get_mut(self.phase)
+                .and_then(|p| p.get_mut(self.index))
+            {
+                row.elapsed_ns = Some(elapsed_ns);
+                row.completed = self.completed;
+                row.scanned_files = self.scanned.map(|v| v.0);
+                row.scanned_entries = self.scanned.map(|v| v.1);
+                return;
+            }
+        }
+        self.log.omit();
+    }
+}
+
 #[derive(Debug)]
 pub struct RecordingError(pub &'static str);
 type Result<T> = std::result::Result<T, RecordingError>;
@@ -547,6 +658,7 @@ pub struct ScenarioRecorder {
     snapshots: Vec<Value>,
     epochs: Vec<u32>,
     frames: Vec<Value>,
+    frame_timings: Option<PhaseTimingLog>,
     drafts: Vec<Value>,
     grants: Vec<Value>,
     counts: Vec<Value>,
@@ -808,6 +920,7 @@ impl CaseRecorder {
             snapshots: vec![],
             epochs: vec![],
             frames: vec![],
+            frame_timings: None,
             drafts: vec![],
             grants: vec![],
             counts: vec![],
@@ -823,6 +936,9 @@ impl CaseRecorder {
     }
 }
 impl ScenarioRecorder {
+    pub fn enable_frame_timings(&mut self, log: PhaseTimingLog) {
+        self.frame_timings = Some(log);
+    }
     pub fn unit_control(
         &mut self,
         purpose: &'static str,
@@ -1194,12 +1310,20 @@ impl ScenarioRecorder {
             }
         }
         let mut totals = Totals::default();
-        scan(
+        let mut scan_timing = self.frame_timings.as_ref().and_then(|log| log.start(0));
+        let scanned = scan(
             &self.case.root,
             &self.case.root.join(self.case.case),
             0,
             &mut totals,
-        )?;
+        );
+        if let Some(timer) = scan_timing.as_mut() {
+            timer.scanned(totals.files, totals.entries);
+        }
+        scanned?;
+        if let Some(timer) = scan_timing {
+            timer.complete();
+        }
         require(
             totals
                 .files
@@ -1212,6 +1336,7 @@ impl ScenarioRecorder {
                 && totals.all.checked_add(len).is_some_and(|v| v <= MAX_ALL),
             "combined frame pre-growth reservation",
         )?;
+        let write_timing = self.frame_timings.as_ref().and_then(|log| log.start(1));
         let mut first_record = None;
         for (file, kind, bytes) in [Some(first), second].into_iter().flatten() {
             check_directory(&self.case.root, &self.case.held_root)?;
@@ -1278,7 +1403,13 @@ impl ScenarioRecorder {
         check_directory(&self.path, &self.held)?;
         drop(reservation);
         fs::remove_file(marker).map_err(|_| RecordingError("settled frame reservation removal"))?;
-        first_record.ok_or(RecordingError("completed frame output"))
+        let result = first_record.ok_or(RecordingError("completed frame output"));
+        if result.is_ok() {
+            if let Some(timer) = write_timing {
+                timer.complete();
+            }
+        }
+        result
     }
     pub fn raw_bytes(&mut self, file: &str, kind: &str, bytes: &[u8]) -> Result<Value> {
         let (lo, hi) = match kind {
@@ -1437,12 +1568,16 @@ impl ScenarioRecorder {
                 .and_then(|c| c.record248.as_ref())
                 .map(|bytes| (chrome_file.as_str(), "chrome248", bytes.as_slice())),
         )?;
+        let crop_timing = self.frame_timings.as_ref().and_then(|log| log.start(2));
         let app = &frame.bgra[48 * 2560..528 * 2560];
         // The app crop is derived from this actual complete composed frame; retain its digest, not a second raw copy.
         let mut protected = Vec::with_capacity(88 * 2560);
         protected.extend_from_slice(&frame.bgra[..48 * 2560]);
         protected.extend_from_slice(&frame.bgra[528 * 2560..]);
         self.frames.push(json!({"observation_index":n,"session_id":frame.session_id,"instance_id":frame.instance_id,"focus_epoch":frame.focus_epoch,"sequence":frame.sequence,"raw":raw,"protected_crop_sha256":digest(&protected),"app_crop_sha256":digest(app),"expected_protected_label":Value::Null,"expected_unknown_banner":Value::Null,"draft":draft.map(dto_native_editor_observation),"frame_join":join.map(dto_native_frame_observation),"chrome":chrome.map(dto_native_save_chrome_observation)}));
+        if let Some(timer) = crop_timing {
+            timer.complete();
+        }
         Ok(())
     }
     pub fn saved_frame_witness(

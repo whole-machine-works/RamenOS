@@ -63,13 +63,18 @@ Desktop capacity/partial-Read paths as unfinished work. Preserve the default-off
 Linux host scope and the source-bound
 [qualification record](docs/plans/editor-process-delivery-qualification-2026-11-05.md).
 
-Keep a separate reliability packet for the earlier local D19 second-Save failure,
-whose cause remains unknown. Retain its original artifacts, reproduce the named
-scenario on a fresh source-bound Linux snapshot, and instrument the original
-permit/Store publication/reply timeline before proposing a fix. Preserve the
-original Save and cleanup deadlines, owners and assertions; retain every failed
-attempt. A later PASS alone does not close this packet or establish target
-durability. This investigation can proceed alongside disjoint RUN0 preparation.
+Keep a separate reliability packet for the retained capacity, D19 and D09
+failures, whose historical causes remain unknown. Save receipt-failure diagnostics
+and D09 parent-phase timings are implemented; use them before adding another
+instrumentation layer. The full-corpus D09 comparison records substantially more
+time in repeated directory scans. Review a joint reservation/census for both
+complete frame exports before implementing that optimization; preserve every
+path check, cap and independent Host assertion. Retain the original permit/Store
+publication/reply timeline for Save failures before proposing a fix. Preserve
+original deadlines, owners, every frame and exact assertions;
+retain every failed attempt. A later PASS alone does not close this packet or
+establish target durability. This investigation can proceed alongside disjoint
+RUN0 preparation.
 
 The first product checkpoint remains one keyboard-first human editing task that
 works without a model. Preserve its in-process and merged Linux process controls,

@@ -75,6 +75,9 @@ is manufactured. All eighteen native Linux tests, the focused capacity test and
 strict Clippy pass locally. A separate authenticated CandidateBlobWrite failure
 control still exits 101 and retains its failure snapshot without a success summary.
 These checks validate the diagnostics, not a fix for either original failure.
+PR55 merged the Save diagnostics as `1d2c9b1`; all nine checks passed in its
+[post-merge run 42158255430](https://github.com/whole-machine-works/RamenOS/actions/runs/42158255430).
+That green baseline does not explain the earlier failed attempts.
 
 Use these diagnostics in a bounded fresh source-bound Linux reproduction of both
 failed scenarios before proposing a root-cause fix. Preserve every original deadline,
@@ -93,9 +96,29 @@ it in a bounded fresh source-bound Linux snapshot without relaxing budgets or
 assertions; this investigation does not block independent RUN0 preparation.
 Retained control timestamps place about 4.55 seconds in 66 PublishAck-to-next-Input
 gaps that include reference rendering, both compositions and synchronous recording;
-they do not isolate the cause. Measure those parent phases before optimizing,
-preserving every step and frame, the original five-second lifetime and exact
-pixel comparisons.
+they do not isolate the cause. The successor below measures those parent phases
+while preserving every step and frame, the original five-second lifetime and
+exact pixel comparisons.
+
+D09 now records bounded, preallocated in-memory durations for reference rendering,
+both compositions and recorder scan/write/hash phases, then emits a diagnostic
+report after actual child exit/join proofs. It preserves every original step,
+frame and assertion. The focused Linux run completed all 66 iterations and 67
+matching frame pairs within the original lifetime; strict Clippy and the capacity
+Save control passed. A separate actual recorder-refusal control retains the
+original panic, failed result and incomplete sample. Its child exits and joins,
+while the existing failure path retains parent owners as incomplete. These are
+separate ownership outcomes, not a successful scenario.
+
+The full public-selection diagnostic completed D09 successfully with its preceding
+corpus. Scans grew from about 150 ms to 1.390 s as the observed file counts grew
+from 193–455 to 2371–2633; both compositions grew from 1.695 s to 2.882 s. Nested
+scan time is part of composition, not additional time. This is measured current
+overhead, not proof of the historical hosted cause. Next review a joint reservation
+and census for both complete frame exports, preserving path checks, caps and
+independent Host assertions. No optimization or relaxed bound is implemented. The
+[batch record](docs/plans/runtime-next-batch-2026-11-05.md) owns tested scope and
+resource/evidence locations.
 
 The separate earlier local D19 second-Save failure remains unresolved with its
 cause unknown; the later hosted PASS does not explain it. The ready queue retains
