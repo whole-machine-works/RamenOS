@@ -136,6 +136,8 @@ pub struct JoinedProducerProof {
 // There is deliberately no State back-reference. State alone issues bindings and
 // synchronizes its lifetime transitions into this Gate before unlocking State.
 pub(super) struct NativeAuthority {
+    #[cfg(all(target_os = "linux", feature = "host_editor_process_v0_dev"))]
+    pub(super) process: Arc<Mutex<super::process_editor::ProcessRoster>>,
     identity: u64,
     pub(super) gate: Mutex<GateState>,
     owned: Mutex<ProducerRoster>,
@@ -151,6 +153,8 @@ pub(super) struct OriginLifetime {
     pub(super) save_object: Option<u64>,
     #[cfg(feature = "editor_native_save_v0_dev")]
     pub(super) save_installed: Mutex<BTreeMap<u64, (ProducerKind, u64)>>,
+    #[cfg(feature = "editor_native_save_v0_dev")]
+    save_joined: Mutex<BTreeMap<u64, Option<super::native_save::NativeJoinObservation>>>,
     #[cfg(feature = "editor_native_preview_v0_dev")]
     _preview_attachment: Option<Arc<super::native_preview::AttachmentLife>>,
 }
@@ -255,6 +259,8 @@ impl GateState {
 impl NativeAuthority {
     pub(super) fn new() -> Arc<Self> {
         Arc::new_cyclic(|identity| Self {
+            #[cfg(all(target_os = "linux", feature = "host_editor_process_v0_dev"))]
+            process: Arc::new(Mutex::new(super::process_editor::ProcessRoster::new())),
             // Local allocation identity is private and checked together with
             // Arc pointer identity; numeric values cannot construct authority.
             identity: identity.as_ptr() as usize as u64,
@@ -460,6 +466,8 @@ impl NativeAuthority {
             save_object: None,
             #[cfg(feature = "editor_native_save_v0_dev")]
             save_installed: Mutex::new(BTreeMap::new()),
+            #[cfg(feature = "editor_native_save_v0_dev")]
+            save_joined: Mutex::new(BTreeMap::new()),
             id,
             #[cfg(feature = "editor_native_preview_v0_dev")]
             _preview_attachment: preview_attachment,
@@ -803,7 +811,7 @@ impl RegistryWitness {
             return Err(Status::Denied);
         }
         #[cfg(feature = "editor_native_save_v0_dev")]
-        let (origin_id, origin, kind, save_object) = {
+        let (origin_id, origin, kind, save_object, origin_life) = {
             let roster = locked(&self.authority.owned)?;
             let row = roster.rows.get(&id.id).ok_or(Status::NotReady)?;
             (
@@ -811,6 +819,7 @@ impl RegistryWitness {
                 Arc::downgrade(&row.origin),
                 row.kind,
                 row.origin.save_object,
+                row.origin.clone(),
             )
         };
         let handle = {
@@ -821,6 +830,21 @@ impl RegistryWitness {
             }
             if row.joining || row.handle.as_ref().is_none_or(|h| !h.is_finished()) {
                 return Err(Status::NotReady);
+            }
+            #[cfg(feature = "editor_native_save_v0_dev")]
+            if row.origin.save_object.is_some() {
+                if locked(&row.origin.save_installed)?.get(&id.id) != Some(&(row.kind, 1)) {
+                    return Err(Status::Denied);
+                }
+                let mut memo = locked(&row.origin.save_joined)?;
+                if memo.contains_key(&id.id) {
+                    return Err(Status::NotReady);
+                }
+                if memo.len() >= 64 {
+                    return Err(Status::Exhausted);
+                }
+                // Reserve before consuming the actual JoinHandle. None is not completion.
+                memo.insert(id.id, None);
             }
             row.joining = true;
             row.handle.take().ok_or(Status::Internal)?
@@ -833,6 +857,16 @@ impl RegistryWitness {
             JoinOutcome::Returned
         } else {
             JoinOutcome::Panicked
+        };
+        #[cfg(feature = "editor_native_save_v0_dev")]
+        let observation = super::native_save::NativeJoinObservation {
+            producer_id: id.id,
+            producer_generation: 1,
+            origin_id,
+            kind,
+            native_pid: std::process::id(),
+            rust_thread_id,
+            outcome,
         };
         let mut gate = self
             .authority
@@ -852,20 +886,24 @@ impl RegistryWitness {
         roster.recent.push_back((id.id, outcome));
         drop(roster);
         gate.prune_origins();
+        #[cfg(feature = "editor_native_save_v0_dev")]
+        if save_object.is_some() {
+            let mut memo = origin_life
+                .save_joined
+                .lock()
+                .unwrap_or_else(|p| p.into_inner());
+            // This exact reserved slot cannot disappear while the strong origin
+            // above remains held. Publication allocates no new map entry.
+            if let Some(slot) = memo.get_mut(&id.id) {
+                *slot = Some(observation.clone());
+            }
+        }
         Ok(JoinedProducerProof {
             authority: self.authority.clone(),
             id: id.id,
             outcome,
             #[cfg(feature = "editor_native_save_v0_dev")]
-            observation: super::native_save::NativeJoinObservation {
-                producer_id: id.id,
-                producer_generation: 1,
-                origin_id,
-                kind,
-                native_pid: std::process::id(),
-                rust_thread_id,
-                outcome,
-            },
+            observation,
             #[cfg(feature = "editor_native_save_v0_dev")]
             origin,
             #[cfg(feature = "editor_native_save_v0_dev")]
@@ -1238,6 +1276,8 @@ impl NativeAuthority {
             id,
             save_object: Some(object),
             save_installed: Mutex::new(BTreeMap::new()),
+            #[cfg(feature = "editor_native_save_v0_dev")]
+            save_joined: Mutex::new(BTreeMap::new()),
             _preview_attachment: Some(attachment),
         })
     }
@@ -1438,5 +1478,37 @@ impl super::native_save::SaveIssuer {
             origin: proof.origin.clone(),
             save_object: proof.save_object,
         })
+    }
+}
+
+#[cfg(feature = "editor_native_save_v0_dev")]
+impl RegistryWitness {
+    /// Authenticated completed join; true includes a genuinely panicked thread.
+    /// Missing history never proves completion or successful execution.
+    pub fn save_producer_joined(&self, id: &ProducerId) -> Result<bool, Status> {
+        if !same(&self.authority, &id.authority) {
+            return Err(Status::Denied);
+        }
+        let Some(origin) = id.origin.upgrade() else {
+            return Ok(false);
+        };
+        if origin.save_object.is_none() {
+            return Err(Status::Denied);
+        }
+        if locked(&origin.save_installed)?.get(&id.id) != Some(&(id.kind, 1)) {
+            return Err(Status::Denied);
+        }
+        let memo = locked(&origin.save_joined)?;
+        let Some(Some(observation)) = memo.get(&id.id) else {
+            return Ok(false);
+        };
+        if observation.producer_id != id.id
+            || observation.producer_generation != 1
+            || observation.origin_id != origin.id
+            || observation.kind != id.kind
+        {
+            return Err(Status::Denied);
+        }
+        Ok(true)
     }
 }

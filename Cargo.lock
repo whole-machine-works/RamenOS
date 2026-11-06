@@ -115,8 +115,10 @@ name = "artifact_editor"
 version = "0.0.0"
 dependencies = [
  "artifact_store_schema",
+ "desktop_editor_core",
  "desktop_service",
  "kernel_api",
+ "libc",
  "serde_json",
  "sha2",
  "store_service",
@@ -574,6 +576,8 @@ dependencies = [
  "artifact_store_schema",
  "desktop_editor_core",
  "kernel_api",
+ "libc",
+ "serde_json",
  "sha2",
 ]
 

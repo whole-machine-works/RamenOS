@@ -1,0 +1,1472 @@
+{
+  "schema_version": 1,
+  "status": "AUTHORING_OBLIGATIONS_NOT_EXECUTED_COVERAGE",
+  "contract_path": "docs/contracts/editor-process-v0.json",
+  "contract_sha256": "0d68962c99a15858592d45771f930e2e6a5830679765f26c084095635926b142",
+  "family_count": 30,
+  "negative_scenario_count": 223,
+  "positive_scenario_count": 30,
+  "notes": [
+    "Expected obligation catalog only; each named executable entry still requires substantive assertions and actual execution after the reviewed private handoff.",
+    "Kernel-normalized or unconstructible ancillary layouts require separately labelled parser controls plus truthful actual native send/receive evidence, never fabricated received-kernel events.",
+    "Injected syscall failures are explicitly labelled injected, never native wait success or an absence proof.",
+    "All retirement or rejection paths require a genuine subsequent authorized witness; Unknown does not mean noncommit."
+  ],
+  "families": [
+    {
+      "id": "D01",
+      "name": "default_off_build_and_exports",
+      "consumer_entry": "process_d01_default_off_build_and_exports",
+      "layer": "root_build_gate",
+      "positive_scenario": "D01ExplicitChildParentBuild",
+      "positive_obligation": "Explicitprocessfeature actualchildandparentconstructsuccess.",
+      "negative_scenarios": [
+        {
+          "scenario": "D01DefaultBinaryAbsent",
+          "contract_control_index": 1,
+          "contract_control": "defaultbinaryselection"
+        },
+        {
+          "scenario": "D01DefaultParentApiAbsent",
+          "contract_control_index": 2,
+          "contract_control": "defaultparentAPI"
+        },
+        {
+          "scenario": "D01ChildGraphExcludesDesktopStore",
+          "contract_control_index": 3,
+          "contract_control": "servicefeatureexclusion"
+        }
+      ],
+      "required_evidence": "actualCargo/rustcargv/log/exitandselectedartifacthash"
+    },
+    {
+      "id": "D02",
+      "name": "pinned_actual_editor_and_private_channel",
+      "consumer_entry": "process_d02_pinned_actual_editor_and_private_channel",
+      "layer": "desktop_owner",
+      "positive_scenario": "D02HeldRegisteredElfExecAndRealReap",
+      "positive_obligation": "Actual execveat of the same held sealed ELF succeeds despite post-snapshot source replacement or mutation; retained held bytes match registered build digest.",
+      "negative_scenarios": [
+        {
+          "scenario": "D02WrongRegisteredDigest",
+          "contract_control_index": 1,
+          "contract_control": "wrong registered digest before snapshot"
+        },
+        {
+          "scenario": "D02SourceSymlink",
+          "contract_control_index": 2,
+          "contract_control": "source symlink or nonregular source"
+        },
+        {
+          "scenario": "D02SourceNonregular",
+          "contract_control_index": 2,
+          "contract_control": "source symlink or nonregular source"
+        },
+        {
+          "scenario": "D02ScriptExecutable",
+          "contract_control_index": 3,
+          "contract_control": "script or invalid ELF"
+        },
+        {
+          "scenario": "D02InvalidElf",
+          "contract_control_index": 3,
+          "contract_control": "script or invalid ELF"
+        },
+        {
+          "scenario": "D02PreSnapshotSourceReplacement",
+          "contract_control_index": 4,
+          "contract_control": "source replacement before verified snapshot causing digest mismatch"
+        },
+        {
+          "scenario": "D02PostHeldPathReplacement",
+          "contract_control_index": 5,
+          "contract_control": "barrier-controlled source path replacement after final held verification before exec"
+        },
+        {
+          "scenario": "D02PostHeldInodeMutation",
+          "contract_control_index": 6,
+          "contract_control": "barrier-controlled original inode mutation after held verification before exec"
+        },
+        {
+          "scenario": "D02HeldWriteDenied",
+          "contract_control_index": 7,
+          "contract_control": "write/grow/shrink attempts on held sealed executable"
+        },
+        {
+          "scenario": "D02HeldGrowDenied",
+          "contract_control_index": 7,
+          "contract_control": "write/grow/shrink attempts on held sealed executable"
+        },
+        {
+          "scenario": "D02HeldShrinkDenied",
+          "contract_control_index": 7,
+          "contract_control": "write/grow/shrink attempts on held sealed executable"
+        },
+        {
+          "scenario": "D02MemfdUnavailable",
+          "contract_control_index": 8,
+          "contract_control": "executable memfd or execveat unavailable"
+        },
+        {
+          "scenario": "D02ExecveatUnavailable",
+          "contract_control_index": 8,
+          "contract_control": "executable memfd or execveat unavailable"
+        },
+        {
+          "scenario": "D02BirthInstallFailure",
+          "contract_control_index": 9,
+          "contract_control": "birth/pidfd/supervisor installation failure"
+        },
+        {
+          "scenario": "D02PidfdInstallFailure",
+          "contract_control_index": 9,
+          "contract_control": "birth/pidfd/supervisor installation failure"
+        },
+        {
+          "scenario": "D02SupervisorInstallFailure",
+          "contract_control_index": 9,
+          "contract_control": "birth/pidfd/supervisor installation failure"
+        }
+      ],
+      "required_evidence": "Registered Cargo artifact/build graph, complete held ELF pin/seals/mode/FD identity, barrier events, actual fork PID/birth/pidfd association, exec errno pipe result and true supervisor wait/cleanup."
+    },
+    {
+      "id": "D03",
+      "name": "canonical_wire_exact_closed_inventory",
+      "consumer_entry": "process_d03_canonical_wire_exact_closed_inventory",
+      "layer": "desktop_owner",
+      "positive_scenario": "D03AllEightCanonicalMessages",
+      "positive_obligation": "Canonicalpairedauthorizedinput/publicationworksaftereachnonretiringdecoderdenial.",
+      "negative_scenarios": [
+        {
+          "scenario": "D03Frame87Bytes",
+          "contract_control_index": 1,
+          "contract_control": "length87"
+        },
+        {
+          "scenario": "D03Frame89Bytes",
+          "contract_control_index": 2,
+          "contract_control": "length89"
+        },
+        {
+          "scenario": "D03ProtocolZero",
+          "contract_control_index": 3,
+          "contract_control": "protocol0"
+        },
+        {
+          "scenario": "D03ForeignProtocolVersion",
+          "contract_control_index": 4,
+          "contract_control": "wrongversionprotocol"
+        },
+        {
+          "scenario": "D03MessageTypeZero",
+          "contract_control_index": 5,
+          "contract_control": "msgtype0"
+        },
+        {
+          "scenario": "D03MessageTypeNine",
+          "contract_control_index": 6,
+          "contract_control": "msgtype9"
+        },
+        {
+          "scenario": "D03NonzeroTail84",
+          "contract_control_index": 7,
+          "contract_control": "nonzerotail84..87"
+        },
+        {
+          "scenario": "D03NonzeroTail85",
+          "contract_control_index": 7,
+          "contract_control": "nonzerotail84..87"
+        },
+        {
+          "scenario": "D03NonzeroTail86",
+          "contract_control_index": 7,
+          "contract_control": "nonzerotail84..87"
+        },
+        {
+          "scenario": "D03NonzeroTail87",
+          "contract_control_index": 7,
+          "contract_control": "nonzerotail84..87"
+        },
+        {
+          "scenario": "D03WrongPayloadLength",
+          "contract_control_index": 8,
+          "contract_control": "wrongpayloadlen"
+        },
+        {
+          "scenario": "D03NonzeroReservedField",
+          "contract_control_index": 9,
+          "contract_control": "reservedbytes"
+        },
+        {
+          "scenario": "D03UnknownFlags",
+          "contract_control_index": 10,
+          "contract_control": "unknownflags"
+        },
+        {
+          "scenario": "D03WrongMessageDirection",
+          "contract_control_index": 11,
+          "contract_control": "wrongdirection"
+        }
+      ],
+      "required_evidence": "raw88bytes,actualdecoderstatus,noeffectbaseline"
+    },
+    {
+      "id": "D04",
+      "name": "actual_sender_credentials_not_bootstrap_pid",
+      "consumer_entry": "process_d04_actual_sender_credentials_not_bootstrap_pid",
+      "layer": "desktop_owner",
+      "positive_scenario": "D04GenuineOwnedSender",
+      "positive_obligation": "Genuine owned child with expected real UID/GID sends actual accepted kernel credential record.",
+      "negative_scenarios": [
+        {
+          "scenario": "D04ForgedPidKernelReject",
+          "contract_control_index": 1,
+          "contract_control": "unprivileged sendmsg with unauthorized forged PID/UID/GID returns actual kernel rejection"
+        },
+        {
+          "scenario": "D04ForgedUidKernelReject",
+          "contract_control_index": 1,
+          "contract_control": "unprivileged sendmsg with unauthorized forged PID/UID/GID returns actual kernel rejection"
+        },
+        {
+          "scenario": "D04ForgedGidKernelReject",
+          "contract_control_index": 1,
+          "contract_control": "unprivileged sendmsg with unauthorized forged PID/UID/GID returns actual kernel rejection"
+        },
+        {
+          "scenario": "D04InheritedEndpointForeignPid",
+          "contract_control_index": 2,
+          "contract_control": "actual inherited-endpoint helper sends kernel-issued wrong PID credentials"
+        },
+        {
+          "scenario": "D04MissingCredentials",
+          "contract_control_index": 3,
+          "contract_control": "missing or duplicate credentials where actually constructible"
+        },
+        {
+          "scenario": "D04DuplicateCredentials",
+          "contract_control_index": 3,
+          "contract_control": "missing or duplicate credentials where actually constructible"
+        },
+        {
+          "scenario": "D04CreationPeercredIsNotSender",
+          "contract_control_index": 4,
+          "contract_control": "SO_PEERCRED creation-time creator used as child identity"
+        },
+        {
+          "scenario": "D04CopiedBootstrapPidActor",
+          "contract_control_index": 5,
+          "contract_control": "payload PID/Actor copied from approved bootstrap"
+        }
+      ],
+      "required_evidence": "Actual sendmsg return/errno, helper fork birth and genuine wait, received wrong-PID SCM_CREDENTIALS and no-effect counts. Privileged received-wrong-UID/GID parser behavior is explicitly separate and is not a required or claimed assertion."
+    },
+    {
+      "id": "D05",
+      "name": "ancillary_inventory_truncation_and_cleanup",
+      "consumer_entry": "process_d05_ancillary_inventory_truncation_and_cleanup",
+      "layer": "desktop_owner",
+      "positive_scenario": "D05ExactDescriptorRolesAndFreshCarrier",
+      "positive_obligation": "Exact Bootstrap3, DeliverInput0, RequestPublication2, Publish2 and all other message types0 FDs, each with exactly one genuine kernel credential record.",
+      "negative_scenarios": [
+        {
+          "scenario": "D05BootstrapFdZero",
+          "contract_control_index": 1,
+          "contract_control": "Bootstrap 0/1/2/4 FDs"
+        },
+        {
+          "scenario": "D05BootstrapFdOne",
+          "contract_control_index": 1,
+          "contract_control": "Bootstrap 0/1/2/4 FDs"
+        },
+        {
+          "scenario": "D05BootstrapFdTwo",
+          "contract_control_index": 1,
+          "contract_control": "Bootstrap 0/1/2/4 FDs"
+        },
+        {
+          "scenario": "D05BootstrapFdFour",
+          "contract_control_index": 1,
+          "contract_control": "Bootstrap 0/1/2/4 FDs"
+        },
+        {
+          "scenario": "D05DeliverInputFdOne",
+          "contract_control_index": 2,
+          "contract_control": "DeliverInput any FD"
+        },
+        {
+          "scenario": "D05RequestPublicationFdZero",
+          "contract_control_index": 3,
+          "contract_control": "RequestPublication 0/1/3 FDs"
+        },
+        {
+          "scenario": "D05RequestPublicationFdOne",
+          "contract_control_index": 3,
+          "contract_control": "RequestPublication 0/1/3 FDs"
+        },
+        {
+          "scenario": "D05RequestPublicationFdThree",
+          "contract_control_index": 3,
+          "contract_control": "RequestPublication 0/1/3 FDs"
+        },
+        {
+          "scenario": "D05PublishFdZero",
+          "contract_control_index": 4,
+          "contract_control": "Publish 0/1/3 FDs"
+        },
+        {
+          "scenario": "D05PublishFdOne",
+          "contract_control_index": 4,
+          "contract_control": "Publish 0/1/3 FDs"
+        },
+        {
+          "scenario": "D05PublishFdThree",
+          "contract_control_index": 4,
+          "contract_control": "Publish 0/1/3 FDs"
+        },
+        {
+          "scenario": "D05InputAckFdOne",
+          "contract_control_index": 5,
+          "contract_control": "InputAck/Stop/PublishAck/ReceiptNotice any FD"
+        },
+        {
+          "scenario": "D05StopFdOne",
+          "contract_control_index": 5,
+          "contract_control": "InputAck/Stop/PublishAck/ReceiptNotice any FD"
+        },
+        {
+          "scenario": "D05PublishAckFdOne",
+          "contract_control_index": 5,
+          "contract_control": "InputAck/Stop/PublishAck/ReceiptNotice any FD"
+        },
+        {
+          "scenario": "D05ReceiptNoticeFdOne",
+          "contract_control_index": 5,
+          "contract_control": "InputAck/Stop/PublishAck/ReceiptNotice any FD"
+        },
+        {
+          "scenario": "D05UnknownAncillary",
+          "contract_control_index": 6,
+          "contract_control": "unknown ancillary type"
+        },
+        {
+          "scenario": "D05DuplicateRights",
+          "contract_control_index": 7,
+          "contract_control": "duplicate SCM_RIGHTS"
+        },
+        {
+          "scenario": "D05AncillaryTruncation",
+          "contract_control_index": 8,
+          "contract_control": "MSG_CTRUNC"
+        },
+        {
+          "scenario": "D05RecordTruncation",
+          "contract_control_index": 9,
+          "contract_control": "MSG_TRUNC"
+        }
+      ],
+      "required_evidence": "nativeFDcountbeforeafter,flags,ownedreceivedFDledger; nokernel-discardclosurefabrication"
+    },
+    {
+      "id": "D06",
+      "name": "genuine_selected_init_and_first_child_frame",
+      "consumer_entry": "process_d06_genuine_selected_init_and_first_child_frame",
+      "layer": "public_consumer_and_desktop_owner",
+      "positive_scenario": "D06GenuineReadFirstFrameThenFocus",
+      "positive_obligation": "FreshcorrectgenuineReadpin\u2192childframe\u2192focus.",
+      "negative_scenarios": [
+        {
+          "scenario": "D06SelectedHashMismatch",
+          "contract_control_index": 1,
+          "contract_control": "wrongselectedhash"
+        },
+        {
+          "scenario": "D06SelectedRevisionMismatch",
+          "contract_control_index": 2,
+          "contract_control": "wrongselectedrevision"
+        },
+        {
+          "scenario": "D06SelectedObjectMismatch",
+          "contract_control_index": 3,
+          "contract_control": "wrongobject"
+        },
+        {
+          "scenario": "D06SelectedInputUnsealed",
+          "contract_control_index": 4,
+          "contract_control": "initialunsealedFD"
+        },
+        {
+          "scenario": "D06FocusBeforeFirstFrame",
+          "contract_control_index": 5,
+          "contract_control": "focusbeforevalidframe"
+        }
+      ],
+      "required_evidence": "realStoreReadwire/lease,initmappedrawbytes,childexecandfirstframe/crop"
+    },
+    {
+      "id": "D07",
+      "name": "child_local_keyboard_edit_raster_task",
+      "consumer_entry": "process_d07_child_local_keyboard_edit_raster_task",
+      "layer": "public_consumer_and_source_gate",
+      "positive_scenario": "D07ActualChildEditAndRasterGolden",
+      "positive_obligation": "Source-pinnedchildenginehandleskeysandwritesfullmappedimage.",
+      "negative_scenarios": [
+        {
+          "scenario": "D07ObserverOnlyChildOracleReject",
+          "contract_control_index": 1,
+          "contract_control": "observeronlychild"
+        },
+        {
+          "scenario": "D07ParentEditedDraftSourceReject",
+          "contract_control_index": 2,
+          "contract_control": "parentediteddraftsubstitute"
+        },
+        {
+          "scenario": "D07ParentRasterWithReportedPidSourceReject",
+          "contract_control_index": 3,
+          "contract_control": "parentrenderedframewithchildreportedPID"
+        }
+      ],
+      "required_evidence": "actualchildinput/publicationcontrol+rawtext/frame+sourcepins+composedcrops"
+    },
+    {
+      "id": "D08",
+      "name": "ascii_and_4096_bounds_preserve_prior_draft",
+      "consumer_entry": "process_d08_ascii_and_4096_bounds_preserve_prior_draft",
+      "layer": "public_consumer_and_desktop_owner",
+      "positive_scenario": "D08EmptyBase4096PressReleaseAndCtrlS",
+      "positive_obligation": "4096bytevaliddraftandsupportedUSkey.",
+      "negative_scenarios": [
+        {
+          "scenario": "D08Body4097",
+          "contract_control_index": 1,
+          "contract_control": "body4097"
+        },
+        {
+          "scenario": "D08BodyNonAscii",
+          "contract_control_index": 2,
+          "contract_control": "nonASCII"
+        },
+        {
+          "scenario": "D08BodyNul",
+          "contract_control_index": 3,
+          "contract_control": "NUL"
+        },
+        {
+          "scenario": "D08UnsupportedKeyUsage",
+          "contract_control_index": 4,
+          "contract_control": "unsupportedusage"
+        },
+        {
+          "scenario": "D08ContradictoryModifiers",
+          "contract_control_index": 5,
+          "contract_control": "contradictorymodifiers"
+        },
+        {
+          "scenario": "D08InvalidKeyPhase",
+          "contract_control_index": 6,
+          "contract_control": "invalidphase"
+        }
+      ],
+      "required_evidence": "actualchildoutcome,prior/currentmappedhash,cursorbounds,authorizedwitness"
+    },
+    {
+      "id": "D09",
+      "name": "cursor_selection_scroll_exact_state_pixels",
+      "consumer_entry": "process_d09_cursor_selection_scroll_exact_state_pixels",
+      "layer": "public_consumer_and_desktop_owner",
+      "positive_scenario": "D09FrozenCursorSelectionScrollGolden",
+      "positive_obligation": "Canonicalselectionandscrollrender/crop.",
+      "negative_scenarios": [
+        {
+          "scenario": "D09CursorBeyondBody",
+          "contract_control_index": 1,
+          "contract_control": "cursor>len"
+        },
+        {
+          "scenario": "D09HalfSelectionSentinel",
+          "contract_control_index": 2,
+          "contract_control": "halfselection-sentinel"
+        },
+        {
+          "scenario": "D09SelectionReversed",
+          "contract_control_index": 3,
+          "contract_control": "end<start"
+        },
+        {
+          "scenario": "D09SelectionBeyondBody",
+          "contract_control_index": 4,
+          "contract_control": "selection>len"
+        },
+        {
+          "scenario": "D09FirstLineBeyondInventory",
+          "contract_control_index": 5,
+          "contract_control": "line>actualinventory"
+        },
+        {
+          "scenario": "D09WrongViewGeneration",
+          "contract_control_index": 6,
+          "contract_control": "wrongviewgeneration"
+        }
+      ],
+      "required_evidence": "TextState128/body+actualimage/crops+expectedfrozenfont/corpus"
+    },
+    {
+      "id": "D10",
+      "name": "protected_chrome_and_reserved_input_routes",
+      "consumer_entry": "process_d10_protected_chrome_and_reserved_input_routes",
+      "layer": "public_consumer_and_desktop_owner",
+      "positive_scenario": "D10ProtectedChromeAndOrdinaryChildKey",
+      "positive_obligation": "Genuineparentchromeandlocalappkeypublication.",
+      "negative_scenarios": [
+        {
+          "scenario": "D10OversizedSurface",
+          "contract_control_index": 1,
+          "contract_control": "oversizedsurface"
+        },
+        {
+          "scenario": "D10ProtectedChromeObjectAsSurface",
+          "contract_control_index": 2,
+          "contract_control": "chromeobjectFD"
+        },
+        {
+          "scenario": "D10ReservedKeyForwardingReject",
+          "contract_control_index": 3,
+          "contract_control": "reservedkeyforwarded"
+        },
+        {
+          "scenario": "D10ChildSavedImitationClipped",
+          "contract_control_index": 4,
+          "contract_control": "childSavedclaim"
+        }
+      ],
+      "required_evidence": "complete640x568rawpixels/protectedcropsandtrustedinputroute"
+    },
+    {
+      "id": "D11",
+      "name": "actual_write_seals_and_retained_alias_ebusy",
+      "consumer_entry": "process_d11_actual_write_seals_and_retained_alias_ebusy",
+      "layer": "desktop_owner",
+      "positive_scenario": "D11AllAliasesUnmappedFullSeals",
+      "positive_obligation": "Freshpairunmapallwritablealiases+allfourseals\u2192acceptedread-onlyactualmapping.",
+      "negative_scenarios": [
+        {
+          "scenario": "D11RetainedWritableMapping",
+          "contract_control_index": 1,
+          "contract_control": "keptwritablealias"
+        },
+        {
+          "scenario": "D11FutureWriteOnly",
+          "contract_control_index": 2,
+          "contract_control": "F_SEAL_FUTURE_WRITEonly"
+        },
+        {
+          "scenario": "D11MprotectOnly",
+          "contract_control_index": 3,
+          "contract_control": "mprotectonly"
+        },
+        {
+          "scenario": "D11MissingGrowSeal",
+          "contract_control_index": 4,
+          "contract_control": "missingGROW"
+        },
+        {
+          "scenario": "D11MissingShrinkSeal",
+          "contract_control_index": 5,
+          "contract_control": "missingSHRINK"
+        },
+        {
+          "scenario": "D11MissingFinalSeal",
+          "contract_control_index": 6,
+          "contract_control": "missingSEAL"
+        },
+        {
+          "scenario": "D11WriteAfterSeal",
+          "contract_control_index": 7,
+          "contract_control": "writeafterseal"
+        },
+        {
+          "scenario": "D11GrowAfterSeal",
+          "contract_control_index": 8,
+          "contract_control": "growafterseal"
+        },
+        {
+          "scenario": "D11ShrinkAfterSeal",
+          "contract_control_index": 9,
+          "contract_control": "shrinkafterseal"
+        }
+      ],
+      "required_evidence": "actualfcntlerrno/seals,FDidentity,mmap/write/truncateobservations,prioroutputhash"
+    },
+    {
+      "id": "D12",
+      "name": "offered_inode_pair_and_cross_child_denials",
+      "consumer_entry": "process_d12_offered_inode_pair_and_cross_child_denials",
+      "layer": "desktop_owner",
+      "positive_scenario": "D12ExactPendingOfferedPair",
+      "positive_obligation": "Exactpendingtwooffereddev/inoFDsaccepted.",
+      "negative_scenarios": [
+        {
+          "scenario": "D12ForeignChildText",
+          "contract_control_index": 1,
+          "contract_control": "foreignchildtext"
+        },
+        {
+          "scenario": "D12ForeignChildSurface",
+          "contract_control_index": 2,
+          "contract_control": "foreignchildframe"
+        },
+        {
+          "scenario": "D12SwappedOfferedRoles",
+          "contract_control_index": 3,
+          "contract_control": "swappedroles"
+        },
+        {
+          "scenario": "D12DuplicateOfferedFdRoles",
+          "contract_control_index": 4,
+          "contract_control": "duplicateoneFDtwiceroles"
+        },
+        {
+          "scenario": "D12EqualBytesForeignInode",
+          "contract_control_index": 5,
+          "contract_control": "samecontentdifferentinode"
+        },
+        {
+          "scenario": "D12StaleOfferId",
+          "contract_control_index": 6,
+          "contract_control": "staleofferID"
+        }
+      ],
+      "required_evidence": "offered/returnednativeFDidentity+rawcontrol+quota/noeffectdelta"
+    },
+    {
+      "id": "D13",
+      "name": "complete_mapping_shape_hash_and_base",
+      "consumer_entry": "process_d13_complete_mapping_shape_hash_and_base",
+      "layer": "desktop_owner",
+      "positive_scenario": "D13ExactCompleteTextStateAndSurface",
+      "positive_obligation": "Exact128..4224state+1228800BGRAactualpair.",
+      "negative_scenarios": [
+        {
+          "scenario": "D13TextLength127",
+          "contract_control_index": 1,
+          "contract_control": "textlen127"
+        },
+        {
+          "scenario": "D13TextLength4225",
+          "contract_control_index": 2,
+          "contract_control": "textlen4225"
+        },
+        {
+          "scenario": "D13ControlLengthVsFstat",
+          "contract_control_index": 3,
+          "contract_control": "controlsize!=fstat"
+        },
+        {
+          "scenario": "D13SurfaceLength1228799",
+          "contract_control_index": 4,
+          "contract_control": "frame1228799"
+        },
+        {
+          "scenario": "D13SurfaceLength1228801",
+          "contract_control_index": 5,
+          "contract_control": "frame1228801"
+        },
+        {
+          "scenario": "D13TextHeaderVersion",
+          "contract_control_index": 6,
+          "contract_control": "badText64version/reserved/hash"
+        },
+        {
+          "scenario": "D13TextHeaderReserved",
+          "contract_control_index": 6,
+          "contract_control": "badText64version/reserved/hash"
+        },
+        {
+          "scenario": "D13TextBodyHash",
+          "contract_control_index": 6,
+          "contract_control": "badText64version/reserved/hash"
+        },
+        {
+          "scenario": "D13BaseRevisionMismatch",
+          "contract_control_index": 7,
+          "contract_control": "wrongbase/object"
+        },
+        {
+          "scenario": "D13TextObjectMismatch",
+          "contract_control_index": 7,
+          "contract_control": "wrongbase/object"
+        },
+        {
+          "scenario": "D13StateControlGenerationMismatch",
+          "contract_control_index": 8,
+          "contract_control": "state/controlgenmismatch"
+        },
+        {
+          "scenario": "D13SurfaceCompanionHashMismatch",
+          "contract_control_index": 9,
+          "contract_control": "companionframehashmismatch"
+        },
+        {
+          "scenario": "D13SurfaceAlphaMismatch",
+          "contract_control_index": 10,
+          "contract_control": "alpha/formatviolation"
+        },
+        {
+          "scenario": "D13SurfaceFormatMismatch",
+          "contract_control_index": 10,
+          "contract_control": "alpha/formatviolation"
+        }
+      ],
+      "required_evidence": "heldfstat/sealsbeforeafter,fullbytes/hash,status,noeffect"
+    },
+    {
+      "id": "D14",
+      "name": "sequence_epoch_ownership_and_single_use",
+      "consumer_entry": "process_d14_sequence_epoch_ownership_and_single_use",
+      "layer": "desktop_owner",
+      "positive_scenario": "D14CurrentAcknowledgmentAndPublication",
+      "positive_obligation": "Currentgenuinedeliveredsequence/newcheckedgenerationaccepted.",
+      "negative_scenarios": [
+        {
+          "scenario": "D14OldRequest",
+          "contract_control_index": 1,
+          "contract_control": "oldrequest"
+        },
+        {
+          "scenario": "D14FutureInput",
+          "contract_control_index": 2,
+          "contract_control": "futureinput"
+        },
+        {
+          "scenario": "D14DuplicatePublish",
+          "contract_control_index": 3,
+          "contract_control": "duplicatePublish"
+        },
+        {
+          "scenario": "D14DuplicateAck",
+          "contract_control_index": 4,
+          "contract_control": "duplicateAck"
+        },
+        {
+          "scenario": "D14WrongChannelGeneration",
+          "contract_control_index": 5,
+          "contract_control": "wrongchannelgen"
+        },
+        {
+          "scenario": "D14OldFocusEpoch",
+          "contract_control_index": 6,
+          "contract_control": "oldfocus"
+        },
+        {
+          "scenario": "D14OldServiceEpoch",
+          "contract_control_index": 7,
+          "contract_control": "oldserviceepoch"
+        },
+        {
+          "scenario": "D14ForeignDocumentBinding",
+          "contract_control_index": 8,
+          "contract_control": "forgeddocumentbinding"
+        },
+        {
+          "scenario": "D14RequestCounterMax",
+          "contract_control_index": 9,
+          "contract_control": "counterwraprequest/publication/text/view/channel"
+        },
+        {
+          "scenario": "D14PublicationCounterMax",
+          "contract_control_index": 9,
+          "contract_control": "counterwraprequest/publication/text/view/channel"
+        },
+        {
+          "scenario": "D14TextCounterMax",
+          "contract_control_index": 9,
+          "contract_control": "counterwraprequest/publication/text/view/channel"
+        },
+        {
+          "scenario": "D14ViewCounterMax",
+          "contract_control_index": 9,
+          "contract_control": "counterwraprequest/publication/text/view/channel"
+        },
+        {
+          "scenario": "D14ChannelCounterMax",
+          "contract_control_index": 9,
+          "contract_control": "counterwraprequest/publication/text/view/channel"
+        }
+      ],
+      "required_evidence": "actualtypedcontrolandprivatependingticket/epochobservations"
+    },
+    {
+      "id": "D15",
+      "name": "live_owner_pending_queue_and_save_caps",
+      "consumer_entry": "process_d15_live_owner_pending_queue_and_save_caps",
+      "layer": "desktop_and_app_owners",
+      "positive_scenario": "D15RealOwnerReleaseThenAdmit",
+      "positive_obligation": "Releasegenuinemapping/FDorjoinrealownerthenauthorizedrequestwherecontractpermits.",
+      "negative_scenarios": [
+        {
+          "scenario": "D15DataOwnerThirteen",
+          "contract_control_index": 1,
+          "contract_control": "13th data FD/map owner"
+        },
+        {
+          "scenario": "D15FixedOwnerSeventeen",
+          "contract_control_index": 2,
+          "contract_control": "17th fixed-process FD owner"
+        },
+        {
+          "scenario": "D15CombinedOwnerTwentyNine",
+          "contract_control_index": 3,
+          "contract_control": "29th combined process parent owner"
+        },
+        {
+          "scenario": "D15PendingInputTwo",
+          "contract_control_index": 4,
+          "contract_control": "second pending input"
+        },
+        {
+          "scenario": "D15OrdinaryQueueSixtyFive",
+          "contract_control_index": 5,
+          "contract_control": "65th queued ordinary key"
+        },
+        {
+          "scenario": "D15ReservedResetTwo",
+          "contract_control_index": 6,
+          "contract_control": "second reserved reset while first occupies reserved slot"
+        },
+        {
+          "scenario": "D15TotalQueueSixtySix",
+          "contract_control_index": 7,
+          "contract_control": "66th total queued event"
+        },
+        {
+          "scenario": "D15InflightSaveTwo",
+          "contract_control_index": 8,
+          "contract_control": "second inflight Save per child"
+        },
+        {
+          "scenario": "D15LiveEditorThree",
+          "contract_control_index": 9,
+          "contract_control": "third live editor"
+        },
+        {
+          "scenario": "D15SupervisorThree",
+          "contract_control_index": 10,
+          "contract_control": "third actual ProcessSupervisor handle"
+        },
+        {
+          "scenario": "D15StoreDataThirtyThree",
+          "contract_control_index": 11,
+          "contract_control": "existing Store32 data/16 pin/16 pending/64 query/64 producer/IO2 caps"
+        },
+        {
+          "scenario": "D15StorePinSeventeen",
+          "contract_control_index": 11,
+          "contract_control": "existing Store32 data/16 pin/16 pending/64 query/64 producer/IO2 caps"
+        },
+        {
+          "scenario": "D15StorePendingSeventeen",
+          "contract_control_index": 11,
+          "contract_control": "existing Store32 data/16 pin/16 pending/64 query/64 producer/IO2 caps"
+        },
+        {
+          "scenario": "D15StoreQuerySixtyFive",
+          "contract_control_index": 11,
+          "contract_control": "existing Store32 data/16 pin/16 pending/64 query/64 producer/IO2 caps"
+        },
+        {
+          "scenario": "D15StoreProducerSixtyFive",
+          "contract_control_index": 11,
+          "contract_control": "existing Store32 data/16 pin/16 pending/64 query/64 producer/IO2 caps"
+        },
+        {
+          "scenario": "D15StoreIoThree",
+          "contract_control_index": 11,
+          "contract_control": "existing Store32 data/16 pin/16 pending/64 query/64 producer/IO2 caps"
+        }
+      ],
+      "required_evidence": "ownedFD/map/processsupervisorledger,reservedresetrecord,actualexistingservicecapswitnesses"
+    },
+    {
+      "id": "D16",
+      "name": "lifetime_offer_ledger_bytes_and_no_alias_reuse",
+      "consumer_entry": "process_d16_lifetime_offer_ledger_bytes_and_no_alias_reuse",
+      "layer": "desktop_owner",
+      "positive_scenario": "D16LifetimeOffer128ThenFreshReapedChild",
+      "positive_obligation": "128thwithinbudgetworks; separatelyfreshapprovedchildaftertruereapgetsnewboundedledger.",
+      "negative_scenarios": [
+        {
+          "scenario": "D16LifetimeOffer129",
+          "contract_control_index": 1,
+          "contract_control": "129thoffer"
+        },
+        {
+          "scenario": "D16LifetimeObject258",
+          "contract_control_index": 2,
+          "contract_control": "258thobject"
+        },
+        {
+          "scenario": "D16LifetimeByteCapPlusOne",
+          "contract_control_index": 3,
+          "contract_control": "bytecap+1"
+        },
+        {
+          "scenario": "D16ExistingInodeAsNewCredit",
+          "contract_control_index": 4,
+          "contract_control": "sameinodealiaspresentedasnewcredit"
+        },
+        {
+          "scenario": "D16DropDoesNotRefund",
+          "contract_control_index": 5,
+          "contract_control": "drop/reseed/counterresetreopenscredit"
+        },
+        {
+          "scenario": "D16ReseedDoesNotRefund",
+          "contract_control_index": 5,
+          "contract_control": "drop/reseed/counterresetreopenscredit"
+        },
+        {
+          "scenario": "D16CounterResetDoesNotRefund",
+          "contract_control_index": 5,
+          "contract_control": "drop/reseed/counterresetreopenscredit"
+        }
+      ],
+      "required_evidence": "actualcreationFDidentity/lifetimecounters/bytesandheldaliases,notchild-reportedFDcount"
+    },
+    {
+      "id": "D17",
+      "name": "genuine_ctrl_s_full_receipt_and_reopen",
+      "consumer_entry": "process_d17_genuine_ctrl_s_full_receipt_and_reopen",
+      "layer": "app_owner_and_public_consumer",
+      "positive_scenario": "D17OneGenuineSaveReceiptAndFreshChildReopen",
+      "positive_obligation": "FullactualCore/issuer/originalreceiptandfreshchildreopen.",
+      "negative_scenarios": [
+        {
+          "scenario": "D17ShortReceipt",
+          "contract_control_index": 1,
+          "contract_control": "shortreceipt"
+        },
+        {
+          "scenario": "D17ForeignReceiptBinding",
+          "contract_control_index": 2,
+          "contract_control": "wrongreceiptbinding/hash/revision"
+        },
+        {
+          "scenario": "D17ReceiptHashMismatch",
+          "contract_control_index": 2,
+          "contract_control": "wrongreceiptbinding/hash/revision"
+        },
+        {
+          "scenario": "D17ReceiptRevisionMismatch",
+          "contract_control_index": 2,
+          "contract_control": "wrongreceiptbinding/hash/revision"
+        },
+        {
+          "scenario": "D17ChildReceiptSetterApiAbsent",
+          "contract_control_index": 3,
+          "contract_control": "childreceiptsetter"
+        },
+        {
+          "scenario": "D17CopiedAllocationClaim",
+          "contract_control_index": 4,
+          "contract_control": "copiedallocationclaim"
+        }
+      ],
+      "required_evidence": "capturedCtrlSInstant,pendingticket,sourcecopyexplicit,actualwire/binding/permit/journal/receipt176andnewchildbytes"
+    },
+    {
+      "id": "D18",
+      "name": "no_save_without_genuine_single_use_capture",
+      "consumer_entry": "process_d18_no_save_without_genuine_single_use_capture",
+      "layer": "desktop_owner_and_app_owner",
+      "positive_scenario": "D18FreshSingleUseCtrlSCapture",
+      "positive_obligation": "FreshcurrentCtrlScapturewithinoriginaldeadlineadoptsonce.",
+      "negative_scenarios": [
+        {
+          "scenario": "D18OrdinaryPublishSaveClaim",
+          "contract_control_index": 1,
+          "contract_control": "ordinaryPublishSaveclaim"
+        },
+        {
+          "scenario": "D18UnsolicitedCapture",
+          "contract_control_index": 2,
+          "contract_control": "unsolicitedcapture"
+        },
+        {
+          "scenario": "D18CopiedOldCaptureRequest",
+          "contract_control_index": 3,
+          "contract_control": "oldCtrlScopiedrequest"
+        },
+        {
+          "scenario": "D18CaptureConsumedTwice",
+          "contract_control_index": 4,
+          "contract_control": "samecapturetwice"
+        },
+        {
+          "scenario": "D18CaptureAfter1000Ms",
+          "contract_control_index": 5,
+          "contract_control": "latecapture>1000ms"
+        },
+        {
+          "scenario": "D18RoundTripCannotRenewCapture",
+          "contract_control_index": 6,
+          "contract_control": "capturedeadline resetbyroundtrip"
+        }
+      ],
+      "required_evidence": "actualtypedFocusdequeue/Instant/privateintentIDsandmutationcounts"
+    },
+    {
+      "id": "D19",
+      "name": "newer_draft_keeps_unsaved_after_older_commit",
+      "consumer_entry": "process_d19_newer_draft_keeps_unsaved_after_older_commit",
+      "layer": "app_owner_and_public_consumer",
+      "positive_scenario": "D19OlderReceiptThenFreshAuthorizedSave",
+      "positive_obligation": "OldsnapshotreceiptthenexplicitnewSaveaftersettlementvalid.",
+      "negative_scenarios": [
+        {
+          "scenario": "D19RepeatSaveWhileSaving",
+          "contract_control_index": 1,
+          "contract_control": "repeatCtrlSwhileSaving"
+        },
+        {
+          "scenario": "D19RepeatSaveWhileUnknown",
+          "contract_control_index": 2,
+          "contract_control": "repeatCtrlSwhileUnknown"
+        },
+        {
+          "scenario": "D19OldReceiptNewDraftUnsaved",
+          "contract_control_index": 3,
+          "contract_control": "olderreceiptmarksnewerdraftSaved"
+        }
+      ],
+      "required_evidence": "twochilddraftgens/fullpixels,originalsnapshot/permit/receipt/currentSavedtuple"
+    },
+    {
+      "id": "D20",
+      "name": "lost_reply_original_only_recovery_no_replay",
+      "consumer_entry": "process_d20_lost_reply_original_only_recovery_no_replay",
+      "layer": "app_owner_and_public_consumer",
+      "positive_scenario": "D20OriginalLookupThenFreshRestart",
+      "positive_obligation": "Actualsameoriginalorigin+lookup176receiptthenfreshrestart.",
+      "negative_scenarios": [
+        {
+          "scenario": "D20OrdinaryRetiredLookupDenied",
+          "contract_control_index": 1,
+          "contract_control": "ordinaryretiredlookup"
+        },
+        {
+          "scenario": "D20ForeignOriginalOwnerDenied",
+          "contract_control_index": 2,
+          "contract_control": "forgedoriginalowner"
+        },
+        {
+          "scenario": "D20NewIntentCannotReconcileOld",
+          "contract_control_index": 3,
+          "contract_control": "newintentusedasreconcile"
+        },
+        {
+          "scenario": "D20OriginalAllocationCountPreserved",
+          "contract_control_index": 4,
+          "contract_control": "resetallocationcount"
+        }
+      ],
+      "required_evidence": "raworiginalrequest/receipt/control9/10,counts/joins,original/currentactortuples"
+    },
+    {
+      "id": "D21",
+      "name": "child_death_before_permit_retains_known_allocation",
+      "consumer_entry": "process_d21_child_death_before_permit_retains_known_allocation",
+      "layer": "app_owner_and_public_consumer",
+      "positive_scenario": "D21GenuineUnpermittedClosureThenApprovedChild",
+      "positive_obligation": "Supportedgenuineunpermittedclosureandnewapprovedchildafterreconciliation.",
+      "negative_scenarios": [
+        {
+          "scenario": "D21DeathBeforeCapture",
+          "contract_control_index": 1,
+          "contract_control": "deathbeforeacceptedcapture"
+        },
+        {
+          "scenario": "D21DeathAfterAllocateBeforePermit",
+          "contract_control_index": 2,
+          "contract_control": "deathafterAllocatebeforepermit"
+        },
+        {
+          "scenario": "D21PublicationAfterDeath",
+          "contract_control_index": 3,
+          "contract_control": "latequeuedpublicationafterdeath"
+        }
+      ],
+      "required_evidence": "actualnativeexit/waitproof,allocationoriginalrecord,zeroissuedpermit/noeffect,witness"
+    },
+    {
+      "id": "D22",
+      "name": "child_death_after_permit_original_writer_survives",
+      "consumer_entry": "process_d22_child_death_after_permit_original_writer_survives",
+      "layer": "app_owner_and_public_consumer",
+      "positive_scenario": "D22OriginalWriterSettlesAfterChildReap",
+      "positive_obligation": "Releaseauthenticwriter\u2192actualRustjoins+diskvalidation+originalreceipt.",
+      "negative_scenarios": [
+        {
+          "scenario": "D22DropChildDoesNotDropWriter",
+          "contract_control_index": 1,
+          "contract_control": "dropchildowner"
+        },
+        {
+          "scenario": "D22SignalRequestIsNotReap",
+          "contract_control_index": 2,
+          "contract_control": "killsignalrequestedonly"
+        },
+        {
+          "scenario": "D22ChildReapIsNotStoreJoin",
+          "contract_control_index": 3,
+          "contract_control": "childreapmistakenforStorejoin"
+        },
+        {
+          "scenario": "D22NoOrdinaryGrantRevival",
+          "contract_control_index": 4,
+          "contract_control": "ordinarygrantrevival"
+        }
+      ],
+      "required_evidence": "distinctOwnedEditorChildExitProofandallnativeRustproducerIDs/joins,permit/journal/receipt/counts"
+    },
+    {
+      "id": "D23",
+      "name": "actual_fault_fresh_restart_approval",
+      "consumer_entry": "process_d23_actual_fault_fresh_restart_approval",
+      "layer": "public_consumer_and_desktop_owner",
+      "positive_scenario": "D23FreshPreviewApprovalNewBirth",
+      "positive_obligation": "Freshapprovednewchildonconfirmedbase.",
+      "negative_scenarios": [
+        {
+          "scenario": "D23OldPreviewEnterDenied",
+          "contract_control_index": 1,
+          "contract_control": "oldpreviewEnter"
+        },
+        {
+          "scenario": "D23OldBootstrapDenied",
+          "contract_control_index": 2,
+          "contract_control": "oldbootstrap"
+        },
+        {
+          "scenario": "D23NoAutomaticRespawn",
+          "contract_control_index": 3,
+          "contract_control": "automaticrespawn"
+        },
+        {
+          "scenario": "D23UnknownCannotChooseOldOrNewBase",
+          "contract_control_index": 4,
+          "contract_control": "Unknownreopenold/newguess"
+        }
+      ],
+      "required_evidence": "actualfaultsignal/wait+chrome/restarttypedroute+newPIDbirth/generation"
+    },
+    {
+      "id": "D24",
+      "name": "stalled_child_unrelated_session_one_second",
+      "consumer_entry": "process_d24_stalled_child_unrelated_session_one_second",
+      "layer": "public_consumer_and_desktop_owner",
+      "positive_scenario": "D24IndependentChildBWithinOneSecond",
+      "positive_obligation": "WorkingBactualchildwhileAstalledandAtruecleanup.",
+      "negative_scenarios": [
+        {
+          "scenario": "D24NoRegistryLockAcrossReceive",
+          "contract_control_index": 1,
+          "contract_control": "globalGateheldacrossrecv"
+        },
+        {
+          "scenario": "D24NoRegistryLockAcrossSignalWait",
+          "contract_control_index": 2,
+          "contract_control": "wait/killunderregistrylock"
+        },
+        {
+          "scenario": "D24WatchdogWithoutPump",
+          "contract_control_index": 3,
+          "contract_control": "pollrequiredtoretireA"
+        },
+        {
+          "scenario": "D24OtherSessionCannotRenewDeadline",
+          "contract_control_index": 4,
+          "contract_control": "deadlineextendedbyB"
+        }
+      ],
+      "required_evidence": "actualA/Bnativebirth/control/pixels/timing+kill/waitandseparateIOjoins"
+    },
+    {
+      "id": "D25",
+      "name": "flood_eof_short_io_and_backpressure",
+      "consumer_entry": "process_d25_flood_eof_short_io_and_backpressure",
+      "layer": "desktop_owner",
+      "positive_scenario": "D25BoundedRetryThenFreshOwner",
+      "positive_obligation": "Boundedvalidpacketafterordinaryretryonlywithinoriginaldeadline; transportfaultrequiresnewowner.",
+      "negative_scenarios": [
+        {
+          "scenario": "D25ScenarioControlRow32769",
+          "contract_control_index": 1,
+          "contract_control": "32769th scenario control row or131073rd aggregate control row; append denied before growth"
+        },
+        {
+          "scenario": "D25AggregateControlRow131073",
+          "contract_control_index": 1,
+          "contract_control": "32769th scenario control row or131073rd aggregate control row; append denied before growth"
+        },
+        {
+          "scenario": "D25StdoutCapPlusOne",
+          "contract_control_index": 2,
+          "contract_control": "stdoutcap+1"
+        },
+        {
+          "scenario": "D25StderrCapPlusOne",
+          "contract_control_index": 3,
+          "contract_control": "stderr cap+1"
+        },
+        {
+          "scenario": "D25EofWithPendingOffer",
+          "contract_control_index": 4,
+          "contract_control": "EOFpendingoffer"
+        },
+        {
+          "scenario": "D25ShortRecord",
+          "contract_control_index": 5,
+          "contract_control": "shortrecord"
+        },
+        {
+          "scenario": "D25ActualSendBackpressure",
+          "contract_control_index": 6,
+          "contract_control": "sendEAGAIN"
+        },
+        {
+          "scenario": "D25ReceiveInterrupted",
+          "contract_control_index": 7,
+          "contract_control": "recvEINTR"
+        },
+        {
+          "scenario": "D25SendInterrupted",
+          "contract_control_index": 8,
+          "contract_control": "sendEINTR"
+        }
+      ],
+      "required_evidence": "Complete append-only JSONL controls, exact counts/bytes and cap+1 denial, actual syscall results/flags, authentic supervisor wait result plus supervisor join, unrelated session witness. No sampling or truncation marked complete."
+    },
+    {
+      "id": "D26",
+      "name": "revoke_fences_unpermitted_publication_preserves_permit",
+      "consumer_entry": "process_d26_revoke_fences_unpermitted_publication_preserves_permit",
+      "layer": "desktop_and_app_owners",
+      "positive_scenario": "D26OtherOwnerAndOriginalReceiptProgress",
+      "positive_obligation": "Currentotherownerworks; original-onlyreceiptlookupgenuine.",
+      "negative_scenarios": [
+        {
+          "scenario": "D26FrameAfterRevoke",
+          "contract_control_index": 1,
+          "contract_control": "lateframeafterrevoke"
+        },
+        {
+          "scenario": "D26CaptureAfterRevoke",
+          "contract_control_index": 2,
+          "contract_control": "latecaptureafterrevoke"
+        },
+        {
+          "scenario": "D26OldGenerationCannotRevive",
+          "contract_control_index": 3,
+          "contract_control": "reviveoldgeneration"
+        },
+        {
+          "scenario": "D26IssuedPermitCannotCancel",
+          "contract_control_index": 4,
+          "contract_control": "cancelissuedpermit"
+        }
+      ],
+      "required_evidence": "realbarriers,epoch/ticket/effectcounts,oldaliasreadlimitedclaim,actualjoins"
+    },
+    {
+      "id": "D27",
+      "name": "focus_compositor_service_reset_and_reserved_reset",
+      "consumer_entry": "process_d27_focus_compositor_service_reset_and_reserved_reset",
+      "layer": "public_consumer_and_desktop_owner",
+      "positive_scenario": "D27FreshResetApprovalAndSurface",
+      "positive_obligation": "Freshvalidresetandnewapprovedchild/currentreadyframe.",
+      "negative_scenarios": [
+        {
+          "scenario": "D27OrdinaryOverflowReservedReset",
+          "contract_control_index": 1,
+          "contract_control": "queued65overflowreset"
+        },
+        {
+          "scenario": "D27OldKeyPressRelease",
+          "contract_control_index": 2,
+          "contract_control": "oldkeypressrelease"
+        },
+        {
+          "scenario": "D27OldResetServiceEpoch",
+          "contract_control_index": 3,
+          "contract_control": "oldserviceepoch"
+        },
+        {
+          "scenario": "D27OldSurfaceGeneration",
+          "contract_control_index": 4,
+          "contract_control": "oldsurfacegeneration"
+        },
+        {
+          "scenario": "D27StaleResetCapture",
+          "contract_control_index": 5,
+          "contract_control": "staleCtrlScapture"
+        }
+      ],
+      "required_evidence": "actualroute/resetrecord/serviceepochs/objectidentity/pixels/noeffect"
+    },
+    {
+      "id": "D28",
+      "name": "absolute_expiry_death_deadline_no_reset",
+      "consumer_entry": "process_d28_absolute_expiry_death_deadline_no_reset",
+      "layer": "desktop_owner_and_public_consumer",
+      "positive_scenario": "D28WithinOriginalBudgetAndActualExpiry",
+      "positive_obligation": "Withinoriginalbudgetchildworks; independentexpirytriggersactualcleanup.",
+      "negative_scenarios": [
+        {
+          "scenario": "D28BudgetZero",
+          "contract_control_index": 1,
+          "contract_control": "TTL0"
+        },
+        {
+          "scenario": "D28Budget5001",
+          "contract_control_index": 2,
+          "contract_control": "TTL5001"
+        },
+        {
+          "scenario": "D28SpawnPauseCannotRenew",
+          "contract_control_index": 3,
+          "contract_control": "spawnwaitreset"
+        },
+        {
+          "scenario": "D28BootstrapPauseCannotRenew",
+          "contract_control_index": 4,
+          "contract_control": "bootstrapreset"
+        },
+        {
+          "scenario": "D28RoundTripCannotRenew",
+          "contract_control_index": 5,
+          "contract_control": "roundtripreset"
+        },
+        {
+          "scenario": "D28IntentRequestCannotRenew",
+          "contract_control_index": 6,
+          "contract_control": "requestintentreset"
+        },
+        {
+          "scenario": "D28BackdatedCoreClock",
+          "contract_control_index": 7,
+          "contract_control": "backdatedclock"
+        }
+      ],
+      "required_evidence": "nativeclock/deadline/barrierlog/actualwaitandoriginalintentInstant"
+    },
+    {
+      "id": "D29",
+      "name": "real_reap_uncertainty_and_charge_retention",
+      "consumer_entry": "process_d29_real_reap_uncertainty_and_charge_retention",
+      "layer": "desktop_owner_and_public_consumer",
+      "positive_scenario": "D29SoleWaitThenSupervisorJoinAndChargeRelease",
+      "positive_obligation": "Soleactualwaitthenactualsupervisorjoinreleasesexactcharge; secondchildunaffected.",
+      "negative_scenarios": [
+        {
+          "scenario": "D29WaitFailureRetainsOwner",
+          "contract_control_index": 1,
+          "contract_control": "waiterror"
+        },
+        {
+          "scenario": "D29SignalFailureRetainsOwner",
+          "contract_control_index": 2,
+          "contract_control": "killerror"
+        },
+        {
+          "scenario": "D29PidfdReadyIsNotReap",
+          "contract_control_index": 3,
+          "contract_control": "pidfdreadywithoutwait"
+        },
+        {
+          "scenario": "D29EofIsNotReap",
+          "contract_control_index": 4,
+          "contract_control": "EOFwithoutwait"
+        },
+        {
+          "scenario": "D29DropIsNotReap",
+          "contract_control_index": 5,
+          "contract_control": "Dropwithoutreap"
+        },
+        {
+          "scenario": "D29ForeignNumericPidIsNotOwner",
+          "contract_control_index": 6,
+          "contract_control": "foreignnumericPID"
+        },
+        {
+          "scenario": "D29ThreadJoinIsNotReap",
+          "contract_control_index": 7,
+          "contract_control": "RustThreadJoinsubstitute"
+        },
+        {
+          "scenario": "D29ConsumingJoinReturnsOwnerWithoutUnwind",
+          "contract_control_index": 8,
+          "contract_control": "consumingjoinnonunwindingownerreturn"
+        },
+        {
+          "scenario": "D29LiveJoinNotReadyIsPrompt",
+          "contract_control_index": 9,
+          "contract_control": "nonblockingNotReady"
+        }
+      ],
+      "required_evidence": "actualnativewaitstatus/birth/pidfdassociation/ownerreturnandquarantineledger"
+    },
+    {
+      "id": "D30",
+      "name": "unchanged_c_consumers_and_integration",
+      "consumer_entry": "process_d30_unchanged_c_consumers_and_integration",
+      "layer": "root_integration_gate",
+      "positive_scenario": "D30AllUnchangedConsumersOnSameCandidate",
+      "positive_obligation": "CompleteRootintegratedgateevidenceoncandidatewithprocessgateexplicitlyseparate.",
+      "negative_scenarios": [
+        {
+          "scenario": "D30OriginalOneSecondDeadlineUnchanged",
+          "contract_control_index": 1,
+          "contract_control": "weakenedone-secondassertion"
+        },
+        {
+          "scenario": "D30NoFabricatedJoinFence",
+          "contract_control_index": 2,
+          "contract_control": "fabricatedjoin/fence"
+        },
+        {
+          "scenario": "D30NoCachedPassAcceptance",
+          "contract_control_index": 3,
+          "contract_control": "cachedresultacceptance"
+        },
+        {
+          "scenario": "D30ProtocolGrantInventoryUnchanged",
+          "contract_control_index": 4,
+          "contract_control": "silentprotocolgrantchange"
+        },
+        {
+          "scenario": "D30StoreIoExcludedFromSchema",
+          "contract_control_index": 5,
+          "contract_control": "StoreIOinschema"
+        },
+        {
+          "scenario": "D30DesktopGraphExcludesStoreApp",
+          "contract_control_index": 6,
+          "contract_control": "DesktopdependsStore/App"
+        }
+      ],
+      "required_evidence": "source/lockprepost,exactactualcommandinventories/results/fullrawreaderevidence andindependentreview"
+    }
+  ],
+  "parent_death_addendum": {
+    "scenario": "D29ActualParentDeathSubreaperQuarantine",
+    "consumer_entry": "process_d29_actual_parent_death_retains_uncertain_store_quarantine",
+    "requirements": [
+      "Actual outer controller sets PR_SET_CHILD_SUBREAPER before spawning the real parent fixture.",
+      "Outer controller waits only on native processes it legally owns/adopts; no fabricated original supervisor join.",
+      "Killed-parent Rust producer joins/fences remain unproved; Store root and original operation metadata stay quarantined.",
+      "Original Store outcome is never selected from process absence; recovery uses actual original-operation evidence under fresh authorized ownership."
+    ]
+  }
+}

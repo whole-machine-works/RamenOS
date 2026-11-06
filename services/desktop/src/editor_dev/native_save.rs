@@ -352,6 +352,8 @@ pub struct NativeDraftSnapshot {
     pub(super) data: Arc<SnapshotData>,
 }
 pub(super) struct IntentLife {
+    #[cfg(all(target_os = "linux", feature = "host_editor_process_v0_dev"))]
+    pub(super) capture_input_sequence: u64,
     pub(super) id: u64,
     pub(super) exposed: std::sync::atomic::AtomicBool,
     pub(super) closed_before_admission: std::sync::atomic::AtomicBool,
@@ -633,6 +635,8 @@ pub(super) struct SaveGate {
     pub(super) view_exhausted: bool,
     pub(super) armed: Option<(u64, NativeSavePausePoint, Arc<SaveBarrier>)>,
     pub(super) barriers: Vec<Weak<SaveBarrier>>,
+    #[cfg(all(target_os = "linux", feature = "host_editor_process_assertions_v0_dev"))]
+    pub(super) deadline_spawn_fault: Option<ArmedSaveDeadlineSpawnFault>,
 
     pub(super) documents: BTreeMap<u64, DocumentRow>,
     pub(super) intents: BTreeMap<u64, Weak<IntentLife>>,
@@ -642,6 +646,8 @@ pub(super) struct SaveGate {
     pub(super) next_frame: u64,
 }
 pub(super) struct DocumentRow {
+    #[cfg(all(target_os = "linux", feature = "host_editor_process_v0_dev"))]
+    pub(super) process: ProcessDocument,
     pub(super) life: Arc<DocumentLife>,
     pub(super) attachment: Arc<preview::AttachmentLife>,
     pub(super) object_id: u64,
@@ -656,6 +662,48 @@ pub(super) struct DocumentRow {
     pub(super) focus_epoch: u64,
     pub(super) frame: Option<NativeFrameObservation>,
 }
+
+#[cfg(all(target_os = "linux", feature = "host_editor_process_v0_dev"))]
+pub(super) struct ProcessDocument {
+    pub(super) owned: bool,
+    pub(super) retired: bool,
+    pub(super) staged_adoption: bool,
+    pub(super) publication_sequence: u64,
+    pub(super) issued_inputs: std::collections::VecDeque<(u64, u64, u64, u64)>,
+    pub(super) acknowledged_sequence: u64,
+    pub(super) acknowledged_text: u64,
+    pub(super) acknowledged_view: u64,
+    pub(super) app_pixels: Option<Arc<Vec<u8>>>,
+    pub(super) composed_pixels: Option<Arc<Vec<u8>>>,
+    #[cfg(feature = "host_editor_process_assertions_v0_dev")]
+    pub(super) owner_confirm_request: Option<[u8; 88]>,
+    #[cfg(feature = "host_editor_process_assertions_v0_dev")]
+    pub(super) owner_confirm_status: Option<Status>,
+}
+#[cfg(all(target_os = "linux", feature = "host_editor_process_v0_dev"))]
+impl ProcessDocument {
+    fn new() -> Self {
+        Self {
+            owned: false,
+            retired: false,
+            staged_adoption: false,
+            publication_sequence: 0,
+            issued_inputs: std::collections::VecDeque::new(),
+            acknowledged_sequence: 0,
+            acknowledged_text: 1,
+            acknowledged_view: 1,
+            app_pixels: None,
+            composed_pixels: None,
+            #[cfg(feature = "host_editor_process_assertions_v0_dev")]
+            owner_confirm_request: None,
+            #[cfg(feature = "host_editor_process_assertions_v0_dev")]
+            owner_confirm_status: None,
+        }
+    }
+}
+#[cfg(all(target_os = "linux", feature = "host_editor_process_v0_dev"))]
+pub(super) use super::host::process_bridge::ProcessCaptureAuthority;
+
 impl SaveGate {
     pub(super) fn new() -> Self {
         Self {
@@ -670,6 +718,8 @@ impl SaveGate {
             view_exhausted: false,
             armed: None,
             barriers: Vec::new(),
+            #[cfg(all(target_os = "linux", feature = "host_editor_process_assertions_v0_dev"))]
+            deadline_spawn_fault: None,
             documents: BTreeMap::new(),
             intents: BTreeMap::new(),
             next_document: 0,
@@ -765,6 +815,138 @@ pub struct NativeSaveEntry {
     pub(super) life: Arc<CallLife>,
     pub(super) result: Arc<SaveEntryResult>,
     pub(super) producers: [ProducerId; 2],
+}
+
+/// Failure of this Desktop entry attempt, with its authoritative recovery disposition.
+#[must_use]
+pub struct NativeSaveEntryFailure {
+    status: Status,
+    recovery: NativeSaveEntryRecovery,
+}
+
+#[must_use]
+pub enum NativeSaveEntryRecovery {
+    /// This attempt left no installed producer. This does not close a Save intent.
+    NoEntryInstalled,
+    /// Desktop closed the exact Allocate intent before admitting any entry for it.
+    ClosedBeforeAdmission,
+    /// The failed entry is closed and its actual dispatcher still needs a join.
+    Partial(NativeSaveEntryCleanup),
+    /// Entry admission occurred, but no exact unadmitted-intent closure was proved.
+    Unresolved,
+}
+
+/// Retains the failed entry's origin and its actual installed producer token.
+#[must_use]
+pub struct NativeSaveEntryCleanup {
+    life: Arc<CallLife>,
+    producers: [ProducerId; 1],
+}
+
+impl NativeSaveEntryCleanup {
+    pub fn producer_ids(&self) -> &[ProducerId] {
+        &self.producers
+    }
+
+    pub fn deadline(&self) -> Instant {
+        self.life.view.deadline
+    }
+}
+
+impl From<Status> for NativeSaveEntryFailure {
+    fn from(status: Status) -> Self {
+        Self::new(status, NativeSaveEntryRecovery::NoEntryInstalled)
+    }
+}
+
+impl NativeSaveEntryFailure {
+    pub(super) fn new(status: Status, recovery: NativeSaveEntryRecovery) -> Self {
+        Self { status, recovery }
+    }
+
+    pub(super) fn partial(life: Arc<CallLife>, dispatcher: ProducerId) -> Self {
+        Self::new(
+            Status::Internal,
+            NativeSaveEntryRecovery::Partial(NativeSaveEntryCleanup {
+                life,
+                producers: [dispatcher],
+            }),
+        )
+    }
+
+    pub fn status(&self) -> Status {
+        self.status
+    }
+
+    pub fn into_parts(self) -> (Status, NativeSaveEntryRecovery) {
+        (self.status, self.recovery)
+    }
+
+    pub(super) fn into_legacy_status(self) -> Status {
+        // Legacy callers receive Status as before. Core still owns the actual
+        // installed handle and exposes its genuine producer through the roster.
+        self.status
+    }
+}
+
+#[cfg(all(target_os = "linux", feature = "host_editor_process_assertions_v0_dev"))]
+pub(super) struct ArmedSaveDeadlineSpawnFault {
+    pub(super) attachment: Weak<preview::AttachmentLife>,
+    pub(super) hold: Weak<SaveDeadlineSpawnHold>,
+}
+
+#[cfg(all(target_os = "linux", feature = "host_editor_process_assertions_v0_dev"))]
+pub(super) struct SaveDeadlineSpawnHold {
+    released: Mutex<bool>,
+    changed: Condvar,
+}
+
+#[cfg(all(target_os = "linux", feature = "host_editor_process_assertions_v0_dev"))]
+impl SaveDeadlineSpawnHold {
+    pub(super) fn new() -> Self {
+        Self {
+            released: Mutex::new(false),
+            changed: Condvar::new(),
+        }
+    }
+
+    pub(super) fn wait(&self, deadline: Instant) {
+        let mut released = self.released.lock().unwrap_or_else(|p| p.into_inner());
+        while !*released {
+            let left = deadline.saturating_duration_since(Instant::now());
+            if left.is_zero() {
+                return;
+            }
+            released = self
+                .changed
+                .wait_timeout(released, left)
+                .unwrap_or_else(|p| p.into_inner())
+                .0;
+        }
+    }
+}
+
+/// Holds an assertion-injected, unstarted Read dispatcher until release or its
+/// original deadline. Dropping this guard releases the actual worker.
+#[cfg(all(target_os = "linux", feature = "host_editor_process_assertions_v0_dev"))]
+#[must_use]
+pub struct NativeSaveDeadlineSpawnFault {
+    pub(super) hold: Arc<SaveDeadlineSpawnHold>,
+}
+
+#[cfg(all(target_os = "linux", feature = "host_editor_process_assertions_v0_dev"))]
+impl NativeSaveDeadlineSpawnFault {
+    pub fn release(self) {
+        drop(self);
+    }
+}
+
+#[cfg(all(target_os = "linux", feature = "host_editor_process_assertions_v0_dev"))]
+impl Drop for NativeSaveDeadlineSpawnFault {
+    fn drop(&mut self) {
+        *self.hold.released.lock().unwrap_or_else(|p| p.into_inner()) = true;
+        self.hold.changed.notify_all();
+    }
 }
 pub(super) struct SaveEntryResult {
     pub(super) state: Mutex<SaveEntryState>,
@@ -1064,6 +1246,35 @@ impl SaveGateGuard<'_> {
         }
         Ok(outcome)
     }
+    /// Read only the actual closed first-Commit source authority. A discarded
+    /// Store runtime projection or an absent data lease cannot supply this proof.
+    pub fn unpermitted_source_closed(
+        &self,
+        c: &NativeExecutionClaim,
+        binding: &EditorSaveBindingV0,
+    ) -> Result<bool, Status> {
+        if !same(&self.issuer.authority, &c.authority) {
+            return Err(Status::Denied);
+        }
+        let Some(source) = &c.life.source else {
+            return Ok(false);
+        };
+        if c.life.view.request.msg_type != 5
+            || &source.binding != binding
+            || !c
+                .life
+                .intent
+                .as_ref()
+                .is_some_and(|intent| Arc::ptr_eq(intent, &source.intent))
+            || source.consumed.load(std::sync::atomic::Ordering::Acquire)
+        {
+            return Ok(false);
+        }
+        let state = lock(&c.life.state)?;
+        Ok(state.closed
+            && state.phase == NativeOriginalState::ClosedUnpermitted
+            && state.receipt.is_none())
+    }
     pub fn close_original(&mut self, c: &NativeSaveCall) -> Result<(), Status> {
         if !same(&self.issuer.authority, &c.authority) {
             return Err(Status::Denied);
@@ -1347,6 +1558,10 @@ impl SaveGateGuard<'_> {
             .values()
             .find(|r| Arc::ptr_eq(&r.attachment, &c.life.attachment))
         {
+            #[cfg(all(target_os = "linux", feature = "host_editor_process_v0_dev"))]
+            if row.process.owned {
+                return Err(Status::Denied);
+            }
             // Querying an existing editor never resets its privately edited bytes.
             return Ok(NativeEditor {
                 authority: self.issuer.authority.clone(),
@@ -1376,6 +1591,8 @@ impl SaveGateGuard<'_> {
         s.documents.insert(
             id,
             DocumentRow {
+                #[cfg(all(target_os = "linux", feature = "host_editor_process_v0_dev"))]
+                process: ProcessDocument::new(),
                 life: life.clone(),
                 attachment: c.life.attachment.clone(),
                 object_id: current.object_id,
@@ -1842,7 +2059,17 @@ impl SaveGateGuard<'_> {
                 // private frame and protected compose must publish Saved.
                 NativeEditorPhase::Unsaved
             };
-            doc.frame = None;
+            // The process capture already supplied the genuine immutable frame.
+            // A fresh protected compose recomputes receipt/chrome eligibility;
+            // legacy parent-render mode still requires its ordinary fresh frame.
+            #[cfg(all(target_os = "linux", feature = "host_editor_process_v0_dev"))]
+            if !doc.process.owned || doc.process.app_pixels.is_none() {
+                doc.frame = None;
+            }
+            #[cfg(not(all(target_os = "linux", feature = "host_editor_process_v0_dev")))]
+            {
+                doc.frame = None;
+            }
         }
         Ok(())
     }
@@ -2094,7 +2321,8 @@ impl SaveGate {
         let saved = if let (Some(d), Some(original), Some(_)) = (doc, chosen.as_ref(), frame) {
             let state = lock(&original.state)?;
             if let (Some(receipt), Some(source)) = (&state.receipt, &original.source) {
-                receipt.outcome == EditorReceiptOutcomeV0::Committed
+                process_saved_eligible(d)
+                    && receipt.outcome == EditorReceiptOutcomeV0::Committed
                     && current.revision == receipt.result_revision
                     && current.content_hash == receipt.source_content_hash
                     && digest(&d.view.bytes) == receipt.source_content_hash
@@ -2226,10 +2454,14 @@ impl Drop for NativeSaveIntent {
 impl SaveGate {
     // Only the authenticated entry owner calls this before installing any call.
     // Caller timeout never substitutes for the actual absence of admitted work.
-    pub(super) fn close_unadmitted_intent(
-        &mut self,
-        intent: &Arc<IntentLife>,
-    ) -> Result<(), Status> {
+    pub(super) fn close_unadmitted_intent(&mut self, intent: &Arc<IntentLife>) -> bool {
+        if !self
+            .intents
+            .get(&intent.id)
+            .is_some_and(|row| Weak::ptr_eq(row, &Arc::downgrade(intent)))
+        {
+            return false;
+        }
         if intent
             .entry_admitted
             .load(std::sync::atomic::Ordering::Acquire)
@@ -2254,7 +2486,7 @@ impl SaveGate {
                 .filter_map(Weak::upgrade)
                 .any(|source| Arc::ptr_eq(&source.intent, intent))
         {
-            return Ok(());
+            return false;
         }
         intent
             .closed_before_admission
@@ -2269,7 +2501,7 @@ impl SaveGate {
                 row.view.phase = NativeEditorPhase::Unsaved;
             }
         }
-        Ok(())
+        true
     }
     fn intent_unresolved(&self, intent: &Arc<IntentLife>) -> Result<bool, Status> {
         let mut unresolved_commit = false;
@@ -2546,4 +2778,14 @@ impl SaveGateGuard<'_> {
         }
         Ok(())
     }
+}
+
+fn process_saved_eligible(document: &DocumentRow) -> bool {
+    let _ = document;
+    #[cfg(all(target_os = "linux", feature = "host_editor_process_v0_dev"))]
+    if document.process.owned {
+        return !document.process.retired
+            && document.process.acknowledged_text == document.view.text_generation;
+    }
+    true
 }

@@ -184,11 +184,15 @@ class PreparationInventoryControls(unittest.TestCase):
             with self.subTest(field=field), self.assertRaises(preparation.PreparationError):
                 preparation.validate_setup(summary)
 
-    def test_hosted_preparation_and_evidence_are_separate_from_canonical_inventory(self):
+    def test_hosted_runtime_replaces_obsolete_missing_api_preparation(self):
         workflow = (preparation.ROOT / ".github/workflows/ci.yml").read_text()
-        self.assertIn("--directory out/editor-process-preparation/timings --label editor-process-preparation -- just foundry-editor-process-preparation-ui1-1d", workflow)
-        self.assertIn("name: editor-process-preparation-${{ github.run_id }}-${{ github.run_attempt }}", workflow)
-        self.assertIn("path: out/editor-process-preparation/", workflow)
+        self.assertNotIn("-- just foundry-editor-process-preparation-ui1-1d", workflow)
+        self.assertIn("name: editor-process-runtime-${{ github.run_id }}-${{ github.run_attempt }}", workflow)
+        self.assertIn("out/foundry/editor-process/", workflow)
+        self.assertIn("out/foundry/editor-process-stages/", workflow)
+        self.assertIn("ci_lanes.py lane editor", workflow)
+        just = (preparation.ROOT / "justfile").read_text()
+        self.assertIn("foundry-editor-process-preparation-ui1-1d:", just)
 
 
 def failure_note(message):

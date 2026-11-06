@@ -5919,7 +5919,27 @@ impl HostDesktop {
         if let Err(status) = self.save_authority() {
             return reply(q, chrome.class, status);
         }
-        self.dispatch_store_preview_chrome(chrome, q, now)
+        #[cfg(feature = "host_editor_process_assertions_v0_dev")]
+        let slot = if q.protocol == 352 && matches!(q.msg_type, 9 | 11) {
+            let mut state = self.state.lock().unwrap();
+            if state.exchanges.len() >= state.trace_limit() {
+                state.trace_exhausted = true;
+                return reply(q, chrome.class, Status::Exhausted);
+            }
+            let slot = state.exchanges.len();
+            state
+                .exchanges
+                .push((*q, reply(q, chrome.class, Status::NotReady)));
+            Some(slot)
+        } else {
+            None
+        };
+        let response = self.dispatch_store_preview_chrome(chrome, q, now);
+        #[cfg(feature = "host_editor_process_assertions_v0_dev")]
+        if let Some(slot) = slot {
+            self.state.lock().unwrap().exchanges[slot].1 = response;
+        }
+        response
     }
     pub fn native_join_observation(
         &self,
@@ -5933,6 +5953,37 @@ impl HostDesktop {
 
 #[cfg(feature = "editor_native_save_v0_dev")]
 impl FixtureController {
+    #[cfg(all(target_os = "linux", feature = "host_editor_process_assertions_v0_dev"))]
+    pub fn fail_next_native_save_deadline_spawn(
+        &self,
+        origin: &super::SaveOrigin,
+    ) -> Result<super::NativeSaveDeadlineSpawnFault, Status> {
+        use super::native_save::*;
+        let authority = self.host.save_authority()?;
+        if !same(&authority, &origin.authority) {
+            return Err(Status::Denied);
+        }
+        let mut gate = authority.gate.lock().map_err(|_| Status::Internal)?;
+        let preview = gate.preview.as_ref().ok_or(Status::Denied)?;
+        let row = preview.row(&origin.life)?;
+        if row.context != origin.context || !row.delivered {
+            return Err(Status::Denied);
+        }
+        preview.admit_instance(origin.life.id)?;
+        let save = gate.save.as_mut().ok_or(Status::Unsupported)?;
+        if save.deadline_spawn_fault.as_ref().is_some_and(|armed| {
+            armed.attachment.strong_count() > 0 && armed.hold.strong_count() > 0
+        }) {
+            return Err(Status::NotReady);
+        }
+        let hold = Arc::new(SaveDeadlineSpawnHold::new());
+        save.deadline_spawn_fault = Some(ArmedSaveDeadlineSpawnFault {
+            attachment: Arc::downgrade(&origin.life),
+            hold: Arc::downgrade(&hold),
+        });
+        Ok(NativeSaveDeadlineSpawnFault { hold })
+    }
+
     pub fn pause_next_native_save(
         &self,
         session: u64,
@@ -6073,7 +6124,16 @@ impl HostDesktop {
         q: &Envelope,
         now: u64,
     ) -> Result<super::NativeSaveEntry, Status> {
-        self.begin_save_entry((Some(origin), None, None, None), q, now, 1)
+        self.begin_save_read_owned(origin, q, now)
+            .map_err(super::NativeSaveEntryFailure::into_legacy_status)
+    }
+    pub fn begin_save_read_owned(
+        &self,
+        origin: &super::SaveOrigin,
+        q: &Envelope,
+        now: u64,
+    ) -> Result<super::NativeSaveEntry, super::NativeSaveEntryFailure> {
+        self.begin_save_entry((Some(origin), None, None, None), q, now, 1, false)
     }
     pub fn begin_save_allocate(
         &self,
@@ -6082,7 +6142,17 @@ impl HostDesktop {
         q: &Envelope,
         now: u64,
     ) -> Result<super::NativeSaveEntry, Status> {
-        self.begin_save_entry((Some(origin), Some(intent), None, None), q, now, 3)
+        self.begin_save_entry((Some(origin), Some(intent), None, None), q, now, 3, false)
+            .map_err(super::NativeSaveEntryFailure::into_legacy_status)
+    }
+    pub fn begin_save_allocate_owned(
+        &self,
+        origin: &super::SaveOrigin,
+        intent: &super::NativeSaveIntent,
+        q: &Envelope,
+        now: u64,
+    ) -> Result<super::NativeSaveEntry, super::NativeSaveEntryFailure> {
+        self.begin_save_entry((Some(origin), Some(intent), None, None), q, now, 3, true)
     }
     pub fn begin_save_commit(
         &self,
@@ -6091,7 +6161,8 @@ impl HostDesktop {
         q: &Envelope,
         now: u64,
     ) -> Result<super::NativeSaveEntry, Status> {
-        self.begin_save_entry((Some(origin), None, Some(source), None), q, now, 5)
+        self.begin_save_entry((Some(origin), None, Some(source), None), q, now, 5, false)
+            .map_err(super::NativeSaveEntryFailure::into_legacy_status)
     }
     pub fn begin_save_status(
         &self,
@@ -6099,7 +6170,8 @@ impl HostDesktop {
         q: &Envelope,
         now: u64,
     ) -> Result<super::NativeSaveEntry, Status> {
-        self.begin_save_entry((Some(origin), None, None, None), q, now, 7)
+        self.begin_save_entry((Some(origin), None, None, None), q, now, 7, false)
+            .map_err(super::NativeSaveEntryFailure::into_legacy_status)
     }
     pub fn begin_save_recovery(
         &self,
@@ -6110,7 +6182,8 @@ impl HostDesktop {
         if !matches!(q.msg_type, 7 | 9) {
             return Err(Status::Unsupported);
         }
-        self.begin_save_entry((None, None, None, Some(origin)), q, now, q.msg_type)
+        self.begin_save_entry((None, None, None, Some(origin)), q, now, q.msg_type, false)
+            .map_err(super::NativeSaveEntryFailure::into_legacy_status)
     }
     fn begin_save_entry(
         &self,
@@ -6123,13 +6196,14 @@ impl HostDesktop {
         q: &Envelope,
         now: u64,
         kind: u32,
-    ) -> Result<super::NativeSaveEntry, Status> {
+        close_on_capacity_rejection: bool,
+    ) -> Result<super::NativeSaveEntry, super::NativeSaveEntryFailure> {
         use super::native_save::*;
         let (origin, intent, source, recovery) = origins;
         let entered = Instant::now();
         let authority = self.save_authority()?;
         if q.protocol != 368 || q.msg_type != kind {
-            return Err(Status::Unsupported);
+            return Err(Status::Unsupported.into());
         }
         encode_envelope_wire(q).and_then(|b| decode_envelope_wire(&b))?;
         if origin.is_some_and(|o| !same(&authority, &o.authority))
@@ -6137,7 +6211,7 @@ impl HostDesktop {
             || source.is_some_and(|s| !same(&authority, &s.authority))
             || recovery.is_some_and(|r| !same(&authority, &r.authority))
         {
-            return Err(Status::Denied);
+            return Err(Status::Denied.into());
         }
         let mut state = self.state.lock().map_err(|_| Status::Internal)?;
         let now = self.clock.fetch_max(now, Ordering::SeqCst).max(now);
@@ -6149,11 +6223,11 @@ impl HostDesktop {
             let row = p.row(&origin.life)?;
             let installation = row.installation.as_ref().ok_or(Status::NotReady)?;
             if origin.context != row.context || q.handle != installation.store_handle {
-                return Err(Status::Denied);
+                return Err(Status::Denied.into());
             }
             p.admit_instance(origin.life.id)?;
             if !row.delivered {
-                return Err(Status::NotReady);
+                return Err(Status::NotReady.into());
             }
             (
                 origin.life.clone(),
@@ -6165,11 +6239,11 @@ impl HostDesktop {
         } else {
             let r = recovery.ok_or(Status::Denied)?;
             if q.handle != r.life.view.request.handle {
-                return Err(Status::Denied);
+                return Err(Status::Denied.into());
             }
             if q.msg_type == 9 {
                 if r.life.view.request.msg_type != 3 || q64(q, 24) != q64(&r.life.view.request, 0) {
-                    return Err(Status::Denied);
+                    return Err(Status::Denied.into());
                 }
             } else {
                 let op = r
@@ -6186,7 +6260,7 @@ impl HostDesktop {
                     })
                     .ok_or(Status::Denied)?;
                 if q64(q, 24) != op {
-                    return Err(Status::Denied);
+                    return Err(Status::Denied.into());
                 }
             }
             (
@@ -6202,7 +6276,7 @@ impl HostDesktop {
             || kind == 1
                 && (q64(q, 24) != actor.instance_id || q64(q, 32) != actor.instance_generation)
         {
-            return Err(Status::Denied);
+            return Err(Status::Denied.into());
         }
         let actual_intent = intent
             .map(|i| i.life.clone())
@@ -6215,7 +6289,7 @@ impl HostDesktop {
                 || i.snapshot.data.view.object_generation != object_generation
                 || i.snapshot.data.view.original_store_epoch != epoch
             {
-                return Err(Status::Denied);
+                return Err(Status::Denied.into());
             }
         }
         if let Some(source) = source {
@@ -6230,7 +6304,7 @@ impl HostDesktop {
                         .checked_add(64)
                         .ok_or(Status::Exhausted)?
             {
-                return Err(Status::Denied);
+                return Err(Status::Denied.into());
             }
         }
         if let Some(i) = &actual_intent {
@@ -6240,10 +6314,17 @@ impl HostDesktop {
                 .get(&i.id)
                 .is_some_and(|row| std::sync::Weak::ptr_eq(row, &Arc::downgrade(i)))
             {
-                return Err(Status::Denied);
+                return Err(Status::Denied.into());
             }
             if i.closed_before_admission.load(Ordering::Acquire) {
-                return Err(Status::Stale);
+                return Err(if kind == 3 {
+                    NativeSaveEntryFailure::new(
+                        Status::Stale,
+                        NativeSaveEntryRecovery::ClosedBeforeAdmission,
+                    )
+                } else {
+                    Status::Stale.into()
+                });
             }
         }
         let deadline = actual_intent.as_ref().map(|i| i.deadline).unwrap_or(
@@ -6252,33 +6333,52 @@ impl HostDesktop {
                 .ok_or(Status::Exhausted)?,
         );
         let started = actual_intent.as_ref().map(|i| i.entered).unwrap_or(entered);
-        if Instant::now() >= deadline {
-            if kind == 3 {
-                if let Some(i) = &actual_intent {
+        let reject_before_install = |gate: &mut super::native_authority::GateState, status| {
+            let closed = kind == 3
+                && actual_intent.as_ref().is_some_and(|intent| {
                     gate.save
                         .as_mut()
-                        .ok_or(Status::Denied)?
-                        .close_unadmitted_intent(i)?;
-                }
+                        .is_some_and(|save| save.close_unadmitted_intent(intent))
+                });
+            NativeSaveEntryFailure::new(
+                status,
+                if closed {
+                    NativeSaveEntryRecovery::ClosedBeforeAdmission
+                } else {
+                    NativeSaveEntryRecovery::NoEntryInstalled
+                },
+            )
+        };
+        if Instant::now() >= deadline {
+            return Err(reject_before_install(&mut gate, Status::Timeout));
+        }
+        let reserve = (|| {
+            if authority.prune_save_calls(&mut gate)? >= 64 {
+                return Err(Status::Exhausted);
             }
-            return Err(Status::Timeout);
-        }
-        if authority.prune_save_calls(&mut gate)? >= 64 {
-            return Err(Status::Exhausted);
-        }
-        let id = gate.next_origin.checked_add(1).ok_or(Status::Exhausted)?;
-        let scope = super::native_authority::NativeAuthority::save_origin(
-            id,
-            attachment.clone(),
-            object_id,
-        );
-        let [dispatcher_reservation, supervisor_reservation] = authority.reserve_save_pair(
-            &scope,
-            [
-                super::ProducerKind::DesktopDispatch,
-                super::ProducerKind::DesktopSupervisor,
-            ],
-        )?;
+            let id = gate.next_origin.checked_add(1).ok_or(Status::Exhausted)?;
+            let scope = super::native_authority::NativeAuthority::save_origin(
+                id,
+                attachment.clone(),
+                object_id,
+            );
+            let pair = authority.reserve_save_pair(
+                &scope,
+                [
+                    super::ProducerKind::DesktopDispatch,
+                    super::ProducerKind::DesktopSupervisor,
+                ],
+            )?;
+            Ok((id, scope, pair))
+        })();
+        let (id, scope, [dispatcher_reservation, supervisor_reservation]) =
+            reserve.map_err(|status| {
+                if close_on_capacity_rejection && status == Status::Exhausted {
+                    reject_before_install(&mut gate, status)
+                } else {
+                    status.into()
+                }
+            })?;
         let producers = [
             dispatcher_reservation.save_id(),
             supervisor_reservation.save_id(),
@@ -6323,6 +6423,17 @@ impl HostDesktop {
         } else {
             None
         };
+        #[cfg(all(target_os = "linux", feature = "host_editor_process_assertions_v0_dev"))]
+        let deadline_spawn_fault = if kind == 1
+            && save.deadline_spawn_fault.as_ref().is_some_and(|armed| {
+                std::sync::Weak::ptr_eq(&armed.attachment, &Arc::downgrade(&life.attachment))
+            }) {
+            save.deadline_spawn_fault
+                .take()
+                .and_then(|armed| armed.hold.upgrade())
+        } else {
+            None
+        };
         drop(gate);
         drop(state);
         let result = Arc::new(SaveEntryResult {
@@ -6334,6 +6445,18 @@ impl HostDesktop {
             }),
             changed: Condvar::new(),
         });
+        let abort_entry = || {
+            // Close the actual admitted row and unconditionally release the
+            // start latch. No fallible reservation cleanup may strand a worker.
+            let mut gate = authority.gate.lock().unwrap_or_else(|p| p.into_inner());
+            if let Some(row) = gate.save.as_mut().and_then(|s| s.calls.get_mut(&id)) {
+                row.closed = true;
+            }
+            drop(gate);
+            result.publish(Err(Status::Internal));
+        };
+        #[cfg(all(target_os = "linux", feature = "host_editor_process_assertions_v0_dev"))]
+        let worker_fault_hold = deadline_spawn_fault.clone();
         let worker_result = result.clone();
         let worker_authority = authority.clone();
         let worker_life = life.clone();
@@ -6355,6 +6478,13 @@ impl HostDesktop {
                 let started = ready.started;
                 drop(ready);
                 if !started {
+                    #[cfg(all(
+                        target_os = "linux",
+                        feature = "host_editor_process_assertions_v0_dev"
+                    ))]
+                    if let Some(hold) = worker_fault_hold {
+                        hold.wait(deadline);
+                    }
                     return;
                 }
                 if let Some(b) = &worker_barrier {
@@ -6379,56 +6509,75 @@ impl HostDesktop {
         let dispatcher = match dispatcher {
             Ok(handle) => dispatcher_reservation.install(handle),
             Err(_) => {
-                dispatcher_reservation.cancel_unspawned()?;
-                supervisor_reservation.cancel_unspawned()?;
+                abort_entry();
+                drop((dispatcher_reservation, supervisor_reservation));
                 if let Some(b) = barrier {
                     b.settle();
                 }
-                return Err(Status::Internal);
+                return Err(NativeSaveEntryFailure::new(
+                    Status::Internal,
+                    if actual_intent.is_some() {
+                        NativeSaveEntryRecovery::Unresolved
+                    } else {
+                        NativeSaveEntryRecovery::NoEntryInstalled
+                    },
+                ));
             }
         };
         let timer_result = result.clone();
         let timer_authority = authority.clone();
         let timer_life = life.clone();
-        let supervisor = std::thread::Builder::new()
-            .name("desktop-save-deadline".into())
-            .spawn(move || {
-                let mut ready = timer_result.state.lock().unwrap_or_else(|p| p.into_inner());
-                while !ready.started && !ready.completed {
-                    ready = timer_result
-                        .changed
-                        .wait(ready)
-                        .unwrap_or_else(|p| p.into_inner());
-                }
-                while !ready.completed {
-                    let now = Instant::now();
-                    if now >= deadline {
-                        drop(ready);
-                        let mut gate = timer_authority
-                            .gate
-                            .lock()
+        let spawn_supervisor = || {
+            std::thread::Builder::new()
+                .name("desktop-save-deadline".into())
+                .spawn(move || {
+                    let mut ready = timer_result.state.lock().unwrap_or_else(|p| p.into_inner());
+                    while !ready.started && !ready.completed {
+                        ready = timer_result
+                            .changed
+                            .wait(ready)
                             .unwrap_or_else(|p| p.into_inner());
-                        if let Some(row) = gate.save.as_mut().and_then(|s| s.calls.get_mut(&id)) {
-                            row.closed = true;
-                        }
-                        drop(gate);
-                        timer_result.publish(Err(Status::Timeout));
-                        return;
                     }
-                    ready = timer_result
-                        .changed
-                        .wait_timeout(ready, deadline - now)
-                        .unwrap_or_else(|p| p.into_inner())
-                        .0;
-                }
-                drop(timer_life);
-            });
+                    while !ready.completed {
+                        let now = Instant::now();
+                        if now >= deadline {
+                            drop(ready);
+                            let mut gate = timer_authority
+                                .gate
+                                .lock()
+                                .unwrap_or_else(|p| p.into_inner());
+                            if let Some(row) = gate.save.as_mut().and_then(|s| s.calls.get_mut(&id))
+                            {
+                                row.closed = true;
+                            }
+                            drop(gate);
+                            timer_result.publish(Err(Status::Timeout));
+                            return;
+                        }
+                        ready = timer_result
+                            .changed
+                            .wait_timeout(ready, deadline - now)
+                            .unwrap_or_else(|p| p.into_inner())
+                            .0;
+                    }
+                    drop(timer_life);
+                })
+        };
+        #[cfg(all(target_os = "linux", feature = "host_editor_process_assertions_v0_dev"))]
+        let supervisor = match deadline_spawn_fault {
+            Some(_) => Err(std::io::Error::other(
+                "asserted Desktop deadline spawn failure",
+            )),
+            None => spawn_supervisor(),
+        };
+        #[cfg(not(all(target_os = "linux", feature = "host_editor_process_assertions_v0_dev")))]
+        let supervisor = spawn_supervisor();
         let supervisor = match supervisor {
             Ok(handle) => supervisor_reservation.install(handle),
             Err(_) => {
-                supervisor_reservation.cancel_unspawned()?;
-                result.publish(Err(Status::Internal));
-                return Err(Status::Internal);
+                abort_entry();
+                drop(supervisor_reservation);
+                return Err(NativeSaveEntryFailure::partial(life, dispatcher));
             }
         };
         let mut ready = result.state.lock().unwrap_or_else(|p| p.into_inner());
@@ -6524,6 +6673,10 @@ impl HostDesktop {
             let save = gate.save.as_ref().ok_or(Status::Denied)?;
             let doc = save.documents.get(&editor.life.id).ok_or(Status::Stale)?;
             if !Arc::ptr_eq(&doc.life, &editor.life) {
+                return Err(Status::Denied);
+            }
+            #[cfg(all(target_os = "linux", feature = "host_editor_process_v0_dev"))]
+            if doc.process.owned {
                 return Err(Status::Denied);
             }
             let actor = doc.view.actor.clone();
@@ -6690,6 +6843,8 @@ impl HostDesktop {
                 }),
             };
             intent = Some(Arc::new(IntentLife {
+                #[cfg(all(target_os = "linux", feature = "host_editor_process_v0_dev"))]
+                capture_input_sequence: 0,
                 id,
                 exposed: std::sync::atomic::AtomicBool::new(false),
                 closed_before_admission: std::sync::atomic::AtomicBool::new(false),
@@ -6869,6 +7024,10 @@ impl HostDesktop {
                 .get(&editor.life.id)
                 .ok_or(Status::Stale)?;
             if !Arc::ptr_eq(&d.life, &editor.life) {
+                return Err(Status::Denied);
+            }
+            #[cfg(all(target_os = "linux", feature = "host_editor_process_v0_dev"))]
+            if d.process.owned {
                 return Err(Status::Denied);
             }
             let actor = &d.view.actor;
@@ -7137,7 +7296,8 @@ impl HostDesktop {
                 return Err(Status::Exhausted);
             }
             let mut gate = a.gate.lock().map_err(|_| Status::Internal)?;
-            let p = gate.preview.as_mut().ok_or(Status::Denied)?;
+            let gate_state = &mut *gate;
+            let p = gate_state.preview.as_mut().ok_or(Status::Denied)?;
             let id = p
                 .attachments
                 .iter()
@@ -7151,14 +7311,53 @@ impl HostDesktop {
                     return Err(Status::Exhausted);
                 }
                 let terminal = row.retired || row.faulted;
+                #[cfg(all(target_os = "linux", feature = "host_editor_process_v0_dev"))]
+                if gate_state.save.as_ref().is_some_and(|save| {
+                    save.documents.values().any(|document| {
+                        document.attachment.id == id && document.process.staged_adoption
+                    })
+                }) {
+                    return Err(Status::NotReady);
+                }
                 let (focus, sequence, source) = if terminal {
                     (0, 0, None)
                 } else {
                     p.admit_instance(id)?;
                     let i = state.instances.get(&id).ok_or(Status::Stale)?;
-                    let (_, sequence, source) =
-                        i.surface.frozen.as_ref().ok_or(Status::NotReady)?;
-                    (state.sessions[&sid].focus, *sequence, Some(source.clone()))
+                    let focus = state.sessions[&sid].focus;
+                    #[cfg(not(all(target_os = "linux", feature = "host_editor_process_v0_dev")))]
+                    let retained = None;
+                    #[cfg(all(target_os = "linux", feature = "host_editor_process_v0_dev"))]
+                    let retained = gate_state
+                        .save
+                        .as_ref()
+                        .and_then(|save| process_retained_surface(save, id, focus, &i.surface));
+                    #[cfg(all(target_os = "linux", feature = "host_editor_process_v0_dev"))]
+                    let process_owned = gate_state.save.as_ref().is_some_and(|save| {
+                        save.documents
+                            .values()
+                            .any(|d| d.attachment.id == id && d.process.owned)
+                    });
+                    #[cfg(not(all(target_os = "linux", feature = "host_editor_process_v0_dev")))]
+                    let process_owned = false;
+                    let (sequence, source) = if process_owned {
+                        let (sequence, source) = retained.ok_or(Status::NotReady)?;
+                        if i.surface.frozen.as_ref().is_some_and(
+                            |(_, actual_sequence, actual_source)| {
+                                *actual_sequence != sequence || !Arc::ptr_eq(actual_source, &source)
+                            },
+                        ) {
+                            return Err(Status::Stale);
+                        }
+                        (sequence, source)
+                    } else {
+                        i.surface
+                            .frozen
+                            .as_ref()
+                            .map(|(_, sequence, source)| (*sequence, source.clone()))
+                            .ok_or(Status::NotReady)?
+                    };
+                    (focus, sequence, Some(source))
                 };
                 let next = p.next_status.checked_add(1).ok_or(Status::Exhausted)?;
                 p.next_status = next;
@@ -7166,8 +7365,8 @@ impl HostDesktop {
                     .get_mut(&id)
                     .ok_or(Status::Stale)?
                     .status_version = next;
-                let observation = gate.save.as_ref().ok_or(Status::Denied)?.chrome(
-                    gate.preview.as_ref().ok_or(Status::Denied)?,
+                let observation = gate_state.save.as_ref().ok_or(Status::Denied)?.chrome(
+                    gate_state.preview.as_ref().ok_or(Status::Denied)?,
                     id,
                     focus,
                     sequence,
@@ -7277,6 +7476,14 @@ impl HostDesktop {
             state.auth(&compositor.peer)?;
             let mut gate = a.gate.lock().map_err(|_| Status::Internal)?;
             if let Some(captured) = observation {
+                #[cfg(all(target_os = "linux", feature = "host_editor_process_v0_dev"))]
+                if captured
+                    .document_id
+                    .and_then(|id| gate.save.as_ref().and_then(|save| save.documents.get(&id)))
+                    .is_some_and(|document| document.process.staged_adoption)
+                {
+                    return Err(Status::NotReady);
+                }
                 let actual = gate.save.as_ref().ok_or(Status::Denied)?.chrome(
                     gate.preview.as_ref().ok_or(Status::Denied)?,
                     id,
@@ -7303,26 +7510,58 @@ impl HostDesktop {
                         .ok_or(Status::Denied)?
                         .admit_instance(id)?;
                     let i = state.instances.get(&id).ok_or(Status::Stale)?;
+                    let frozen = i.surface.frozen.as_ref().is_some_and(
+                        |(_, actual_sequence, actual_source)| {
+                            *actual_sequence == sequence
+                                && source
+                                    .as_ref()
+                                    .is_some_and(|source| Arc::ptr_eq(actual_source, source))
+                        },
+                    );
+                    #[cfg(not(all(target_os = "linux", feature = "host_editor_process_v0_dev")))]
+                    let repeat = false;
+                    #[cfg(all(target_os = "linux", feature = "host_editor_process_v0_dev"))]
+                    let repeat = gate
+                        .save
+                        .as_ref()
+                        .and_then(|save| process_retained_surface(save, id, focus, &i.surface))
+                        .is_some_and(|(actual_sequence, actual_source)| {
+                            actual_sequence == sequence
+                                && source
+                                    .as_ref()
+                                    .is_some_and(|source| Arc::ptr_eq(&actual_source, source))
+                        });
+                    #[cfg(all(target_os = "linux", feature = "host_editor_process_v0_dev"))]
+                    let process_owned = gate.save.as_ref().is_some_and(|save| {
+                        save.documents
+                            .values()
+                            .any(|d| d.attachment.id == id && d.process.owned)
+                    });
+                    #[cfg(not(all(target_os = "linux", feature = "host_editor_process_v0_dev")))]
+                    let process_owned = false;
                     if state.sessions[&sid].focus != focus
                         || state.sessions[&sid].focused != Some(id)
-                        || i.surface.frozen.as_ref().map(|(_, seq, _)| *seq) != Some(sequence)
+                        || (process_owned && !repeat)
+                        || (!process_owned && !frozen)
                     {
                         return Err(Status::Stale);
                     }
-                    let q = kernel_api::generated::desktop_surface_v1::Consume {
-                        request_id: sequence,
-                        surface_id: i.surface.id,
-                        surface_generation: i.surface.generation,
-                        sequence,
+                    if frozen {
+                        let q = kernel_api::generated::desktop_surface_v1::Consume {
+                            request_id: sequence,
+                            surface_id: i.surface.id,
+                            surface_generation: i.surface.generation,
+                            sequence,
+                        }
+                        .encode(compositor.handle)?;
+                        if state.exchanges.len() >= state.trace_limit() {
+                            return Err(Status::Exhausted);
+                        }
+                        state.consume_frozen(id, sequence)?;
+                        let mut r = reply(&q, EndpointClass::Compositor, Status::Ok);
+                        put64(&mut r.payload, 8, sequence);
+                        state.exchanges.push((q, r));
                     }
-                    .encode(compositor.handle)?;
-                    if state.exchanges.len() >= state.trace_limit() {
-                        return Err(Status::Exhausted);
-                    }
-                    state.consume_frozen(id, sequence)?;
-                    let mut r = reply(&q, EndpointClass::Compositor, Status::Ok);
-                    put64(&mut r.payload, 8, sequence);
-                    state.exchanges.push((q, r));
                 }
                 if let Some(docid) = captured.document_id {
                     if let Some(d) = gate
@@ -7333,6 +7572,18 @@ impl HostDesktop {
                         .get_mut(&docid)
                     {
                         d.view.phase = captured.label.clone();
+                    }
+                }
+                #[cfg(all(target_os = "linux", feature = "host_editor_process_v0_dev"))]
+                if let Some(docid) = captured.document_id {
+                    if let Some(document) = gate
+                        .save
+                        .as_mut()
+                        .and_then(|save| save.documents.get_mut(&docid))
+                    {
+                        if document.process.owned {
+                            document.process.composed_pixels = Some(Arc::new(pixels.clone()));
+                        }
                     }
                 }
                 state.save_chrome.insert(sid, captured);
@@ -7509,4 +7760,39 @@ impl FixtureController {
         }
         Ok(out)
     }
+}
+
+#[cfg(all(target_os = "linux", feature = "host_editor_process_v0_dev"))]
+pub(super) mod process_bridge;
+
+// The Surface Arc was actually validated/adopted by process_bridge and remains
+// immutable. Recomposition computes new trusted chrome; this is no child edit,
+// new offered pair, frame lease, or reuse of cached chrome as a current receipt.
+#[cfg(all(target_os = "linux", feature = "host_editor_process_v0_dev"))]
+fn process_retained_surface(
+    save: &super::native_save::SaveGate,
+    id: u64,
+    focus: u64,
+    surface: &Surface,
+) -> Option<(u64, Arc<Vec<u8>>)> {
+    let document = save.documents.values().find(|d| d.attachment.id == id)?;
+    if !document.process.owned || document.process.retired || document.process.staged_adoption {
+        return None;
+    }
+    let frame = document.frame.as_ref()?;
+    if frame.sequence == 0
+        || frame.sequence > surface.sequence
+        || frame.actor != document.view.actor
+        || frame.surface_id != surface.id
+        || frame.surface_generation != surface.generation
+        || frame.focus_epoch != focus
+        || frame.text_generation != document.view.text_generation
+        || frame.view_version != document.view.view_version
+    {
+        return None;
+    }
+    Some((
+        frame.sequence,
+        document.process.app_pixels.as_ref()?.clone(),
+    ))
 }

@@ -45,8 +45,8 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install system prerequisites
         run: |
-          sudo apt-get update
-          sudo apt-get install -y just qemu-system-x86 qemu-system-arm ovmf python3 python3-jsonschema gcc cpio gzip e2fsprogs curl ripgrep
+          sudo apt-get update -o Acquire::Retries=3 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30
+          sudo apt-get install -y -o Acquire::Retries=3 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 just qemu-system-x86 qemu-system-arm ovmf python3 python3-jsonschema gcc cpio gzip e2fsprogs curl ripgrep
       - id: toolchain
         name: Read pinned manifest toolchain
         run: echo "channel=$(python3 tools/ci/ci_lanes.py toolchain)" >> "$GITHUB_OUTPUT"
@@ -86,8 +86,8 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install system prerequisites
         run: |
-          sudo apt-get update
-          sudo apt-get install -y just qemu-system-x86 qemu-system-arm ovmf python3 python3-jsonschema gcc cpio gzip e2fsprogs curl ripgrep
+          sudo apt-get update -o Acquire::Retries=3 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30
+          sudo apt-get install -y -o Acquire::Retries=3 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 just qemu-system-x86 qemu-system-arm ovmf python3 python3-jsonschema gcc cpio gzip e2fsprogs curl ripgrep
       - id: toolchain
         name: Read pinned manifest toolchain
         run: echo "channel=$(python3 tools/ci/ci_lanes.py toolchain)" >> "$GITHUB_OUTPUT"
@@ -125,8 +125,8 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install system prerequisites
         run: |
-          sudo apt-get update
-          sudo apt-get install -y just qemu-system-x86 qemu-system-arm ovmf python3 python3-jsonschema gcc cpio gzip e2fsprogs curl ripgrep
+          sudo apt-get update -o Acquire::Retries=3 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30
+          sudo apt-get install -y -o Acquire::Retries=3 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 just qemu-system-x86 qemu-system-arm ovmf python3 python3-jsonschema gcc cpio gzip e2fsprogs curl ripgrep
       - id: toolchain
         name: Read pinned manifest toolchain
         run: echo "channel=$(python3 tools/ci/ci_lanes.py toolchain)" >> "$GITHUB_OUTPUT"
@@ -166,8 +166,8 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install system prerequisites
         run: |
-          sudo apt-get update
-          sudo apt-get install -y just qemu-system-x86 qemu-system-arm ovmf python3 python3-jsonschema gcc cpio gzip e2fsprogs curl ripgrep
+          sudo apt-get update -o Acquire::Retries=3 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30
+          sudo apt-get install -y -o Acquire::Retries=3 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 just qemu-system-x86 qemu-system-arm ovmf python3 python3-jsonschema gcc cpio gzip e2fsprogs curl ripgrep
       - id: toolchain
         name: Read pinned manifest toolchain
         run: echo "channel=$(python3 tools/ci/ci_lanes.py toolchain)" >> "$GITHUB_OUTPUT"
@@ -209,6 +209,7 @@ jobs:
     env:
       RAMEN_CI_STRICT: "1"
       RUST_TEST_THREADS: "1"
+      RUST_BACKTRACE: "1"
       CARGO_BUILD_JOBS: "2"
       LINT_ALLOW_WARNINGS: "0"
       SKIP_E2E_ASSERTIONS: "1"
@@ -217,8 +218,8 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install editor host prerequisites
         run: |
-          sudo apt-get update
-          sudo apt-get install -y just python3 python3-jsonschema gcc curl ripgrep
+          sudo apt-get update -o Acquire::Retries=3 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30
+          sudo apt-get install -y -o Acquire::Retries=3 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 just python3 python3-jsonschema gcc curl ripgrep
       - name: Cache Cargo downloads and pinned toolchain
         uses: actions/cache@v4
         with:
@@ -241,16 +242,50 @@ jobs:
             ${{ runner.os }}-${{ runner.arch }}-foundry-compile-v2-${{ hashFiles('rust-toolchain.toml') }}-
       - name: Run canonical editor lane (serialized)
         run: python3 tools/ci/ci_lanes.py lane editor
-      # Supplemental P0 preparation is deliberately separate from the frozen
-      # canonical task inventory and does not claim editor-process execution.
-      - name: Run editor process preparation controls
-        run: python3 tools/ci/stage_timer.py --directory out/editor-process-preparation/timings --label editor-process-preparation -- just foundry-editor-process-preparation-ui1-1d
-      - name: Retain editor process preparation evidence
+      - name: Retain editor process runtime evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: editor-process-preparation-${{ github.run_id }}-${{ github.run_attempt }}
-          path: out/editor-process-preparation/
+          name: editor-process-runtime-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            out/foundry/editor-process/
+            out/foundry/editor-process-stages/
+          include-hidden-files: true
+          if-no-files-found: error
+      - name: Retain original editor diagnostics on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: editor-process-failure-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            out/desktop/ui1-0/
+            out/desktop/ui1-1a/
+            out/desktop/ui1-1b.*/
+            out/desktop/native-read-*/
+            out/desktop/native-preview-read-*/
+            out/desktop/native-task-source.*/
+            out/foundry/editor-adapter-migration/
+            out/foundry/editor-reliability/
+          include-hidden-files: true
+          if-no-files-found: ignore
+      - name: Retain selected editor process binaries
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: editor-process-binaries-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            target/D01ExplicitChildBuild/debug/editor-process
+            target/D01ExplicitAssertionChildBuild/debug/editor-process
+            target/debug/libartifact_editor.rlib
+          if-no-files-found: error
+      - name: Run Linux editor kernel prerequisites
+        run: python3 tools/ci/stage_timer.py --directory out/editor-process-linux-prerequisites/timings --label editor-process-linux-prerequisites -- just foundry-editor-process-linux-prerequisites-ui1-1d
+      - name: Retain Linux editor kernel prerequisite evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: editor-process-linux-prerequisites-${{ github.run_id }}-${{ github.run_attempt }}
+          path: out/editor-process-linux-prerequisites/
           if-no-files-found: error
       - name: Retain actual editor stage timings
         if: always()

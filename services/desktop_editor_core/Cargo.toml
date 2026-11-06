@@ -8,6 +8,4 @@ default = []
 
 [dependencies]
 kernel_api = { path = "../../kernel_api" }
-
-[dev-dependencies]
 sha2 = "0.10"

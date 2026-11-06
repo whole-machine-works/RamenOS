@@ -1,8 +1,8 @@
 # Current Status
 
-**Last Updated:** 2026-10-15
+**Last Updated:** 2026-11-05
 **Status:** Active and authoritative for landed state
-**Current Slice:** UI1.1d P0/process sequence after qualified foundation follow-ups
+**Current Slice:** UI1.1d Linux editor process qualification and repository delivery
 **Physical Lane:** S12.4 HIL appliance observation/actuation awaits setup
 **Software Lane:** SW0 foundations through A2.9; full A2 and comparison pending
 
@@ -19,9 +19,36 @@ The default-off UI1.1c host task reads an approved artifact, processes logical
 keyboard input, edits bounded text, renders offscreen frames, saves through typed
 Store authority and reconciles original outcomes through joined-owner reopen.
 Its eighteen original assertions and complete 93-scenario recording checks passed
-on macOS/Linux. This is a trusted in-process host consumer. An actual editor child,
-authenticated process transport, target execution and target persistence remain
-unfinished. Models are unnecessary for this task.
+on macOS/Linux. That landed result is a trusted in-process host consumer. Models
+are unnecessary for the task. Target execution and target persistence remain
+unfinished.
+
+The default-off Linux process implementation is delivered on
+[PR52](https://github.com/whole-machine-works/RamenOS/pull/52). Complete P0 review,
+the private assertion handoff and source-bound Linux missing-API RED closed the
+P1/P2 authoring dependencies before their concurrent implementation. P1/P2 then
+released P3's common Store Save/original-recovery integration. The workflow uses
+genuine approval/Read and enrollment, child-local edit/raster, immutable
+publications and one-use captures. The parent retains Core and Store authority.
+It exercises Save denial, newer-draft Unsaved, lost-reply recovery without mutation
+replay, issued-writer survival after child death/revoke, unrelated-session progress
+and a subsequent successful Save.
+
+The `0d449c9` predecessor passed all five complete hosted CI lanes and their
+Foundry and merge aggregates, including all thirty public families, strict
+profiles, genuine Store controls and the eight preservation stages. Independent
+review matched the three archived binaries to that run's own receipts. A further
+source review identified two Desktop entry ownership gaps that those checks did
+not cover: a Save rejected before admission could leave an unrecoverable app
+chain, and a failed startup Read could lose the identity of a dispatcher that
+was already installed. The correction carries Desktop's admission disposition
+to the app and retains the actual partial Read owner until joined. Focused
+Linux regressions cover both paths. Fresh hosted qualification of the corrected
+candidate is required before A3 review.
+The separate earlier local D19 failure remains unresolved. The
+[qualification record](docs/plans/editor-process-delivery-qualification-2026-11-05.md)
+keeps these sources, failures and host evidence distinct from target and physical
+qualification.
 
 The four host reliability packets from external review are implemented and
 independently reviewed. Store requests retain their actual reply data through
@@ -54,15 +81,23 @@ successors. Complete Linux56 and the fresh five-lane hosted qualification now pa
 
 ### UI1.1d shared adapter migration — accepted host preservation
 
+The [November 4 Linux prerequisite packet](docs/plans/editor-process-linux-prerequisites-2026-11-04.md)
+adds six independently reviewed kernel witnesses and a separate default-off gate:
+real shared mappings and sealing, received descriptor ownership, unprivileged
+credential rejection and inherited-endpoint sender identity. These are primitive
+prerequisites. At that recorded source, the actual editor carrier and full P0/P1–P3
+were incomplete; the reviewed working successor above now advances that path. The existing thirteen setup controls and
+four missing-process-API consumers retain their separate preparation scope.
+
 Both `EditorClient` and `NativeTextEditor` use `desktop_editor_core` for pure
 editing/navigation/scroll/raster. Checked snapshots transfer seven fields;
 legacy/native policies and detached-scratch owner admission remain distinct.
 The core has no Desktop, Store, Focus or Save authority. Its 26 pure assertions
 and four explicit required-feature adapter assertions passed on macOS/Linux;
 strict Linux55 preserves original13/18, strict3 and Reader93 requirements.
-Protocol384/version1 and the process contracts are preparation. Private process
-smoke/cleanup experiments do not establish child execution, authenticated channels,
-sealed publication or retained Save ownership after child death. Re-freeze current
+Protocol384/version1 and the process contracts alone establish no runtime result.
+The successor above supplies bounded Linux evidence; historical private smoke and
+cleanup experiments do not substitute for its remaining complete qualification. Re-freeze current
 source before reusing historical evidence; the old 217-row task closure is not a
 permanent count requirement after legitimate dependency additions.
 
@@ -120,14 +155,15 @@ Both trace dispatch entrypoints bind creation to that capability's domain before
 allocating or resetting state. The comprehensive successor below adds caller-bound read/info/destroy checks;
 generic IPC handles still lack protocol-specific rights.
 
-P0 preparation has nine genuine in-process controls, including Read/reopen,
+The following preparation record predates complete P0 release and the implemented
+process successor above. P0 preparation had nine genuine in-process controls, including Read/reopen,
 constructor and Save-chain panic, actual initialization failures and retained
 reopen failure/recovery. Four separate parent-owner policy controls cover
 quarantine, release, an immutable child cleanup deadline and a deliberately
 faulty consuming reopen callback; these do not observe a native child or a
 Store-internal panic. Four authored consumers target the frozen process API.
-The process APIs remain absent: their actual compiler RED is preparation, never
-runtime acceptance or completion of the thirty assertion families. Consuming join
+At that source the process APIs were absent: its actual compiler RED established
+preparation, not runtime acceptance or completion of the thirty assertion families. Consuming join
 must return promptly without unwinding and return the sole child on uncertainty.
 The preparation gate serializes recorder access and runs separately in hosted
 editor CI, retaining its setup, strict Clippy, compiler and source snapshots.
@@ -138,7 +174,8 @@ proof, so its failure controls intentionally quarantine two parent groups; two
 reopen Drop/policy controls also retain their unproved owners. The original
 two-second quiescence deadline bounds fence acquisition, not synchronous reopen
 IO or a full retry lifetime. Private native negative controls and process-mode
-shared app Save ownership remain required before P1/P2 handlers.
+shared app Save ownership were still required before P1/P2 handlers at that source;
+the reviewed P0/private handoff subsequently closed those authoring dependencies.
 Source and validation scope are tracked in the follow-up
 review resolution. Those local results remain source-bound; hosted qualification
 must identify its matching revision.
@@ -203,8 +240,9 @@ and has no v3 kernel carrier. The host Store registry does not implement the
 Domain Manager's target backend. GetBlob still returns a host path; acknowledged
 revocation cannot retract delivered bytes or bypass same-UID filesystem access.
 The default POSIX path remains trusted host development with best-effort rlimits.
-The real editor child, full P0, RUN0, target storage and physical graduation remain
-unfinished.
+At that recorded source the real editor child, full P0, RUN0, target storage and
+physical graduation were unfinished. The process successor above supplies the
+Linux host implementation; the target and physical joins remain separate.
 
 ### Updated-review successor — accepted foundation repairs
 
@@ -250,9 +288,10 @@ exposed two fixture-readiness races; test-only repairs pass the complete suite o
 PR #44 adds bounded timeout evidence and an explicit test recovery scenario;
 PR #45 covers aggregate broker timeouts as well. Their separate qualification and retained failure history are tracked in the plan.
 Production budgets, containment and public error redaction remain unchanged.
-The authenticated process/trace carrier, full process P0 and real editor child,
+At that recorded source, the authenticated process/trace carrier, full process P0 and real editor child,
 RUN0, target grants/storage, SMP page-table synchronization and physical graduation
-remain unfinished. Host paths/bytes and same-UID filesystem access are not revoked;
+were unfinished. The Linux editor successor above does not establish the remaining
+target/trace joins. Host paths/bytes and same-UID filesystem access are not revoked;
 epoch safety depends on external operator pins and exclusive key provisioning.
 
 ## Foundry development and CI execution

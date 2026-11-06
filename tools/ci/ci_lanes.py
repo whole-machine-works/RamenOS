@@ -86,6 +86,7 @@ EXTENDED = (
     shell("sector-oracle", "tools/ci/foundry_s13_block_sector_oracle_s13_4.sh", "qemu"),
     shell("runtime-block", "tools/ci/foundry_s13_runtime_block_s13_6.sh", "qemu"),
     shell("editor-reliability", "tools/ci/foundry_editor_reliability_ui1_1.sh"),
+    Stage("editor-process-runtime", "editor", ("python3", "tools/ci/editor_process_gate.py")),
 )
 
 
@@ -135,9 +136,21 @@ def preflight_plan():
 def run_stages(stages, environment=None):
     inherited = dict(os.environ if environment is None else environment)
     inherited["RUSTUP_TOOLCHAIN"] = read_toolchain(ROOT)["channel"]
+    batch = None
+    if any(stage.name == "editor-process-runtime" for stage in stages):
+        import editor_process_stage_receipts as receipts
+        batch = receipts.create(ROOT)
     for stage in stages:
         env = inherited | dict(stage.env)
-        command = ["python3", str(ROOT / "tools/ci/stage_timer.py"), "--label", stage.name, "--", *stage.argv]
+        if batch is not None and stage.name in receipts.SPECS:
+            result = receipts.stage(ROOT, batch, stage.name, stage.argv, env)
+            if result:
+                return result
+            continue
+        argv = stage.argv
+        if stage.name == "editor-process-runtime":
+            argv = (*argv, "--stage-batch", str(batch))
+        command = ["python3", str(ROOT / "tools/ci/stage_timer.py"), "--label", stage.name, "--", *argv]
         print(f"FOUNDRY_LANES: stage={stage.name} lane={stage.lane}", flush=True)
         result = subprocess.run(command, cwd=ROOT, env=env, check=False)
         if result.returncode:

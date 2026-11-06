@@ -3,6 +3,10 @@
 //! retains the child, launch, Store Core, actual IO owners and temporary root.
 
 use crate::support::Fixture;
+#[allow(
+    clippy::duplicate_mod,
+    reason = "Each independently staged owner module retains its own three named cleanup controls in the frozen executable inventory."
+)]
 #[path = "cleanup_owners.rs"]
 mod cleanup_owners;
 use cleanup_owners::ParentOwners;
@@ -59,6 +63,10 @@ impl OwnedProcessFixture {
     /// A failed consuming join supplies the sole actual owner for retry/return.
     /// The runtime implementation must itself honor this consuming API's
     /// non-unwinding owner-return and bounded nonblocking-NotReady contract.
+    #[allow(
+        clippy::result_large_err,
+        reason = "Failed cleanup must return this same inline sole owner, preserving its original deadline, children and parent roots for retry or quarantine."
+    )]
     pub fn finish(mut self, now: u64) -> Result<OwnedEditorChildExitProof, Self> {
         if self.child.is_none() {
             // A faulty consuming API may have unwound without returning its

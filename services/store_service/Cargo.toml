@@ -32,6 +32,11 @@ name = "editor_reliability"
 path = "tests/editor_reliability.rs"
 required-features = ["editor_native_save_v0_dev"]
 
+[[test]]
+name = "editor_unpermitted_commit_closure"
+path = "tests/editor_unpermitted_commit_closure.rs"
+required-features = ["editor_native_save_v0_dev"]
+
 [dependencies]
 kernel_api = { path = "../../kernel_api" }
 desktop_service = { path = "../desktop", default-features = false, optional = true }
@@ -76,3 +81,8 @@ rand = "0.8"  # V-007 Phase 6: For generating test keypairs
 [lib]
 # V-007 Phase 2: Export client library for use by other services
 path = "src/lib.rs"
+
+[[test]]
+name = "editor_allocation_closure"
+path = "tests/editor_allocation_closure.rs"
+required-features = ["editor_native_save_v0_dev"]

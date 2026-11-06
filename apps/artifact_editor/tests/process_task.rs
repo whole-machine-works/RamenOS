@@ -1,7 +1,8 @@
 //! P0 preparation, deliberately compile RED until the frozen process API exists.
-//! These genuine consumer assertions cover only the public happy path, alias
-//! fencing, budget construction and prompt consuming owner return. They do not implement all thirty families,
-//! the private negative-control fixture, common SaveChains, or a process gate.
+//! The original four preparation consumers retain their production-feature RED.
+//! The separate assertion feature also compiles the full family consumers and
+//! independent Desktop-owner predicates; handlers and common SaveChains remain
+//! implementation dependencies until their actual Linux behavior is accepted.
 #![cfg(feature = "host_editor_process_v0_dev")]
 
 #[path = "process_support/child_owner.rs"]
@@ -12,6 +13,21 @@ mod fixture;
 #[allow(dead_code)]
 #[path = "native_task_support/mod.rs"]
 mod support;
+
+#[cfg(all(target_os = "linux", feature = "host_editor_process_assertions_v0_dev"))]
+mod dev {
+    pub use desktop_service::dev::Status;
+}
+#[cfg(all(target_os = "linux", feature = "host_editor_process_assertions_v0_dev"))]
+mod editor_dev {
+    pub use desktop_service::editor_dev::*;
+}
+#[cfg(all(target_os = "linux", feature = "host_editor_process_assertions_v0_dev"))]
+#[path = "../../../services/desktop/src/editor_dev/process_editor/assertions.rs"]
+mod desktop_owner_assertions;
+#[cfg(all(target_os = "linux", feature = "host_editor_process_assertions_v0_dev"))]
+#[path = "process_support/full_assertions.rs"]
+mod full_assertions;
 
 use desktop_service::dev::Status;
 use desktop_service::editor_dev::{self as desktop, ChildBudget, OwnedEditorChild};
@@ -96,6 +112,13 @@ fn until_publication(f: &Fixture, child: &mut OwnedEditorChild, now: u64) {
     loop {
         let step = ok(f.h.pump_process_editor(child, now));
         if step.publication_accepted() {
+            let view = ok(f.h.observe_process_editor(child, now));
+            let session = f
+                .drivers
+                .iter()
+                .position(|d| d.s.session_id == view.actor.session_id)
+                .expect("actual matching session compositor");
+            ok(f.compose(session, now));
             return;
         }
         assert!(

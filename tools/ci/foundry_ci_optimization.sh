@@ -17,6 +17,13 @@ python3 tools/ci/test_compiler_cache_control.py
 python3 tools/ci/test_build_streamlining.py
 python3 tools/ci/test_selected_test_runner.py
 python3 tools/ci/test_editor_process_preparation.py
+python3 tools/ci/test_editor_process_linux_prerequisites.py
+python3 tools/ci/test_editor_process_p0.py
+python3 tools/ci/test_editor_process_recording.py
+python3 tools/ci/test_editor_process_source_policy.py
+python3 -m unittest discover -s tools/ci -p "test_editor_process_reader*.py"
+python3 tools/ci/test_editor_process_parent_join.py
+python3 tools/ci/test_editor_process_stage_receipts.py
 python3 tools/ci/test_qemu_boot_observation.py
 cargo test --locked -p idl_codegen --test content_stable
 printf '%s\n' 'FOUNDRY_CI_OPTIMIZATION: PASS scope=tooling'

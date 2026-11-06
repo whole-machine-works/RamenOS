@@ -6,7 +6,7 @@ if [[ "$#" -eq 0 ]]; then
   mkdir -p "$REPO/out/desktop"
   TASK_PACKET="$(mktemp -d "$REPO/out/desktop/native-task-source.XXXXXXXX")"
   TASK_SOURCE_SHA="$(python3 "$REPO/tools/ci/native_save_task_sources.py" --repo "$REPO" \
-    --registry-sha256 79a052915fe61b96ffd993170e943c7da3823427da5871c6275aa71d306b90d5 \
+    --registry-sha256 6c5fd0e9d9a3bbf997135f41af452beae2e23592341f75f3976ec0031837123f \
     --output "$TASK_PACKET/source-manifest.json")"
   set -- "$TASK_PACKET/source-manifest.json" "$TASK_SOURCE_SHA" "$TASK_PACKET/run"
 elif [[ "$#" -ne 3 ]]; then

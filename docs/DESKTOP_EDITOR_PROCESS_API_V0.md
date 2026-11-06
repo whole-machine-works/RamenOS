@@ -180,3 +180,21 @@ fn adopt_process_publication(
 // acknowledged_sequence is the actual delivered Focus sequence, including
 // only genuine service reset deliveries; never a fabricated process counter.
 ```
+
+### Additive process-wrapper frame request (2026-11-05)
+
+`ProcessArtifactEditor` exposes `request_frame(&mut self, now: u64) ->
+Result<(), NativeEditorError>` under the existing Linux, default-off process
+feature. It delegates to `HostDesktop::request_process_editor_frame` using the
+wrapper's same owned child. It returns the normal owner, retirement, deadline,
+and backpressure errors and does not extract or construct a child or any Save
+authority. It requests an ordinary child publication; it performs no parent
+editing or raster work and issues no Save.
+
+A caller can pump each delivered input to its exact ACK, request a frame when
+its edit batch is complete, then pump to the accepted publication. This is
+needed for a small ordinary batch below the child's automatic publication
+threshold. It uses the existing RequestPublication wire message and preserves
+the original child and explicit Ctrl+S deadlines. The public P3 consumers use
+this operation instead of padding input or triggering a Save to obtain a frame.
+The frozen Portal ABI and the retained P0 assertion-handoff bytes are unchanged.

@@ -1,5 +1,20 @@
 # CHANGELOG
 
+## 2026-11-04 — Linux editor-process kernel prerequisites
+
+- Add six default-off, actual Linux witnesses for shared writable-alias seal
+  refusal, FUTURE_WRITE limits, complete immutable seals, ancillary truncation
+  and received alias closure, kernel credential rejection and inherited helper
+  PID/birth with actual terminal wait.
+- Register a separate source-bound exact-inventory gate, strict Clippy, hosted
+  execution/evidence and tooling controls. Serialize descriptor closure probes;
+  preserve the caller's test-thread environment. Review source registry
+  successors for affected editor consumers without changing their assertions.
+- Set an owner-only umask around the existing preparation fixture command and
+  restore it afterward. Retain the fresh Linux permission failure and successful
+  preparation evidence. These witnesses do not complete full P0 or implement
+  the editor carrier/child.
+
 ## 2026-10-15 — P0 opaque Store failure ownership
 
 - Stage complete constructor parents and the actual initialization failure before

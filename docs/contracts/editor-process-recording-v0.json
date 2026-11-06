@@ -1,0 +1,92 @@
+{
+  "schema_version": 1,
+  "scope": "Diagnostic recording of one complete armed ProcessAssertionRun/channel invocation; no whole parent-case or production authority claim",
+  "environment": {
+    "root": "RAMEN_PROCESS_EVIDENCE",
+    "nonce": "RAMEN_PROCESS_RUN_NONCE must equal RAMEN_NATIVE_TASK_RUN_NONCE,32 lowercase hex",
+    "parent_io_root": "RAMEN_NATIVE_TASK_EVIDENCE; separate actual corpus joined by nonce and bound CaseRecorder case",
+    "source": "RAMEN_PROCESS_GATE_RECORD source_manifest.sha256"
+  },
+  "scope_binding": {
+    "api": "FixtureController::bind_process_recording_case(case: &'static str) -> Result<(),Status>",
+    "timing": "once per actualHost before any process prepare",
+    "label": "actual existing CaseRecorder case; nonempty <=128 ASCII lowercase/digits/underscore/hyphen",
+    "authority": "label never enters native admission or selects a fault; no arbitrary path/bytes/identity setter"
+  },
+  "namespace": {
+    "allocation": "global checked ordinal under held cross-process budget lock, including reexec/helpers",
+    "path": "case/closedScenario-runOrdinal; held no-follow directory traversal, exclusive creation",
+    "repeat": "different actualRun/channel invocations each have one complete leaf; never segment oneRun",
+    "unarmed_witnesses": "new unarmed children in same parentCase are separately tested, outside priorRun leaf coverage"
+  },
+  "limits": {
+    "files": 16384,
+    "entries": 17000,
+    "corpus_bytes": 2147483648,
+    "raw_leaf_bytes": 2097152,
+    "metadata_leaf_bytes": 33554432,
+    "source_manifest_bytes": 524288,
+    "source_rows": 1024,
+    "path_bytes": 256,
+    "path_depth": 16,
+    "raw_refs_per_run": 1024,
+    "control_rows_per_run": 32768,
+    "control_rows_aggregate": 131072,
+    "control_leaf_bytes": 16777216,
+    "control_row_bytes": 512,
+    "process_rows_per_run": 8,
+    "transport_object_rows_per_child": 257
+  },
+  "admission": [
+    "Reserve native control recording slot BEFORE native effects; release unused reservation on EAGAIN/no event.",
+    "Build bounded complete copied evidence outside Core/process locks. Reserve all knownRun file/entry/byte/row charges under actual held global budget lock BEFORE any output growth.",
+    "All writes exclusive no-follow,0600; directories0700. Preserve conservative reserved credits and partial files on failure; finish returns retainedRun, never complete.",
+    "Archive actual full stdout/stderr including under-capEOF; no sampling or silently dropped partial notifications."
+  ],
+  "metadata_fields": {
+    "schema_version": 1,
+    "run_nonce": "Root selected sharednonce",
+    "source_manifest_sha256": "actual Root source manifest identity",
+    "scope": {
+      "parent_case": "bound actual CaseRecorder case",
+      "scenario_id": "closed catalog ID",
+      "run_ordinal": "actual globally allocatedu64",
+      "parent_pid": "actual native parent PID",
+      "channel_generation": "immutable actual admitted wire channel (0 unspawned); distinct from after snapshot enforcing revocation tombstone"
+    },
+    "recording_complete": "files complete only, never generic casepassed",
+    "controls": {
+      "path": "onecomplete controls.jsonl",
+      "bytes": "actual",
+      "sha256": "actual",
+      "rows": "actual",
+      "first_row": "1 or0 ifempty",
+      "last_row": "actualrowcount"
+    },
+    "before/after": "all declared snapshot fields; owners ordinary/reset are actual parent typed queue64+1. Separate core_ordinary_queue/core_reset_queue retain unchanged Core64 overflow-reset counters. offer_cursor is the actual non-authoritative carrier offer cursor; lifetime quotas are separate. owner_confirm_request/status record the actual owner-side consumed Confirm invocation, never a fabricated wire exchange. frame_surface_id/generation/epoch/live are read-only matching actual Core frame/surface facts; Surface.epoch and service_epoch share the same Core epoch domain. Pixels use exact raw references.",
+    "syscalls": "all declared actual syscall fields/origin/errno/credentials/ancillary ledger joins; DuplicateFd labels actual precharged F_DUPFD_CLOEXEC, normalized0/-1, source ledgerID and actual new alias descriptor facts",
+    "descriptors": "all declared actual descriptor/offer/owner/mapping/disposition fields",
+    "objects": "descriptorID + actual rawref; distinguish rejected mutable snapshot/prefix from immutable accepted object",
+    "executable": "actual declared held/source/exec descriptive identities; never whole1GiBVec",
+    "checkpoints": "actualpoint/checkedordinal/relative monotonic reachednanos",
+    "native_wait_outcome": "actual supervisorwait outcome ornull",
+    "supervisor_joined": "actualgenuinejoin",
+    "quarantined": "actualunknownretainedowner",
+    "processes": "At most8 actual native process rows: parentPID, fork-derived childPID, nativebirthticks (null on failedread, never fake0proof), actual pidfd ledgerID, registered/held/executed artifact identities, actual sole-supervisor native/Rustidentity, actualwaitpid rawstatus and decodedoutcome, actualsupervisorjoin/quarantine. Join returnedexitproof+kernelSCMcredentials; no PIDpayload construction.",
+    "referenced_processes": "at most7 finalized ReferencedSibling scopes with actual parentCase/immutable channel/unarmed scenario-null, own native process and minimal fork/exec/pidfd/terminal-wait ledgers/descriptors/held executable. Copy after genuine sibling wait/join and zero owner charges; never merge into primary A ledgers."
+  },
+  "controls": {
+    "layout": "i,k,d,b,c,o,q,s,t,f,r; compactUTF8+LF; frozen production contract remains authority",
+    "raw": "complete88 frame base64; malformedshort/long usesseparatecompleteboundedrawleaf inr",
+    "r_zero": "no separate malformed rawleaf; never interpreted as semanticPASS; nativeoutcome joins actual syscall ledger",
+    "coverage": "one row per actual transmission/deniedsend, no duplicate send+recv for same event"
+  },
+  "review": {
+    "decision": "ACCEPTED_IN_PRINCIPLE; exact source/reader still reviewed before acceptance",
+    "runtime_accepted": false
+  },
+  "cleanup_ownership": {
+    "process": "same common strict SaveChains retains lookup entry/reply until authentic ownproducer joins; target closure separate",
+    "legacy": "same common strict lookup/receipt/target closure preserves existing Core-owned query JoinHandles and fixture quiesce collector; completed caller aliases may drop; unknown/partial registration retained in both modes"
+  }
+}
