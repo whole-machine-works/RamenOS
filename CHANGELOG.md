@@ -14,12 +14,16 @@
   verify 57 canonical stages, eight preservation stages and three archived binaries.
 - Retain the separate post-merge [main attempt 1 failure](https://github.com/whole-machine-works/RamenOS/actions/runs/42151282196/attempts/1):
   the original native-task `slots/0` Save returned Unknown for operation 1 without
-  the required receipt. Seventeen other tests passed. Queue bounded failure-only
-  Store/IO/permit/reply/join diagnostics; no root cause or remediation is claimed,
-  and D19 remains separate. The one unchanged failed-jobs [retry, attempt 2](https://github.com/whole-machine-works/RamenOS/actions/runs/42151282196/attempts/2)
+  the required receipt. Seventeen other tests passed. No root cause or remediation
+  is claimed, and D19 remains separate. The one unchanged failed-jobs [retry, attempt 2](https://github.com/whole-machine-works/RamenOS/actions/runs/42151282196/attempts/2)
   completed `slots/0` but failed `native_max/6` with the same Unknown operation 1
   receipt result: seventeen passed, one failed. Both main attempts remain failed;
   PR53's separate passing run and merge do not resolve their unknown cause.
+- Add failure-only diagnostics at both receipt sites, retaining after-settle
+  timing, actual reply/join observations and a bounded Store snapshot before the
+  original panic resumes. Keep assertions and budgets unchanged. The authenticated
+  CandidateBlobWrite control still fails with exit 101 and no success summary;
+  use the diagnostics for bounded reproduction, without claiming a runtime fix.
 - Advance dispatch to RUN0 and the IN0/STORE0/UI2 target joins. Preserve the earlier
   local D19 failure as unresolved with a bounded reproduction follow-up. Host
   acceptance does not establish target persistence or physical durability.
