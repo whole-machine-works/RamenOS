@@ -65,12 +65,19 @@ again retained only its initial Store snapshot. Both main qualification attempts
 on `c9ed54a` remain failed, with root cause unknown. Separately, PR53's
 [hosted run 42151684699](https://github.com/whole-machine-works/RamenOS/actions/runs/42151684699)
 passed all nine checks and its dispatch update merged as `65d45be`; that passing
-run does not explain or remediate either main failure. Obtain the diagnostics
-below before another retry.
+run does not explain or remediate either main failure.
 
-The bounded follow-up is to add failure-only terminal Store/IO/permit/reply/join
-diagnostics, then reproduce this named scenario on a fresh source-bound Linux
-snapshot before proposing a root-cause fix. Preserve every original deadline,
+Failure-only diagnostics now cover the `slots/0` and `native_max` receipt sites.
+They retain after-settle timing, actual request/reply bytes, producer join
+observations and a bounded Store/IO/permit snapshot before resuming the original
+panic. Assertions, deadlines and budgets are unchanged; no successful summary
+is manufactured. All eighteen native Linux tests, the focused capacity test and
+strict Clippy pass locally. A separate authenticated CandidateBlobWrite failure
+control still exits 101 and retains its failure snapshot without a success summary.
+These checks validate the diagnostics, not a fix for either original failure.
+
+Use these diagnostics in a bounded fresh source-bound Linux reproduction of both
+failed scenarios before proposing a root-cause fix. Preserve every original deadline,
 owner and assertion; do not accept Unknown as the expected successful receipt.
 Retain every failed attempt. This investigation can proceed alongside independent
 RUN0 preparation and does not change the accepted dispatch dependencies.

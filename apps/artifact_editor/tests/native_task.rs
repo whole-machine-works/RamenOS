@@ -2915,7 +2915,7 @@ fn ui1_1_clock_capacity_and_counter_limits_fail_closed() {
         );
         let a = attempt(&mut slots, 0, &raw, 3300 + revision, 2);
         let r = settle(&mut slots, &a);
-        let (actual, _) = receipt(&r, a.operation);
+        let (actual, _) = receipt_with_failure_diagnostics(&slots, &a, &r, "slots", 0, revision);
         assert_eq!(actual.result_revision, revision);
         last = Some((a, r));
     }
