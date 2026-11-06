@@ -35,6 +35,7 @@
     "apps/artifact_editor/tests/process_support/p0_obligations.json",
     "apps/artifact_editor/tests/process_support/reopen_drop_control.rs",
     "apps/artifact_editor/tests/process_support/setup_control.rs",
+    "apps/artifact_editor/tests/process_support/shared_frame_controls.rs",
     "apps/artifact_editor/tests/process_task.rs",
     "artifact_store_core/Cargo.toml",
     "artifact_store_core/src/lib.rs",

@@ -20,7 +20,7 @@ REPO = Path(__file__).absolute().parents[2]
 GATE = 'foundry-editor-native-preview-read-ui1-1c'
 GATE_SOURCE = 'tools/foundry/desktop_editor_native_preview_read_gate.py'
 REGISTRY = 'tools/foundry/editor_native_preview_read_sources_v0.json'
-REGISTRY_SHA = 'f13b6edccae34f6806a793983a27767938dabb9faa987594722cbaf6a3cb72b4'
+REGISTRY_SHA = 'f2a174caa3768d0229720bf9b625e90ec3e3b07d334395b1b39749ddb4420350'
 CONTRACT = 'docs/contracts/editor-native-preview-read-v0.json'
 CONTRACT_SHA = '2267e4fe80ac02a8676cfccaa194a8395f70a2926526d829fdcac8b37b6b6252'
 OBSERVED_CONTRACT_SHA = '2f312a9a2f38504c576606a186d53b108f104c7fdd76519d092d2547d0d29c1c'
@@ -29,7 +29,7 @@ CODEC_CONTRACT_SHA = '92f31fe946c549f9ec76ce4cd7fc0fedfb515a46a7127e22de46a56325
 PRIMITIVES = 'tools/ci/editor_store_runner.py'
 PRIMITIVES_SHA = '3aeba4be230cfcd972ee8939e183d6e1cb9a14c60ebeec2e96368e16e143a787'
 BASE_REGISTRY = 'tools/foundry/editor_native_read_sources_v0.json'
-BASE_REGISTRY_SHA = '6fc06ccd910b9098f21f2ab2d05ef834c7cd2d635bbfc5863c03749456d2f3ec'
+BASE_REGISTRY_SHA = 'ddbc11c22f39a198890b019cfc10010678478bd2838f0898f46f5e0b8cd2c028'
 ASSERTION_PINS = {
     'services/store_service/tests/editor_native_preview_read.rs': 'bd011ebebe64ce3ec61d90f7e2d1a747246a8cbaf6cc8d37b25e666247498923',
     'services/store_service/tests/editor_native_preview_read_support/mod.rs': 'cff606f92e6706f629945aa05644a90ffdba4d8920235dcb93e331a224417e62',

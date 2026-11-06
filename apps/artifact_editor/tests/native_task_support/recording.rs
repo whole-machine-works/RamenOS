@@ -645,6 +645,7 @@ pub struct ScenarioSpec {
 pub struct CaseRecorder {
     root: PathBuf,
     held_root: File,
+    held_case: File,
     case: &'static str,
     nonce: String,
 }
@@ -653,6 +654,7 @@ pub struct ScenarioRecorder {
     spec: ScenarioSpec,
     path: PathBuf,
     held: File,
+    held_parent: File,
     raw: Vec<Value>,
     records: Vec<String>,
     snapshots: Vec<Value>,
@@ -671,11 +673,288 @@ pub struct ScenarioRecorder {
     known_files: BTreeSet<String>,
     applied_storage_faults: BTreeMap<String, store::StorageFault>,
 }
+// The shared path has a closed canonical layout: one complete desktop frame
+// and its actual typed chrome record for each of two independent recorders.
+const SHARED_FRAME_BYTES: usize = 640 * 568 * 4;
+const SHARED_CHROME_BYTES: usize = std::mem::size_of::<[u8; 248]>();
+
+pub struct SharedFrameReservation<'a> {
+    recorders: [&'a mut ScenarioRecorder; 2],
+    names: [[String; 2]; 2],
+    ordinals: [u32; 2],
+    marker: PathBuf,
+    reservation: File,
+    marker_identity: fs::Metadata,
+    next: usize,
+    failed: bool,
+}
+impl ScenarioRecorder {
+    fn check_shared_owner(&self) -> Result<()> {
+        let case_path = self.case.root.join(self.case.case);
+        let parent = self
+            .path
+            .parent()
+            .ok_or(RecordingError("owned scenario parent"))?;
+        for (path, held) in [
+            (self.case.root.as_path(), &self.case.held_root),
+            (case_path.as_path(), &self.case.held_case),
+            (parent, &self.held_parent),
+            (self.path.as_path(), &self.held),
+        ] {
+            check_directory(path, held)?;
+            // Recheck every ancestor and private mode, then join the fresh
+            // descriptor to the original retained directory identity.
+            let current = held_directory(path)?;
+            require(
+                identity(
+                    &current
+                        .metadata()
+                        .map_err(|_| RecordingError("current owned directory"))?,
+                    &held
+                        .metadata()
+                        .map_err(|_| RecordingError("retained owned directory"))?,
+                ),
+                "anchored shared output directory",
+            )?;
+        }
+        Ok(())
+    }
+}
+impl<'a> SharedFrameReservation<'a> {
+    pub fn prepare(
+        left: &'a mut ScenarioRecorder,
+        right: &'a mut ScenarioRecorder,
+    ) -> Result<Self> {
+        require(
+            left.case.root == right.case.root
+                && left.case.nonce == right.case.nonce
+                && left.case.case != right.case.case
+                && left.path != right.path,
+            "same root and nonce, distinct shared recording paths",
+        )?;
+        require(
+            identity(
+                &left
+                    .case
+                    .held_root
+                    .metadata()
+                    .map_err(|_| RecordingError("left root identity"))?,
+                &right
+                    .case
+                    .held_root
+                    .metadata()
+                    .map_err(|_| RecordingError("right root identity"))?,
+            ),
+            "same held shared root",
+        )?;
+        let mut ordinals = [0; 2];
+        let mut names: [[String; 2]; 2] =
+            std::array::from_fn(|_| std::array::from_fn(|_| String::new()));
+        for (index, r) in [&*left, &*right].into_iter().enumerate() {
+            r.check_shared_owner()?;
+            require(
+                r.frames.len() < 128
+                    && r.raw.len().checked_add(2).is_some_and(|n| n <= 2048)
+                    && r.records
+                        .len()
+                        .checked_add(r.raw.len())
+                        .and_then(|n| n.checked_add(2))
+                        .is_some_and(|n| n <= 128 + 2048),
+                "each shared recorder inventory cap",
+            )?;
+            ordinals[index] = u32::try_from(r.frames.len())
+                .map_err(|_| RecordingError("shared frame ordinal"))?;
+            names[index] = [
+                format!("frame-{}.bgra", ordinals[index]),
+                format!("chrome-{}.bin", ordinals[index]),
+            ];
+            for name in &names[index] {
+                basename(name)?;
+                require(
+                    fs::symlink_metadata(r.path.join(name))
+                        .is_err_and(|e| e.kind() == io::ErrorKind::NotFound),
+                    "fresh shared target before admission",
+                )?;
+            }
+        }
+        require(
+            SHARED_FRAME_BYTES as u64 <= MAX_FILE && SHARED_CHROME_BYTES as u64 <= MAX_FILE,
+            "canonical shared individual bounds",
+        )?;
+        let len = (SHARED_FRAME_BYTES as u64)
+            .checked_add(SHARED_CHROME_BYTES as u64)
+            .and_then(|n| n.checked_mul(2))
+            .ok_or(RecordingError("shared reservation byte overflow"))?;
+        let marker = left.case.root.join(".recording-reservation");
+        let mut reservation = OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .mode(0o600)
+            .custom_flags(NOFOLLOW)
+            .open(&marker)
+            .map_err(|_| RecordingError("exclusive shared reservation or abandoned writer"))?;
+        // From this acquisition onward, every error or unwind retains the
+        // marker and all actual outputs. Only finish() can settle the pair.
+        reservation
+            .write_all(len.to_string().as_bytes())
+            .map_err(|_| RecordingError("shared reservation write"))?;
+        let marker_identity = reservation
+            .metadata()
+            .map_err(|_| RecordingError("held shared marker"))?;
+        require(
+            marker_identity.is_file()
+                && marker_identity.nlink() == 1
+                && marker_identity.mode() & 0o022 == 0,
+            "private regular shared marker",
+        )?;
+        for (r, targets) in [(&*left, &names[0]), (&*right, &names[1])] {
+            r.check_shared_owner()?;
+            for name in targets {
+                require(
+                    fs::symlink_metadata(r.path.join(name))
+                        .is_err_and(|e| e.kind() == io::ErrorKind::NotFound),
+                    "fresh shared target under reservation",
+                )?;
+            }
+        }
+        let mut totals = Totals::default();
+        let mut timing = left.frame_timings.as_ref().and_then(|log| log.start(0));
+        let scanned = scan_cases(
+            &left.case.root,
+            &left.case.root.join(left.case.case),
+            Some(&right.case.root.join(right.case.case)),
+            0,
+            &mut totals,
+        );
+        if let Some(timer) = timing.as_mut() {
+            timer.scanned(totals.files, totals.entries);
+        }
+        scanned?;
+        if let Some(timer) = timing {
+            timer.complete();
+        }
+        require(
+            totals.files.checked_add(4).is_some_and(|n| n <= MAX_FILES)
+                && totals
+                    .entries
+                    .checked_add(4)
+                    .is_some_and(|n| n <= MAX_ENTRIES)
+                && totals.all.checked_add(len).is_some_and(|n| n <= MAX_ALL),
+            "combined two-frame pre-growth reservation",
+        )?;
+        Ok(Self {
+            recorders: [left, right],
+            names,
+            ordinals,
+            marker,
+            reservation,
+            marker_identity,
+            next: 0,
+            failed: false,
+        })
+    }
+    fn check_marker(&self) -> Result<()> {
+        let held = self
+            .reservation
+            .metadata()
+            .map_err(|_| RecordingError("held shared marker identity"))?;
+        let current = fs::symlink_metadata(&self.marker)
+            .map_err(|_| RecordingError("shared marker identity"))?;
+        require(
+            current.is_file()
+                && current.nlink() == 1
+                && identity(&self.marker_identity, &held)
+                && identity(&held, &current)
+                && held.len() == self.marker_identity.len()
+                && current.len() == held.len(),
+            "only the original shared reservation owns growth",
+        )
+    }
+    pub fn record_next(
+        &mut self,
+        frame: &desktop::ComposedFrame,
+        chrome: &desktop::NativeSaveChromeObservation,
+    ) -> Result<()> {
+        require(!self.failed, "failed shared reservation remains retained")?;
+        // Every error or unwind after acquisition is sticky on this exact
+        // owner, including malformed input before any bytes have been written.
+        self.failed = true;
+        require(
+            self.next < 2 && frame.bgra.len() == SHARED_FRAME_BYTES,
+            "next canonical shared frame",
+        )?;
+        let chrome_bytes = chrome
+            .record248
+            .as_ref()
+            .ok_or(RecordingError("actual shared chrome record"))?;
+        require(
+            chrome_bytes.len() == SHARED_CHROME_BYTES,
+            "canonical shared chrome bytes",
+        )?;
+        for recorder in &self.recorders {
+            recorder.check_shared_owner()?;
+        }
+        require(
+            self.recorders[self.next].frames.len() == self.ordinals[self.next] as usize,
+            "exclusive shared frame ordinal",
+        )?;
+        let timing = self.recorders[self.next]
+            .frame_timings
+            .as_ref()
+            .and_then(|log| log.start(1));
+        let mut frame_raw = None;
+        for (index, kind, bytes) in [
+            (0, "composed_frame", frame.bgra.as_slice()),
+            (1, "chrome248", chrome_bytes.as_slice()),
+        ] {
+            self.check_marker()?;
+            let r = &mut self.recorders[self.next];
+            r.check_shared_owner()?;
+            let raw = r.write_frame_leaf(&self.names[self.next][index], kind, bytes)?;
+            r.raw.push(raw.clone());
+            r.check_shared_owner()?;
+            if index == 0 {
+                frame_raw = Some(raw);
+            }
+        }
+        if let Some(timer) = timing {
+            timer.complete();
+        }
+        // Complete the first recorder's original frame row before permitting
+        // the second actual composition/export. This is not pair success.
+        self.recorders[self.next].append_frame_row(
+            self.ordinals[self.next],
+            frame,
+            None,
+            None,
+            Some(chrome),
+            frame_raw.ok_or(RecordingError("actual shared frame raw row"))?,
+        )?;
+        self.next += 1;
+        self.failed = false;
+        Ok(())
+    }
+    pub fn finish(self) -> Result<()> {
+        require(
+            !self.failed && self.next == 2,
+            "both shared exports completed without any prior error",
+        )?;
+        for recorder in &self.recorders {
+            recorder.check_shared_owner()?;
+        }
+        self.check_marker()?;
+        fs::remove_file(&self.marker)
+            .map_err(|_| RecordingError("settled shared reservation removal"))?;
+        Ok(())
+    }
+}
+
 #[derive(Default)]
 struct Totals {
     all: u64,
     json: u64,
     case_json: u64,
+    second_case_json: u64,
     files: usize,
     entries: usize,
 }
@@ -746,6 +1025,15 @@ fn check_directory(path: &Path, held: &File) -> Result<()> {
     )
 }
 fn scan(path: &Path, case: &Path, depth: usize, t: &mut Totals) -> Result<()> {
+    scan_cases(path, case, None, depth, t)
+}
+fn scan_cases(
+    path: &Path,
+    case: &Path,
+    second_case: Option<&Path>,
+    depth: usize,
+    t: &mut Totals,
+) -> Result<()> {
     require(depth <= 8, "export depth")?;
     let entries = fs::read_dir(path).map_err(|_| RecordingError("owned inventory scan"))?;
     for row in entries {
@@ -759,7 +1047,7 @@ fn scan(path: &Path, case: &Path, depth: usize, t: &mut Totals) -> Result<()> {
         let m = fs::symlink_metadata(&p).map_err(|_| RecordingError("inventory metadata"))?;
         require(!m.file_type().is_symlink(), "export symlink")?;
         if m.is_dir() {
-            scan(&p, case, depth + 1, t)?;
+            scan_cases(&p, case, second_case, depth + 1, t)?;
         } else {
             require(
                 m.is_file() && m.nlink() == 1,
@@ -786,9 +1074,18 @@ fn scan(path: &Path, case: &Path, depth: usize, t: &mut Totals) -> Result<()> {
                         .checked_add(m.len())
                         .ok_or(RecordingError("case JSON overflow"))?;
                 }
+                if second_case.is_some_and(|case| p.starts_with(case)) {
+                    t.second_case_json = t
+                        .second_case_json
+                        .checked_add(m.len())
+                        .ok_or(RecordingError("second case JSON overflow"))?;
+                }
             }
             require(
-                t.all <= MAX_ALL && t.json <= MAX_JSON && t.case_json <= MAX_CASE_JSON,
+                t.all <= MAX_ALL
+                    && t.json <= MAX_JSON
+                    && t.case_json <= MAX_CASE_JSON
+                    && t.second_case_json <= MAX_CASE_JSON,
                 "aggregate export cap",
             )?;
         }
@@ -863,14 +1160,18 @@ fn fresh_directory(root: &Path, held: &File, path: &Path) -> Result<()> {
 }
 impl CaseRecorder {
     pub fn open(case: &'static str) -> Result<Arc<Self>> {
-        name(case)?;
         let root = PathBuf::from(
             std::env::var_os("RAMEN_NATIVE_TASK_EVIDENCE")
                 .ok_or(RecordingError("missing actual evidence destination"))?,
         );
-        let held_root = held_directory(&root)?;
         let nonce = std::env::var("RAMEN_NATIVE_TASK_RUN_NONCE")
             .map_err(|_| RecordingError("missing actual run nonce"))?;
+        Self::open_at(&root, &nonce, case)
+    }
+    pub fn open_at(root: &Path, nonce: &str, case: &'static str) -> Result<Arc<Self>> {
+        name(case)?;
+        let root = root.to_owned();
+        let held_root = held_directory(&root)?;
         require(
             nonce.len() == 32
                 && nonce
@@ -880,11 +1181,13 @@ impl CaseRecorder {
         )?;
         let p = root.join(case);
         fresh_directory(&root, &held_root, &p)?;
+        let held_case = held_directory(&p)?;
         Ok(Arc::new(Self {
             root,
             held_root,
+            held_case,
             case,
-            nonce,
+            nonce: nonce.to_owned(),
         }))
     }
     pub fn scenario(self: &Arc<Self>, spec: ScenarioSpec) -> Result<ScenarioRecorder> {
@@ -899,6 +1202,7 @@ impl CaseRecorder {
         if !parent.exists() {
             fresh_directory(&self.root, &self.held_root, &parent)?;
         }
+        let held_parent = held_directory(&parent)?;
         let path = parent.join(spec.leg.to_string());
         require(
             path.strip_prefix(&self.root)
@@ -915,6 +1219,7 @@ impl CaseRecorder {
             spec,
             path,
             held,
+            held_parent,
             raw: vec![],
             records: vec![],
             snapshots: vec![],
@@ -936,6 +1241,9 @@ impl CaseRecorder {
     }
 }
 impl ScenarioRecorder {
+    pub fn frame_export_progress(&self) -> (&[Value], &[Value]) {
+        (&self.raw, &self.frames)
+    }
     pub fn enable_frame_timings(&mut self, log: PhaseTimingLog) {
         self.frame_timings = Some(log);
     }
@@ -1258,6 +1566,63 @@ impl ScenarioRecorder {
         fs::remove_file(marker).map_err(|_| RecordingError("settled reservation removal"))?;
         Ok(actual_hash)
     }
+    fn write_frame_leaf(&self, file: &str, kind: &str, bytes: &[u8]) -> Result<Value> {
+        check_directory(&self.case.root, &self.case.held_root)?;
+        check_directory(&self.path, &self.held)?;
+        let p = self.path.join(file);
+        let opened = OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .mode(0o600)
+            .custom_flags(NOFOLLOW)
+            .open(&p)
+            .map_err(|_| RecordingError("fresh frame export file"))?;
+        let before = opened
+            .metadata()
+            .map_err(|_| RecordingError("opened frame export stat"))?;
+        require(
+            before.is_file() && before.nlink() == 1,
+            "owned regular frame export",
+        )?;
+        let mut writer = ReservedWriter {
+            file: opened,
+            left: bytes.len() as u64,
+            hash: Sha256::new(),
+        };
+        writer
+            .write_all(bytes)
+            .map_err(|_| RecordingError("bounded frame export write"))?;
+        writer
+            .flush()
+            .map_err(|_| RecordingError("frame export flush"))?;
+        require(writer.left == 0, "complete reserved frame export")?;
+        let after = writer
+            .file
+            .metadata()
+            .map_err(|_| RecordingError("frame export final stat"))?;
+        require(
+            after.is_file()
+                && after.nlink() == 1
+                && identity(&before, &after)
+                && after.len() == bytes.len() as u64,
+            "stable single-link complete frame export",
+        )?;
+        let actual_hash = hex(&writer.hash.finalize());
+        drop(writer.file);
+        check_directory(&self.case.root, &self.case.held_root)?;
+        check_directory(&self.path, &self.held)?;
+        let final_stat =
+            fs::symlink_metadata(&p).map_err(|_| RecordingError("final frame export path stat"))?;
+        require(
+            final_stat.is_file()
+                && final_stat.nlink() == 1
+                && identity(&after, &final_stat)
+                && final_stat.len() == bytes.len() as u64,
+            "final single-link frame path identity",
+        )?;
+        let record = json!({"file":file,"kind":kind,"byte_len":bytes.len(),"sha256":actual_hash});
+        Ok(record)
+    }
     // Fixed frame plus optional chrome outputs share admission, not completion.
     fn frame_raw_pair(
         &mut self,
@@ -1339,61 +1704,7 @@ impl ScenarioRecorder {
         let write_timing = self.frame_timings.as_ref().and_then(|log| log.start(1));
         let mut first_record = None;
         for (file, kind, bytes) in [Some(first), second].into_iter().flatten() {
-            check_directory(&self.case.root, &self.case.held_root)?;
-            check_directory(&self.path, &self.held)?;
-            let p = self.path.join(file);
-            let opened = OpenOptions::new()
-                .write(true)
-                .create_new(true)
-                .mode(0o600)
-                .custom_flags(NOFOLLOW)
-                .open(&p)
-                .map_err(|_| RecordingError("fresh frame export file"))?;
-            let before = opened
-                .metadata()
-                .map_err(|_| RecordingError("opened frame export stat"))?;
-            require(
-                before.is_file() && before.nlink() == 1,
-                "owned regular frame export",
-            )?;
-            let mut writer = ReservedWriter {
-                file: opened,
-                left: bytes.len() as u64,
-                hash: Sha256::new(),
-            };
-            writer
-                .write_all(bytes)
-                .map_err(|_| RecordingError("bounded frame export write"))?;
-            writer
-                .flush()
-                .map_err(|_| RecordingError("frame export flush"))?;
-            require(writer.left == 0, "complete reserved frame export")?;
-            let after = writer
-                .file
-                .metadata()
-                .map_err(|_| RecordingError("frame export final stat"))?;
-            require(
-                after.is_file()
-                    && after.nlink() == 1
-                    && identity(&before, &after)
-                    && after.len() == bytes.len() as u64,
-                "stable single-link complete frame export",
-            )?;
-            let actual_hash = hex(&writer.hash.finalize());
-            drop(writer.file);
-            check_directory(&self.case.root, &self.case.held_root)?;
-            check_directory(&self.path, &self.held)?;
-            let final_stat = fs::symlink_metadata(&p)
-                .map_err(|_| RecordingError("final frame export path stat"))?;
-            require(
-                final_stat.is_file()
-                    && final_stat.nlink() == 1
-                    && identity(&after, &final_stat)
-                    && final_stat.len() == bytes.len() as u64,
-                "final single-link frame path identity",
-            )?;
-            let record =
-                json!({"file":file,"kind":kind,"byte_len":bytes.len(),"sha256":actual_hash});
+            let record = self.write_frame_leaf(file, kind, bytes)?;
             self.raw.push(record.clone());
             if first_record.is_none() {
                 first_record = Some(record);
@@ -1568,6 +1879,17 @@ impl ScenarioRecorder {
                 .and_then(|c| c.record248.as_ref())
                 .map(|bytes| (chrome_file.as_str(), "chrome248", bytes.as_slice())),
         )?;
+        self.append_frame_row(n, frame, draft, join, chrome, raw)
+    }
+    fn append_frame_row(
+        &mut self,
+        n: u32,
+        frame: &desktop::ComposedFrame,
+        draft: Option<&desktop::NativeEditorObservation>,
+        join: Option<&desktop::NativeFrameObservation>,
+        chrome: Option<&desktop::NativeSaveChromeObservation>,
+        raw: Value,
+    ) -> Result<()> {
         let crop_timing = self.frame_timings.as_ref().and_then(|log| log.start(2));
         let app = &frame.bgra[48 * 2560..528 * 2560];
         // The app crop is derived from this actual complete composed frame; retain its digest, not a second raw copy.
