@@ -21,6 +21,19 @@ import test_run0_host_cpu_reader as reader_controls
 
 
 class ParentAdmissionControls(unittest.TestCase):
+    def test_sata_off_checks_bundle_at_the_actual_input_root(self):
+        old = Path("/tmp/wmw-debug-d21-YFXXNEg5/run0/inputs")
+        fresh = Path("/tmp/sata-off/inputs")
+        fixed = ["/etc/ld.so.preload", "/etc/qemu/qemu.conf",
+                 "/var/run/qemu/Debian_1_8.2.2+ds-0ubuntu1.18"]
+        modules = {"checked_absences": [*fixed, str(old / "qemu-bundle")]}
+        self.assertEqual(witness.runtime_module_absences(modules, old, base.INVOCATION_PROFILE),
+                         modules["checked_absences"])
+        self.assertEqual(witness.runtime_module_absences(modules, fresh,
+                         base.SATA_OFF_INVOCATION_PROFILE), [*fixed, str(fresh / "qemu-bundle")])
+        with self.assertRaises(base.ProbeError):
+            witness.runtime_module_absences(modules, fresh, base.INVOCATION_PROFILE)
+
     def test_hc01_native_layout_refuses_changes(self):
         actual = {
             "pointer_size": 8, "long_size": 8, "int_size": 4, "sigchld": 17,
@@ -595,7 +608,8 @@ def synthetic_host_report(folder, *, rsp_index=None, rsp_blobs=None, profile=Non
     plan = {
         "schema_version": 1, "kind": "run0_host_cpu_witness_plan_v0",
         "inputs": "/fixture", "run": "/fixture/witness", "uid": 41, "gid": 42,
-        "argv": base.build_argv(Path("/fixture"), Path("/fixture/witness")),
+        "argv": base.build_argv(Path("/fixture"), Path("/fixture/witness"),
+                                profile.get("invocation_profile", base.INVOCATION_PROFILE)),
         "launch_identity": {name: exe[name] for name in ("device", "inode", "size")},
         "profile_sha256": profile_ref["sha256"], "abi_sha256": abi_ref["sha256"],
         "source_dossier_sha256": marker["sha256"], "observer_ref": observer,

@@ -262,6 +262,27 @@ class EntryInputsTests(unittest.TestCase):
             self.result('DENY', packet)
         self.result('ADMIT')
 
+    def test_sata_off_machine_has_distinct_hint_binding(self):
+        original = self.result('ADMIT')['profile_sha256']
+        self.packet['profile']['machine'] = 'pc-q35-8.2,sata=off'
+        self.assertEqual('hint_profile_mismatch', self.result('DENY')['reason'])
+        self.rehint()
+        changed = self.result('ADMIT')['profile_sha256']
+        self.assertNotEqual(original, changed)
+        self.packet['profile']['machine'] = 'pc-q35-8.2'
+        self.assertEqual('hint_profile_mismatch', self.result('DENY')['reason'])
+        self.rehint()
+        self.assertEqual(original, self.result('ADMIT')['profile_sha256'])
+
+    def test_unknown_machine_denies_without_profile_fallback(self):
+        for machine in ['pc-q35-8.2,sata=on', 'pc-q35-8.2,accel=tcg,sata=off',
+                        'pc-q35-8.2,sata=off,usb=off', '', True, 0, None, [], {}]:
+            with self.subTest(machine=machine):
+                packet = copy.deepcopy(self.packet)
+                packet['profile']['machine'] = machine
+                self.assertEqual('unsupported_machine', self.result('DENY', packet)['reason'])
+        self.result('ADMIT')
+
     def test_boolean_integer_and_out_of_range_fields(self):
         for field, values in [('schema_version', [True, False, 2, 1.0]),
                               ('entry_length', [True, False, 0, -1, 65, 2**64])]:

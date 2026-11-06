@@ -2,6 +2,7 @@
 """Synthetic control tests. These tests never launch QEMU or certify a capture."""
 import json
 import errno
+import io
 import os
 from pathlib import Path
 import subprocess
@@ -64,6 +65,68 @@ class ProbeTests(unittest.TestCase):
         self.assertTrue(all('fat:' not in x for x in argv))
         self.assertFailure('unsafe_resource_path', lambda:
             probe.build_argv(Path('/inputs,injected=on'), Path('/private/run')))
+
+    def test_sata_off_profile_changes_only_machine_argv(self):
+        inputs, run = Path('/inputs'), Path('/private/run')
+        original = probe.build_argv(inputs, run)
+        self.assertEqual(original, probe.build_argv(inputs, run, probe.INVOCATION_PROFILE))
+        changed = probe.build_argv(inputs, run, probe.SATA_OFF_INVOCATION_PROFILE)
+        machine_index = original.index('-machine') + 1
+        self.assertEqual('pc-q35-8.2,accel=tcg', original[machine_index])
+        self.assertEqual('pc-q35-8.2,accel=tcg,sata=off', changed[machine_index])
+        expected = original.copy()
+        expected[machine_index] = 'pc-q35-8.2,accel=tcg,sata=off'
+        self.assertEqual(expected, changed)
+
+    def test_closed_invocation_and_admission_machine_mapping(self):
+        inputs, run = Path('/inputs'), Path('/private/run')
+        for name in ['q35-8.2-tcg-qemu64-virtio-ro-esp-debugcon-sata-off-v1',
+                     '', True, 0, None, [], {}]:
+            with self.subTest(name=name):
+                self.assertFailure('invocation_profile', lambda:
+                    probe.build_argv(inputs, run, name))
+                self.assertFailure('invocation_profile', lambda: probe.admission_machine(name))
+        self.assertEqual('pc-q35-8.2', probe.admission_machine(probe.INVOCATION_PROFILE))
+        self.assertEqual('pc-q35-8.2,sata=off',
+                         probe.admission_machine(probe.SATA_OFF_INVOCATION_PROFILE))
+        self.assertIn('pc-q35-8.2,accel=tcg', probe.build_argv(inputs, run))
+
+    def test_validated_profile_reaches_plan_and_probe_argv(self):
+        with tempfile.TemporaryDirectory() as directory:
+            inputs = Path(directory).resolve()
+            profile = self.profile_fixture(inputs)
+            profile_path, run = inputs / 'profile.json', inputs / 'run'
+            digests = []
+            for name, machine in [(probe.INVOCATION_PROFILE, 'pc-q35-8.2,accel=tcg'),
+                    (probe.SATA_OFF_INVOCATION_PROFILE, 'pc-q35-8.2,accel=tcg,sata=off')]:
+                with self.subTest(profile=name):
+                    profile['invocation_profile'] = name
+                    probe.validate_profile(profile, inputs)
+                    profile_path.write_text(json.dumps(profile))
+                    profile_path.chmod(0o600)
+                    stdout = io.StringIO()
+                    with mock.patch.object(probe, 'check_esp', return_value={}), \
+                         mock.patch.object(probe.subprocess, 'Popen') as spawn, \
+                         mock.patch.object(sys, 'stdout', stdout):
+                        self.assertEqual(0, probe.main(['plan', '--profile', str(profile_path),
+                            '--inputs-root', str(inputs), '--run-dir', str(run)]))
+                        spawn.assert_not_called()
+                    plan = json.loads(stdout.getvalue())
+                    self.assertEqual('READY_FOR_REVIEW', plan['status'])
+                    self.assertEqual(name, plan['invocation_profile'])
+                    self.assertEqual(machine, plan['argv'][plan['argv'].index('-machine') + 1])
+                    self.assertEqual(probe.entry.profile_digest(profile), plan['profile_sha256'])
+                    digests.append(plan['profile_sha256'])
+                    with mock.patch.object(probe, 'check_esp', return_value={}), \
+                         mock.patch.object(probe, 'build_argv', wraps=probe.build_argv) as builder, \
+                         mock.patch.object(probe, 'create_run', side_effect=
+                             probe.ProbeError('DENY', 'synthetic_prelaunch_stop')), \
+                         mock.patch.object(probe.subprocess, 'Popen') as spawn:
+                        self.assertFailure('synthetic_prelaunch_stop', lambda:
+                            probe.run_probe(profile, inputs, run))
+                        builder.assert_called_once_with(inputs, run, name)
+                        spawn.assert_not_called()
+            self.assertNotEqual(*digests)
 
     def test_forbidden_commands_never_reach_wire(self):
         control, wire = self.controller([{'return': {'running': False, 'status': 'prelaunch'}, 'id': 2}])

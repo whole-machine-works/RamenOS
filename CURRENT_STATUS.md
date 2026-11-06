@@ -246,6 +246,12 @@ readback. All six streams reached EOF and the owned VM exited and was reaped.
 Fresh C0 still needs a source-bound exclusion or actual witness for hidden
 nested translation before it can inspect ordinary RAM.
 
+The [SATA-disabled requalification](docs/plans/run0-sata-off-requalification-2026-11-06.md)
+supplies a fresh DEBUG entry hint and admission, a paused CAP1 pass and a separate
+paused host CPU witness pass. The diagnostic and CAP1 reset memory views contain
+no AHCI region. The live C0 collector still needs its own same-stop witness and
+RAM acquisition evidence.
+
 The IPC diagnostic reproduced two zero-byte timeouts before a later valid
 reply on the same VM. The separate single-client run succeeded immediately.
 The retained CPU snapshots follow successful replies, so the cause of the

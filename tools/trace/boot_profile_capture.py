@@ -2,7 +2,7 @@
 """Owned QEMU provenance/capability/prior-diagnostic probe, not a CPU capture.
 
 `plan` validates byte pins and independently checks the materialized FAT volume.
-`probe` additionally launches exactly the fixed profile below in a fresh private
+`probe` additionally launches the selected fixed profile below in a fresh private
 directory. Its only guest execution control is one QMP cont followed by teardown.
 No RSP connection, physical/virtual memory read, breakpoint or injected guest
 operation is implemented. Missing diagnostics never trigger another run or an
@@ -36,6 +36,7 @@ import boot_profile_inputs as entry
 
 VM_SECONDS = 60
 INVOCATION_PROFILE = 'q35-8.2-tcg-qemu64-virtio-ro-esp-debugcon-v0'
+SATA_OFF_INVOCATION_PROFILE = 'q35-8.2-tcg-qemu64-virtio-ro-esp-debugcon-sata-off-v0'
 TEARDOWN_SECONDS = 5
 BOOT_SECONDS = 20
 RESPONSE_SECONDS = 5
@@ -215,11 +216,20 @@ def create_run(path):
          'run_not_private')
 
 
-def build_argv(inputs, run):
+def admission_machine(invocation_profile):
+    deny(type(invocation_profile) is str and
+         invocation_profile in (INVOCATION_PROFILE, SATA_OFF_INVOCATION_PROFILE),
+         'invocation_profile')
+    return 'pc-q35-8.2,sata=off' if invocation_profile == SATA_OFF_INVOCATION_PROFILE else 'pc-q35-8.2'
+
+
+def build_argv(inputs, run, invocation_profile=INVOCATION_PROFILE):
+    machine = admission_machine(invocation_profile)
     safe_path(inputs)
     safe_path(run)
     deny(len(str(run / 'serial.sock').encode()) < 104, 'unix_socket_path_length')
-    return [str(inputs / 'qemu'), '-machine', 'pc-q35-8.2,accel=tcg',
+    machine_argv = 'pc-q35-8.2,accel=tcg' + (',sata=off' if machine.endswith(',sata=off') else '')
+    return [str(inputs / 'qemu'), '-machine', machine_argv,
         '-cpu', 'qemu64', '-smp', '1', '-m', '512M', '-nic', 'none', '-S',
         '-display', 'none', '-no-reboot',
         '-drive', 'if=pflash,format=raw,readonly=on,file=' + str(inputs / 'ovmf_code'),
@@ -332,8 +342,7 @@ def validate_profile(profile, inputs):
             'assembled_patch_sha256', 'diagnostic_image_name', 'inputs', 'provenance'), 'probe_profile_fields')
         entry.integer(profile['schema_version'], 1, 1, 'schema_version')
         deny(profile['kind'] == 'boot_profile_probe_inputs_v0', 'profile_kind')
-        deny(type(profile['invocation_profile']) is str and
-             profile['invocation_profile'] == INVOCATION_PROFILE, 'invocation_profile')
+        admission_machine(profile['invocation_profile'])
         deny(type(profile['source_commit']) is str and
              re.fullmatch('[0-9a-f]{40}', profile['source_commit']), 'source_commit')
         entry.sha(profile['assembled_patch_sha256'], 'assembled_patch_sha256')
@@ -553,7 +562,7 @@ def classify_diagnostic(result, data, image_name, pe):
 def run_probe(profile, inputs, run):
     pe = validate_profile(profile, inputs)
     esp = check_esp(inputs, profile)  # Both independent checks must pass before Popen.
-    argv = build_argv(inputs, run)
+    argv = build_argv(inputs, run, profile['invocation_profile'])
     create_run(run)
     shutil.copyfile(inputs / 'initial_vars', run / 'vars.fd')
     os.chmod(run / 'vars.fd', 0o600)
@@ -690,7 +699,7 @@ def main(argv=None):
             validate_profile(profile, args.inputs_root)
             result = new_report('READY_FOR_REVIEW', 'no_vm_launched')
             result['esp_validation'] = check_esp(args.inputs_root, profile)
-            result['argv'] = build_argv(args.inputs_root, args.run_dir)
+            result['argv'] = build_argv(args.inputs_root, args.run_dir, profile['invocation_profile'])
             result['profile_sha256'] = entry.profile_digest(profile)
             result['invocation_profile'] = profile['invocation_profile']
         else:

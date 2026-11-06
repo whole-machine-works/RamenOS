@@ -118,6 +118,7 @@ class LauncherFixture:
         for name in (*cap.STREAMS[:4], "release"):
             self.parents[name], self.child_ends[name] = socket.socketpair()
         self.plan = {"observer": {"kind": "owned_python_lifecycle_fixture"},
+                     "profile_sha256": hashlib.sha256(self.profile_bytes).hexdigest(),
                      "argv": [sys.executable, "-B", "-c", _OWNED_CHILD, mode,
                               json.dumps({n: s.fileno() for n, s in self.child_ends.items()})]}
         self.children, self.waits, self.signals, self.reap_deadlines = [], [], [], []
@@ -208,6 +209,21 @@ class LauncherFixture:
 
 
 class CapabilityControls(unittest.TestCase):
+    def test_cap02_sata_off_profile_has_a_distinct_pin_and_exact_machine(self):
+        old = {"invocation_profile": previous.INVOCATION_PROFILE}
+        new = {"invocation_profile": previous.SATA_OFF_INVOCATION_PROFILE}
+        self.assertEqual(cap.profile_pin(old), cap.PROFILE_SHA256)
+        self.assertNotEqual(cap.profile_pin(old), cap.profile_pin(new))
+        with self.assertRaises(previous.ProbeError):
+            cap.decode_pinned_profile(cap.canonical(new))
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp).resolve()
+            old_argv = cap.capability_argv(root, root / "fresh")
+            new_argv = cap.capability_argv(root, root / "fresh", new["invocation_profile"])
+            machine = old_argv.index("-machine") + 1
+            old_argv[machine] = "pc-q35-8.2,accel=tcg,sata=off"
+            self.assertEqual(old_argv, new_argv)
+
     def test_cap01_unreviewed_plan_denies_before_child(self):
         with tempfile.TemporaryDirectory() as tmp, patch.object(subprocess, "Popen") as spawn:
             root = Path(tmp).resolve()

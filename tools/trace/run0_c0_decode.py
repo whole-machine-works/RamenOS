@@ -906,8 +906,8 @@ def _profile_binding(report, store):
     _fields(profile, ("schema_version", "kind", "invocation_profile", "source_commit",
         "assembled_patch_sha256", "diagnostic_image_name", "inputs", "provenance"), "profile_fields")
     _integer(profile["schema_version"], 1, 1)
-    _require(profile["kind"] == "boot_profile_probe_inputs_v0" and
-             profile["invocation_profile"] == capture.INVOCATION_PROFILE, "profile_identity")
+    _require(profile["kind"] == "boot_profile_probe_inputs_v0", "profile_identity")
+    machine = capture.admission_machine(profile["invocation_profile"])
     _fields(profile["inputs"], capture.INPUT_LIMITS, "profile_inputs")
     _fields(profile["provenance"], capture.PROVENANCE_KEYS, "profile_provenance")
     for name, limit in capture.INPUT_LIMITS.items():
@@ -950,7 +950,7 @@ def _profile_binding(report, store):
                        "prior_run_id", "diagnostic_ref"), "candidate_fields")
     admission_profile = {name: profile[name] for name in
                          ("source_commit", "assembled_patch_sha256", "diagnostic_image_name")}
-    admission_profile.update(machine="pc-q35-8.2", accelerator="tcg", cpu="qemu64", vcpus=1,
+    admission_profile.update(machine=machine, accelerator="tcg", cpu="qemu64", vcpus=1,
                              ram_bytes=512 << 20, artifacts=artifacts)
     packet = {"schema_version": 1, "kind": "boot_entry_inputs_v0", "entry_length": 32,
         "profile": admission_profile, "prior_hint": {"prior_run_id": candidate["prior_run_id"],
@@ -990,6 +990,7 @@ def _profile_binding(report, store):
              _same(probe.get("claims"), {name: False for name in entry.CLAIM_NAMES}) and
              probe.get("capture_complete") is False and probe.get("profile_preconditions_met") is False,
              "prior_probe_binding")
+    capability.validate_invocation_argv(probe["argv"], profile["invocation_profile"])
     files = probe.get("raw_files")
     _require(type(files) is list and len(files) <= 16, "prior_probe_raw_files")
     diagnostic_rows = [row for row in files if type(row) is dict and row.get("path") == "debug.bin"]
@@ -1203,8 +1204,9 @@ def _capability_binding(report, store, profile):
     _require(_same(_json(store.get(previous["profile_ref"], 65536), 65536), profile) and
              store.get(previous["source_dossier_ref"], 65536) ==
              store.get(report["source_dossier_ref"], 65536), "capability_profile_binding")
-    for key in ("observer_ref", "argv_ref"):
-        store.get(previous[key], 65536)
+    store.get(previous["observer_ref"], 65536)
+    argv = _json(store.get(previous["argv_ref"], 65536), 65536)
+    capability.validate_invocation_argv(argv, profile["invocation_profile"])
     for ref in previous["raw_refs"]:
         store.get(ref, LIMITS["retained_bytes"])
     for key in capability.OBS_REFS:
