@@ -92,8 +92,10 @@ class C0PlanControls(unittest.TestCase):
         decoder._profile_binding(report, store)
         decoder._capability_binding(report, store, json.loads(blobs[report['profile_ref']['path']]))
         store.get(persistence, witness.REPORT_LIMIT)
+        # Public preparation also verifies the separately pinned ABI root.
+        store.get(host['abi_ref'], witness.REPORT_LIMIT)
         manifest = [witness.CaptureEvidence.ref(name, raw) for name, raw in sorted(store.verified.items())]
-        plan = {'context':'c0', 'prior_inputs_sha256':hashlib.sha256(witness.canonical(manifest)).hexdigest()}
+        plan = {'context':'c0', 'abi_sha256':host['abi_ref']['sha256'], 'prior_inputs_sha256':hashlib.sha256(witness.canonical(manifest)).hexdigest()}
         for key in ('prior_admission_ref','profile_mapping_ref','capability_ref'):
             reference=report[key]
             plan[key]=[reference['path'],reference['sha256'],reference['length']]
@@ -105,7 +107,8 @@ class C0PlanControls(unittest.TestCase):
             report, plan, blobs, abi, digest = self.packet(directory)
             with patch.object(witness, 'C0_SOURCE_PERSISTENCE_SHA256', digest, create=True), \
                  patch.object(witness.subprocess, 'Popen', side_effect=AssertionError('spawned')):
-                witness.validate_c0_plan_inputs(plan, report['profile_ref'], abi, blobs)
+                witness.validate_c0_plan_inputs(plan, report['profile_ref'], abi, blobs,
+                    abi_ref=json.loads(blobs['host-report.json'])['abi_ref'])
 
     def test_input_ref_arrays_and_manifest_are_not_unchecked_output_escape_hatches(self):
         import copy
@@ -120,17 +123,43 @@ class C0PlanControls(unittest.TestCase):
             with patch.object(witness, 'C0_SOURCE_PERSISTENCE_SHA256', digest, create=True):
                 for changed in variants:
                     with self.subTest(changed=changed), self.assertRaises((witness.base.ProbeError, decoder.C0DecodeError)):
-                        witness.validate_c0_plan_inputs(changed, report['profile_ref'], abi, blobs)
+                        witness.validate_c0_plan_inputs(changed, report['profile_ref'], abi, blobs,
+                            abi_ref=json.loads(blobs['host-report.json'])['abi_ref'])
                 corrupted=copy.copy(blobs)
                 corrupted[plan['source_persistence_ref'][0]]=b'changed'
                 with self.assertRaises((witness.base.ProbeError, decoder.C0DecodeError)):
-                    witness.validate_c0_plan_inputs(plan,report['profile_ref'],abi,corrupted)
+                    witness.validate_c0_plan_inputs(plan,report['profile_ref'],abi,corrupted,
+                        abi_ref=json.loads(blobs['host-report.json'])['abi_ref'])
+
+    def test_abi_root_is_explicit_verified_and_required_in_full_prepared_manifest(self):
+        with tempfile.TemporaryDirectory() as directory:
+            report, plan, blobs, abi, digest = self.packet(directory)
+            reference = json.loads(blobs['host-report.json'])['abi_ref']
+            with patch.object(witness, 'C0_SOURCE_PERSISTENCE_SHA256', digest):
+                # Same full verified closure as public preparation, including
+                # the ABI root in addition to prior/profile/CAP/persistence.
+                witness.validate_c0_plan_inputs(plan, report['profile_ref'], abi, blobs,
+                                                 abi_ref=reference)
+                missing = dict(blobs)
+                del missing[reference['path']]
+                for changed_plan, changed_abi, changed_blobs, changed_ref in (
+                    (plan, abi, missing, reference),
+                    (plan, abi, blobs, reference | {'length':reference['length']+1}),
+                    (plan, abi, blobs, reference | {'sha256':'0'*64}),
+                    (plan | {'abi_sha256':'0'*64}, abi, blobs, reference),
+                    (plan, abi | {'kind':'contradictory'}, blobs, reference),
+                ):
+                    with self.subTest(reference=changed_ref), self.assertRaises((
+                            witness.base.ProbeError, decoder.C0DecodeError)):
+                        witness.validate_c0_plan_inputs(changed_plan, report['profile_ref'],
+                            changed_abi, changed_blobs, abi_ref=changed_ref)
 
     def test_source_persistence_and_profile_must_be_the_reviewed_pair(self):
         with tempfile.TemporaryDirectory() as directory:
             report, plan, blobs, abi, _ = self.packet(directory)
             with self.assertRaisesRegex(witness.base.ProbeError, 'persistence'):
-                witness.validate_c0_plan_inputs(plan,report['profile_ref'],abi,blobs)
+                witness.validate_c0_plan_inputs(plan,report['profile_ref'],abi,blobs,
+                    abi_ref=json.loads(blobs['host-report.json'])['abi_ref'])
 
 
 if __name__ == '__main__':

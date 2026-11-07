@@ -2,7 +2,7 @@
 
 The collector now joins the accepted entry stop, host observation and typed RAM
 acquisition through one owned VM and one wire. Independent source review and
-353 sealed Linux trace controls pass. Three earlier actual reset captures still
+354 sealed Linux trace controls pass. Three earlier actual reset captures still
 validate. Actual C0 execution and retained-runtime acceptance remain pending.
 
 ## Implemented boundary
@@ -54,16 +54,18 @@ Evidence root: `evidence/run0-c0-owned-collector-20261107/`.
 
 - `policy-review-001/disposition.json`: independent root runtime-policy review,
   eight controls and separate malformed-input/ABI/manifest counterexamples.
+- `runtime-abi-review-006/disposition.json`: actual retained-input recomputation
+  includes the exact verified ABI root; strict full-manifest equality is preserved.
 - `wire-review-001/disposition.json`: independent wire/accounting review,
   103 focused controls and operation/terminal-boundary counterexamples.
 - `collector-root-review-002.json` and `collector-root-review-003.json`:
   non-author collector review, 24 controls and the final teardown correction.
-- `linux-integrated-004.log`: all 353 controls pass under Linux Python 3.14.6;
+- `linux-integrated-006.log`: all 354 controls pass under Linux Python 3.14.6;
   all 35 source/test hashes match before and after. The sealed manifest is
-  `a847007d2d598e06f77458c42efe0949677ca9fec1ab6539e1276986ace12fac`.
+  `de166c13c84c4a08911e72abec1b94eeeb915b707f7cc4b2197823eea971efb5`.
 - `endpoint-review-004/disposition.json`: independent acceptance of the fixed
   debugger socket mapping and actual UNIX connections derived from `build_argv`.
-- `historical-reset-replay-002.json`: three unchanged retained reset captures pass.
+- `historical-reset-replay-006.json`: three unchanged retained reset captures pass.
 - `gate-review-001/disposition.json`: four additive test commands preserve every
   earlier gate command byte-for-byte.
 
@@ -76,7 +78,15 @@ unbound exception name; its typed-refusal control now passes. Exact launch-plan
 review rejected preparation003 before execution because its collector opened
 `rsp.sock` while the unchanged QEMU argv created `gdb.sock`. The corrected closed
 mapping is covered by actual UNIX listeners and connectors derived from the real
-argv builder. The rejected prepared packet remains unexecuted and preserved.
+argv builder. The rejected prepared packet remains unexecuted and preserved. The later
+single attempt005 entered the public collector but stopped at its first
+registration check before run creation or VM spawn: preparation included the
+verified ABI root in its 124-entry manifest, while validation reconstructed 123.
+The corrected validator receives that exact ABI reference explicitly at both
+current-registration and final-report call sites. Independent replay of the
+retained 124-entry closure passes, and missing/altered/extra inputs still refuse.
+The consumed attempt, traceback and unchanged source/input posthashes are retained;
+no unchanged retry occurred.
 
 ## Next outcome
 

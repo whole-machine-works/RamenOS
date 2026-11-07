@@ -74,7 +74,7 @@ VAPIC-off, `device[2]/rtc` for older profiles. The
 [pure/typed driver](docs/plans/run0-c0-acquisition-driver-2026-11-06.md),
 [receiving host adapter](docs/plans/run0-c0-host-observation-2026-11-07.md) and
 [owned collector/shared dispatch](docs/plans/run0-c0-owned-collector-2026-11-07.md)
-are implemented and independently source-reviewed. All 353 sealed Linux trace
+are implemented and independently source-reviewed. All 354 sealed Linux trace
 controls and three historical reset replays pass. Finish independent review of
 the exact prepared source/input/launch plan, then run one actual C0 capture and
 independently replay its retained evidence. Preserve all existing budgets,

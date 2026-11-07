@@ -299,7 +299,7 @@ owned collector, shared dispatch/accounting and retained-runtime C0 acceptance.
 
 The [owned C0 collector](docs/plans/run0-c0-owned-collector-2026-11-07.md)
 now joins private current/after issuers, shared physical-send accounting and owned
-cleanup. Independent source review, all 353 sealed Linux trace controls and three
+cleanup. Independent source review, all 354 sealed Linux trace controls and three
 historical reset replays pass. The runtime policy checks the exact profile, ABI,
 prior/persistence inputs and seventeen observer source files. Actual C0 capture
 and retained-runtime acceptance remain pending; no live RAM result is claimed.

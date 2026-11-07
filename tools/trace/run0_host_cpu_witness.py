@@ -717,7 +717,7 @@ C0_PLAN_INPUT_FIELDS = ("prior_admission_ref", "profile_mapping_ref", "capabilit
                         "source_persistence_ref")
 
 
-def validate_c0_plan_inputs(plan, profile_ref, abi_index, blobs):
+def validate_c0_plan_inputs(plan, profile_ref, abi_index, blobs, *, abi_ref):
     """Recompute a closed input manifest; input arrays never grant output authority."""
     import run0_c0_decode as decoder
     import run0_c0_capture as capture
@@ -733,6 +733,13 @@ def validate_c0_plan_inputs(plan, profile_ref, abi_index, blobs):
     persistence = references["source_persistence_ref"]
     deny(persistence["sha256"] == C0_SOURCE_PERSISTENCE_SHA256, "c0_source_persistence_pin")
     store = decoder._Blobs(blobs)
+    # Preparation verifies this exact ABI root through the same store. Include
+    # it explicitly in the reconstructed manifest; do not infer its path or
+    # drop a verified producer input to make a digest match.
+    abi_ref = decoder._ref(abi_ref, REPORT_LIMIT)
+    abi_raw = store.get(abi_ref, REPORT_LIMIT)
+    deny(type(abi_index) is dict and strict_json(abi_raw, REPORT_LIMIT) == abi_index
+         and plan.get("abi_sha256") == abi_ref["sha256"], "c0_plan_abi_root_identity")
     profile, _, _ = decoder._profile_binding({"profile_ref": profile_ref, **references}, store)
     deny(profile["invocation_profile"] == base.VAPIC_OFF_INVOCATION_PROFILE,
          "c0_runtime_profile")
@@ -839,7 +846,7 @@ def require_c0_runtime_registration(prepared, plan):
          == retained_blob(index["source_dossier_ref"], blobs, 65536), "c0_runtime_input_changed")
     validate_native_layout(dict(prepared.native_layout))
     profile_ref = CaptureEvidence.ref("profile.json", prepared.profile_bytes)
-    validate_c0_plan_inputs(plan, profile_ref, index, blobs)
+    validate_c0_plan_inputs(plan, profile_ref, index, blobs, abi_ref=reference)
     prior = prior_entry.validate_prior_entry(profile_ref,
         dict(zip(("path", "sha256", "length"), prepared.prior_admission_ref)),
         dict(zip(("path", "sha256", "length"), prepared.profile_mapping_ref)), blobs)
@@ -1647,7 +1654,7 @@ def validate_complete_report(report_ref, report, blobs):
          and plan["abi_sha256"] == report["abi_ref"]["sha256"]
          and plan["source_dossier_sha256"] == report["source_ref"]["sha256"], "plan_binding")
     if c0_runtime:
-        validate_c0_plan_inputs(plan, report["profile_ref"], index, blobs)
+        validate_c0_plan_inputs(plan, report["profile_ref"], index, blobs, abi_ref=report["abi_ref"])
     if runtime:
         verify_runtime_observer(report, blobs, profile, plan, index)
     else:
