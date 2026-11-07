@@ -43,3 +43,25 @@ class _C0Reset(_ResetSequence):
         self.query_physical_mode()
         self.enable_physical_mode()
         return ResetBootstrap(target, registers, self.query_physical_mode())
+
+
+def _current_physical_mode(wire, deadline_ns):
+    """One query at the confirmed stop; no mode mutation is available here."""
+    value = wire._rsp_exchange("physical_mode_query", b"qqemu.PhyMemMode", limit=deadline_ns)
+    if value != b"1":
+        wire._rsp_semantic("c0_physical_mode", "DENY")
+
+
+def _selected_registers(wire, deadline_ns):
+    from run0_c0_decode import SELECTED_REGISTERS
+    from run0_rsp import HEX
+
+    result = []
+    for number in SELECTED_REGISTERS:
+        value = wire._rsp_exchange("register_read", f"p{number:x}".encode(), limit=deadline_ns)
+        size = 4 if 17 <= number <= 23 else 8
+        if len(value) != size * 2 or HEX.fullmatch(value) is None:
+            wire._rsp_semantic("c0_selected_register_width", "DENY")
+        result.append((number, int.from_bytes(bytes.fromhex(value.decode("ascii")), "little"),
+                       wire.operations[-1].seq))
+    return tuple(result)

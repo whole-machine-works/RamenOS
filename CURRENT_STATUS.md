@@ -290,6 +290,13 @@ requests. Eighteen new controls and complete synthetic replay pass independent
 review. Production current/after issuers, shared-wire dispatch/accounting and
 the real owned collector remain pending; no live RAM was acquired.
 
+The [host-observation receiving adapter](docs/plans/run0-c0-host-observation-2026-11-07.md)
+now reuses the 14-read/104-byte body through closed same-wire receipts and one
+aggregate lease. Twenty-five new controls and all 296 Linux trace controls pass;
+three historical reset replays remain valid. Actual helpers operate only on
+private synthetic fixtures in this packet. Production issuers, owned collector,
+shared dispatch/accounting and retained-runtime C0 acceptance remain pending.
+
 The IPC diagnostic reproduced two zero-byte timeouts before a later valid
 reply on the same VM. The separate single-client run succeeded immediately.
 The retained CPU snapshots follow successful replies, so the cause of the

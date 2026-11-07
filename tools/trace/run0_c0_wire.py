@@ -33,6 +33,7 @@ TEARDOWN_NS = RESPONSE_NS = 5_000_000_000
 CONTINUE_NS = 60_000_000_000
 READ_CHUNK = 65_536
 _COMMANDS = ("qmp_capabilities", "query-commands", "query-status")
+_REQUIRED_COMMANDS = (*_COMMANDS, "query-cpus-fast", "qom-get", "human-monitor-command", "quit")
 _PASSIVE_STREAMS = frozenset(("rsp", "serial", "debug", "qemu_stdout", "qemu_stderr"))
 
 
@@ -108,6 +109,65 @@ class ConfirmedEntryStop:
     observed_ns: int
 
 
+@dataclass(frozen=True, slots=True)
+class CurrentPhysicalMode:
+    _session: object
+    stop_event_seq: int
+    operation_seq: int
+    value: int
+
+
+@dataclass(frozen=True, slots=True)
+class SelectedC0Registers:
+    _session: object
+    stop_event_seq: int
+    phase: str
+    values: tuple[tuple[int, int, int], ...]
+
+
+@dataclass(frozen=True, slots=True)
+class HostObservationLease:
+    _session: object
+    stop_event_seq: int
+    deadline_ns: int
+
+
+@dataclass(frozen=True, slots=True)
+class PeerReceipt:
+    _session: object
+    raw_bytes: bytes
+    observed_ns: int
+
+
+@dataclass(frozen=True, slots=True)
+class C0HostBracket:
+    _session: object
+    phase: str
+    operations: tuple[tuple[str, int], ...]
+    cpu_identity: tuple[str, int, int]
+    hmp_bytes: bytes
+    parsed_state: tuple
+
+
+@dataclass(frozen=True, slots=True)
+class C0RegisterView:
+    _session: object
+    operation_seq: int
+    wire: WireSlice
+    raw_bytes: bytes
+    parsed_state: tuple
+
+
+@dataclass(frozen=True, slots=True)
+class C0LayoutReceipt:
+    _session: object
+    phase: str
+    operation_seq: int
+    wire: WireSlice
+    raw_bytes: bytes
+    ranges: tuple[tuple[int, int], ...]
+
+
 class C0Wire:
     """One owner-thread wire. Endpoints stay borrowed, including after failure."""
 
@@ -158,6 +218,12 @@ class C0Wire:
         self._rsp_ready = self._boot_active = self._boot_resumed = self._boot_stopped = False
         self._entry_state = "new"
         self._entry = self._entry_stop = None
+        self._confirmed_stop = self._current_mode = None
+        self._before_registers = self._after_registers = self._final_register_view = None
+        self._host_lease = self._host_peer = self._host_before = self._host_after = None
+        self._host_receipt = self._layout_before = self._layout_after = None
+        self._current_binding = self._current_acquisition = self._reads_complete = None
+        self._ram_transport_identity = self._admission_epoch = None
         self._session = object()
 
         self._selector = selectors.DefaultSelector()
@@ -394,14 +460,16 @@ class C0Wire:
             deny(type(value) is list and all(type(row) is dict and set(row) == {"name"}
                  and type(row["name"]) is str for row in value), "qmp_command_inventory")
             names = tuple(row["name"] for row in value)
-            deny(len(set(names)) == len(names) and set(_COMMANDS) <= set(names),
+            deny(len(set(names)) == len(names) and set(_REQUIRED_COMMANDS) <= set(names),
                  "qmp_command_inventory")
             return names
-        else:
+        elif command == "query-status":
             incomplete(type(value) is dict and set(value) == {"running", "singlestep", "status"}
                        and value["running"] is False and value["singlestep"] is False
                        and value["status"] == ("debug" if debug else "prelaunch"),
                        "qmp_not_debug" if debug else "qmp_not_prelaunch")
+        else:
+            return value
         return None
 
     def _exchange(self, *, debug=False):
@@ -410,18 +478,31 @@ class C0Wire:
              and (debug and index == len(_COMMANDS) and self._entry_state == "stopped"
                   or not debug and index < len(_COMMANDS))
              and (not self._operations or self._operations[-1].result == "ok"), "qmp_session_state")
-        identifier, command = index + 1, "query-status" if debug else _COMMANDS[index]
-        self._require_quiet(self._deadline, "qmp_request_timeout")
+        command = "query-status" if debug else _COMMANDS[index]
+        return self._qmp_exchange(command, command.replace("-", "_"), None,
+                                  self._deadline, debug=debug)
+
+    def _qmp_exchange(self, command, name, arguments, limit, *, debug=False):
+        """Private engine; only closed bootstrap/observation operations call it."""
+        deny(not self._closed and self._failure is None and
+             (not self._operations or self._operations[-1].result == "ok"), "qmp_session_state")
+        if self._rsp_active:
+            self._rsp_quiet(limit)
+        else:
+            self._require_quiet(limit, "qmp_request_timeout")
         started = time.monotonic_ns()
-        deadline = min(started + RESPONSE_NS, self._deadline)
-        request = json.dumps({"execute": command, "id": identifier},
-                             separators=(",", ":")).encode() + b"\r\n"
+        deadline = min(started + RESPONSE_NS, self._deadline, limit)
+        identifier = self._qmp_identifier + 1
+        request_value = {"execute": command, "id": identifier}
+        if arguments is not None:
+            request_value["arguments"] = arguments
+        request = json.dumps(request_value, separators=(",", ":")).encode() + b"\r\n"
         offset = len(self._raw["qmp-out"])
         incomplete(len(self._operations) < MAX_OPERATIONS, "c0_operation_limit")
         incomplete(len(request) <= MAX_QMP_BYTES - offset, "qmp_wire_limit")
         self._time_left(deadline, "qmp_request_timeout")
         self.reserve_output(len(request))
-        row = Operation(len(self._operations) + 1, "qmp", command.replace("-", "_"), started)
+        row = Operation(len(self._operations) + 1, "qmp", name, started)
         self._operations.append(row)
         self._qmp_identifier = identifier
         accepted, finished, result = None, None, "error"
@@ -525,12 +606,13 @@ class C0Wire:
         self._operations[-1] = replace(self._operations[-1], result="error")
         raise ProbeError(status, reason)
 
-    def _rsp_exchange(self, name, payload):
+    def _rsp_exchange(self, name, payload, *, limit=None):
         deny(self._rsp_active and self._failure is None and not self._closed,
              "rsp_session_state")
-        self._rsp_quiet(self._deadline)
+        limit = self._deadline if limit is None else min(limit, self._deadline)
+        self._rsp_quiet(limit)
         started = time.monotonic_ns()
-        deadline = min(started + RESPONSE_NS, self._deadline)
+        deadline = min(started + RESPONSE_NS, limit)
         request = rsp.encode_packet(payload)
         incomplete(len(self._operations) < MAX_OPERATIONS, "c0_operation_limit")
         incomplete(self._rsp_acks <= MAX_RSP_ACKS - 2, "rsp_ack_limit")
@@ -749,4 +831,234 @@ class C0Wire:
             # selector. Never publish a complete prefix with an unclaimed tail.
             deny(not self._rsp_frames and not self._rsp_decoder.pending, "rsp_unsolicited")
             incomplete(not self._rsp_eof, "rsp_eof")
-            return ConfirmedEntryStop(self._entry_stop, status_seq, observed)
+            self._confirmed_stop = ConfirmedEntryStop(self._entry_stop, status_seq, observed)
+            return self._confirmed_stop
+
+    def _current_stop(self, confirmed):
+        self._entry_local_state("confirmed")
+        deny(type(confirmed) is ConfirmedEntryStop and confirmed is self._confirmed_stop
+             and confirmed.stop is self._entry_stop and confirmed.stop._session is self._session,
+             "c0_current_stop")
+
+    def _current_deadline(self):
+        return min(self._deadline, self._entry_stop.received_ns + CONTINUE_NS)
+
+    def confirm_stopped_physical_mode(self, confirmed):
+        self._current_stop(confirmed)
+        deny(self._current_mode is None and self._before_registers is None, "c0_mode_state")
+        with self._entry_attempt():
+            from run0_c0_rsp import _current_physical_mode
+            _current_physical_mode(self, self._current_deadline())
+            self._current_mode = CurrentPhysicalMode(self._session, confirmed.stop.stop_event_seq,
+                                                     self._operations[-1].seq, 1)
+            return self._current_mode
+
+    def _require_acquisition_complete(self):
+        # No setter/issuer exists here. Only the separately reviewed real collector
+        # may register these held objects after current owned RAM admission.
+        deny(all(value is not None for value in (self._current_binding,
+             self._current_acquisition, self._reads_complete, self._ram_transport_identity,
+             self._admission_epoch)), "c0_current_acquisition_pending")
+        import run0_c0_acquire as acquire
+        import run0_c0_decode as decoder
+        with self._entry_attempt():
+            try:
+                binding = self._current_binding
+                acquire.require_runtime_binding(binding)
+                deny(type(self._current_acquisition) is acquire.AcquisitionSession
+                     and type(self._reads_complete) is acquire.ReadsComplete
+                     and binding.confirmed_stop is self._confirmed_stop
+                     and binding.wire_identity is self._session
+                     and self._current_acquisition.binding is binding,
+                     "c0_current_acquisition_identity")
+                result = self._current_acquisition.require_reads_complete(self._reads_complete,
+                    self._ram_transport_identity, self._admission_epoch, time.monotonic_ns())
+                deny(result is binding, "c0_current_acquisition_identity")
+            except decoder.C0DecodeError as error:
+                raise ProbeError(error.status, error.reason) from error
+
+    def read_selected_registers(self, confirmed, phase):
+        self._current_stop(confirmed)
+        deny(type(phase) is str and phase in ("before", "after"), "c0_register_phase")
+        deny(self._current_mode is not None and (phase == "before" and self._before_registers is None
+             and self._host_lease is None or phase == "after" and self._before_registers is not None
+             and self._host_receipt is not None and self._layout_before is not None
+             and self._after_registers is None), "c0_register_state")
+        if phase == "after":
+            self._require_acquisition_complete()
+        with self._entry_attempt():
+            from run0_c0_rsp import _selected_registers
+            values = _selected_registers(self, self._current_deadline())
+            if phase == "before":
+                if dict((number, value) for number, value, _ in values)[16] != confirmed.stop.entry_address:
+                    self._rsp_semantic("c0_entry_rip", "DENY")
+            elif tuple((n, v) for n, v, _ in values) != tuple((n, v) for n, v, _ in self._before_registers.values):
+                self._rsp_semantic("c0_registers_changed", "INCOMPLETE")
+            result = SelectedC0Registers(self._session, confirmed.stop.stop_event_seq, phase, values)
+            if phase == "before":
+                self._before_registers = result
+            else:
+                self._after_registers = result
+            return result
+
+    def begin_host_observation(self, confirmed, before_registers):
+        self._current_stop(confirmed)
+        deny(type(before_registers) is SelectedC0Registers
+             and before_registers is self._before_registers and self._host_lease is None,
+             "c0_host_lease_state")
+        with self._entry_attempt():
+            deadline = min(time.monotonic_ns() + RESPONSE_NS, self._current_deadline())
+            self._rsp_quiet(deadline)
+            self._host_lease = HostObservationLease(self._session, confirmed.stop.stop_event_seq, deadline)
+            return self._host_lease
+
+    def _lease(self, lease):
+        self._current_stop(self._confirmed_stop)
+        deny(type(lease) is HostObservationLease and lease is self._host_lease
+             and lease._session is self._session and self._host_receipt is None,
+             "c0_host_lease_state")
+
+    def host_peer_credentials(self, lease):
+        self._lease(lease)
+        deny(self._host_peer is None and self._host_before is None, "c0_host_peer_state")
+        with self._entry_attempt():
+            self._rsp_quiet(lease.deadline_ns)
+            from run0_host_cpu_witness import NATIVE_LAYOUT
+            raw = self._qmp.getsockopt(socket.SOL_SOCKET, NATIVE_LAYOUT["so_peercred"], 12)
+            observed = time.monotonic_ns()
+            self._time_left(lease.deadline_ns, "witness_deadline")
+            deny(type(raw) is bytes and len(raw) == 12, "peer_credentials_shape")
+            self.reserve_output(len(raw))
+            self._host_peer = PeerReceipt(self._session, raw, observed)
+            return self._host_peer
+
+    @staticmethod
+    def _hmp_state(raw, registers):
+        from run0_host_cpu_witness import c0_registers
+        import run0_c0_decode as decoder
+        deny(type(raw) is str and raw.isascii() and 0 < len(raw) <= 65536, "hmp_shape")
+        values = {number: value for number, value, _ in registers.values}
+        c0_registers(raw, values)
+        try:
+            parsed = decoder._hmp(raw.encode("ascii"), values)
+        except decoder.C0DecodeError as error:
+            raise ProbeError(error.status, error.reason) from error
+        return (parsed["cpl"], parsed["smm"], parsed["a20"], parsed["cs64"],
+                tuple(sorted(parsed["descriptors"].items())))
+
+    def host_bracket(self, lease, phase):
+        self._lease(lease)
+        deny(type(phase) is str and (phase == "before" and self._host_peer is not None
+             and self._host_before is None or phase == "after" and self._host_before is not None
+             and self._host_after is None), "c0_host_bracket_state")
+        with self._entry_attempt():
+            from run0_host_cpu_witness import cpu_path, realized_width, MAX_PID
+            indices = []
+
+            def request(command, name, key, arguments=None):
+                value, _ = self._qmp_exchange(command, name, arguments, lease.deadline_ns,
+                                              debug=command == "query-status")
+                indices.append((key, self._operations[-1].seq))
+                return value
+
+            try:
+                request("query-status", "query_status", "status_seq")
+                cpus = request("query-cpus-fast", "query_cpus_fast", "cpu_seq")
+                path = cpu_path(cpus)
+                tid = cpus[0]["thread-id"]
+                deny(type(tid) is int and 1 <= tid <= MAX_PID, "qmp_host_tid")
+                realized = request("qom-get", "qom_realized", "realized_seq",
+                                   {"path": path, "property": "realized"})
+                width = request("qom-get", "qom_phys_bits", "phys_bits_seq",
+                                {"path": path, "property": "phys-bits"})
+                width = realized_width(realized, width)
+                raw = request("human-monitor-command", "hmp_registers", "hmp_seq",
+                              {"command-line": "info registers"})
+                parsed = self._hmp_state(raw, self._before_registers)
+                self._rsp_quiet(lease.deadline_ns)
+                encoded = raw.encode("ascii")
+                self.reserve_output(len(encoded))
+                result = C0HostBracket(self._session, phase, tuple(indices),
+                                       (path, tid, width), encoded, parsed)
+                if phase == "before":
+                    self._host_before = result
+                else:
+                    incomplete((result.cpu_identity, result.hmp_bytes, result.parsed_state) ==
+                               (self._host_before.cpu_identity, self._host_before.hmp_bytes,
+                                self._host_before.parsed_state), "c0_host_bracket_changed")
+                    self._host_after = result
+                return result
+            except ProbeError:
+                if indices and self._operations[-1].result == "ok":
+                    self._operations[-1] = replace(self._operations[-1], result="error")
+                raise
+
+    def pump_host_observation(self, lease):
+        self._lease(lease)
+        with self._entry_attempt():
+            self._time_left(lease.deadline_ns, "witness_deadline")
+            self._rsp_quiet(lease.deadline_ns)
+            deny(self._frame_start == len(self._raw["qmp-in"]), "qmp_observation_partial")
+
+    def finish_host_observation(self, lease, actual_receipt):
+        self._lease(lease)
+        from run0_c0_host import _issued_observation
+        deny(self._host_after is not None and _issued_observation(actual_receipt, self, lease),
+             "c0_host_receipt_identity")
+        with self._entry_attempt():
+            self.pump_host_observation(lease)
+            self._host_receipt = actual_receipt
+
+    def read_final_register_view(self, confirmed, after_registers):
+        self._current_stop(confirmed)
+        deny(type(after_registers) is SelectedC0Registers and after_registers is self._after_registers
+             and self._after_registers is not None and self._final_register_view is None,
+             "c0_final_register_state")
+        self._require_acquisition_complete()
+        with self._entry_attempt():
+            raw, _ = self._qmp_exchange("human-monitor-command", "hmp_registers",
+                {"command-line": "info registers"}, self._current_deadline())
+            try:
+                parsed = self._hmp_state(raw, after_registers)
+                encoded = raw.encode("ascii")
+                incomplete(encoded == self._host_before.hmp_bytes, "c0_final_hmp_changed")
+                self._rsp_quiet(self._current_deadline())
+                self.reserve_output(len(encoded))
+                row = self._operations[-1]
+                self._final_register_view = C0RegisterView(self._session, row.seq, row.response, encoded, parsed)
+                return self._final_register_view
+            except ProbeError:
+                self._operations[-1] = replace(self._operations[-1], result="error")
+                raise
+
+    def read_current_layout(self, confirmed, phase):
+        self._current_stop(confirmed)
+        deny(type(phase) is str and (phase == "before" and self._host_receipt is not None
+             and self._layout_before is None or phase == "after" and self._layout_before is not None
+             and self._final_register_view is not None and self._layout_after is None), "c0_layout_state")
+        if phase == "after":
+            self._require_acquisition_complete()
+        with self._entry_attempt():
+            raw, _ = self._qmp_exchange("human-monitor-command", "hmp_flatview",
+                {"command-line": "info mtree -f"}, self._current_deadline())
+            try:
+                import run0_c0_decode as decoder
+                from run0_rsp_capability import validate_profile_layout
+                deny(type(raw) is str and raw.isascii() and 0 < len(raw) <= 65536, "layout_shape")
+                encoded = raw.encode("ascii")
+                ranges = decoder._layout(encoded)
+                deny(ranges == validate_profile_layout(raw, self._entry["invocation_profile"]), "c0_layout_profile")
+                if phase == "after":
+                    incomplete(encoded == self._layout_before.raw_bytes, "c0_layout_changed")
+                self._rsp_quiet(self._current_deadline())
+                self.reserve_output(len(encoded))
+                row = self._operations[-1]
+                result = C0LayoutReceipt(self._session, phase, row.seq, row.response, encoded, tuple(ranges))
+                if phase == "before":
+                    self._layout_before = result
+                else:
+                    self._layout_after = result
+                return result
+            except (ProbeError, decoder.C0DecodeError) as error:
+                self._operations[-1] = replace(self._operations[-1], result="error")
+                raise ProbeError(error.status, error.reason) from error

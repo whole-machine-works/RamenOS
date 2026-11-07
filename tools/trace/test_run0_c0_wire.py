@@ -19,7 +19,8 @@ def frame(value):
 
 GREETING = frame({"QMP": {"capabilities": [], "version": {
     "qemu": {"major": 8, "minor": 2, "micro": 2}, "package": ""}}})
-COMMANDS = ["qmp_capabilities", "query-commands", "query-status", "query-cpus-fast"]
+COMMANDS = ["qmp_capabilities", "query-commands", "query-status", "query-cpus-fast",
+            "qom-get", "human-monitor-command", "quit"]
 REQUESTS = [frame({"execute": name, "id": index})
             for index, name in enumerate(COMMANDS[:3], 1)]
 RESULTS = [{}, [{"name": name} for name in COMMANDS],
@@ -366,8 +367,9 @@ class WireTests(unittest.TestCase):
         for row, parsed in zip(wire.operations, observed_by_parser[1:], strict=True):
             self.assertLessEqual(row.finished_ns, parsed)
 
-    def test_inventory_requires_unique_names_and_all_three_operations(self):
-        for names in (COMMANDS + [COMMANDS[0]], COMMANDS[1:]):
+    def test_inventory_requires_unique_names_and_every_closed_operation(self):
+        for names in (COMMANDS + [COMMANDS[0]], *(COMMANDS[:i] + COMMANDS[i+1:]
+                                                 for i in range(len(COMMANDS)))):
             with self.subTest(names=names):
                 qmp, peer = self.endpoints()
                 wire = self.wire(qmp)

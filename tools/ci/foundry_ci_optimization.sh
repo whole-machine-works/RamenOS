@@ -38,5 +38,6 @@ python3 tools/trace/test_run0_c0_rsp.py
 python3 tools/trace/test_run0_c0_entry.py
 python3 tools/trace/test_run0_c0_entry_stop.py
 python3 tools/trace/test_run0_c0_acquire.py
+python3 tools/trace/test_run0_c0_host.py
 cargo test --locked -p idl_codegen --test content_stable
 printf '%s\n' 'FOUNDRY_CI_OPTIMIZATION: PASS scope=tooling'

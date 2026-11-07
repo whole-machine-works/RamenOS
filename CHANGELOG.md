@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## 2026-11-07 — C0 host-observation receiving preparation
+
+- Reuse the owned observation body through a closed C0 port and typed wire
+  receipts, preserving the reset wrapper, 14-read/104-byte reader, one lease,
+  actual helper lifecycle and shared budget.
+- Pass 25 new controls, all 296 Linux trace controls and three historical reset
+  replays. Real collector/issuer, accounting/send and retained-runtime source
+  joins remain pending. See the
+  [adapter record](docs/plans/run0-c0-host-observation-2026-11-07.md).
+
 ## 2026-11-06 — typed C0 RAM-acquisition preparation
 
 - Add the bounded suspended paging/object driver, frozen rereads and one-use

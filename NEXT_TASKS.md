@@ -75,7 +75,10 @@ acquisition driver and owned collector. The
 [pure/typed driver](docs/plans/run0-c0-acquisition-driver-2026-11-06.md) is now
 implemented and independently reviewed. Join its actual current/after issuers,
 shared-wire final-send/revocation hook and accounting to the owned collector.
-The live collector needs a fresh
+The [receiving host adapter](docs/plans/run0-c0-host-observation-2026-11-07.md)
+is also implemented with unchanged 14-read/104-byte reader and strict runtime
+guard. Advance the real owned collector, typed physical-send/teardown hooks and
+reviewed runtime plan/observer/source branch. The live collector needs a fresh
 host witness within the same stop before any guest-memory read. The
 [source persistence condition](docs/plans/run0-c0-source-persistence-2026-11-06.md)
 is now conditionally accepted for this exact profile: remaining queued CPU
