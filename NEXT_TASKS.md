@@ -66,9 +66,9 @@ paging step planned for acquisition. Shared C0 replay checks the QMP boot
 transitions and handles the pinned RTC notifications.
 Use the [requalified SATA-disabled profile](docs/plans/run0-sata-off-requalification-2026-11-06.md)
 with its fresh prior hint, entry admission, CAP1 and host reset witness. The
-bounded wire and paused QMP handshake are ready for the typed RSP transport.
-Freeze the dispatch interface and staff transport and RAM-admitted acquisition
-in parallel. The live collector needs a fresh host
+bounded wire, paused QMP handshake and typed debugger reset setup are ready.
+Freeze the admitted-entry breakpoint and asynchronous stop interface, then
+staff that transport and RAM-admitted acquisition in parallel. The live collector needs a fresh host
 witness within the same stop and a reviewed ordinary-RAM persistence condition
 before any guest-memory read. Qualify C0, then the same-call C1/C2 capture.
 The prior address is only a candidate:

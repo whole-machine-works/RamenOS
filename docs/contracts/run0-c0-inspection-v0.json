@@ -34,6 +34,11 @@
       "behavior": "One C0-only multiplexed wire with a shared ledger and fixed paused QMP prelaunch handshake on borrowed unbuffered endpoints. Retains actual partial writes and frame receipt clocks. Socket fixtures exercise the boundary. The future collector owns launch, endpoint closure and final drain."
     },
     {
+      "slice": "C0R-reset",
+      "files": ["tools/trace/run0_c0_rsp.py", "tools/trace/test_run0_c0_rsp.py"],
+      "behavior": "Typed fixed reset debugger setup after successful paused QMP prelaunch on the same C0 wire and ledger. Uses the source-pinned register and XML decoders, verifies reset RIP before mode changes, and retains actual RSP slices and acknowledgments. Socket fixtures only. Resume, breakpoints, guest-memory reads and final owner teardown remain separate."
+    },
+    {
       "slice": "C0C",
       "files": ["tools/trace/run0_c0_capture.py", "tools/trace/test_run0_c0_capture.py"],
       "behavior": "Later owned fresh-C0 collector. Root must separately freeze its typed transport additions, source audit, assertions and exact launch plan."
