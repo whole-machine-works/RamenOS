@@ -104,7 +104,11 @@ Linux host scope and the source-bound
 [qualification record](docs/plans/editor-process-delivery-qualification-2026-11-05.md).
 
 Keep a separate reliability packet for the retained capacity, D19 and D09
-failures, whose historical causes remain unknown. Save receipt-failure diagnostics
+failures, whose historical causes remain unknown. The
+[original-task timeout hook](docs/plans/native-task-until-diagnostics-2026-11-07.md)
+retains state at a distinct failure point. Use it for PR75's source-bound next
+Linux observation; the retained Save47 timeout remains unresolved. Existing
+deadlines and assertions stay fixed. Save receipt-failure diagnostics
 and D09 parent-phase timings are implemented; use them before adding another
 instrumentation layer. Joint reservation/census for both complete frame exports
 is now implemented with eight separate denial/lifecycle controls; preserve its

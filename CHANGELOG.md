@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## 2026-11-07 — Native task timeout evidence
+
+- Retain failure-only same-iteration editor/chrome/producer observations and
+  existing Store snapshots at the original bounded asynchronous assertion.
+- Preserve1500ms, the original panic, all eighteen cases and success-path IO;
+  isolate secondary diagnostic failures and verify fresh genuine Saves on host.
+- Keep the actual Save47 cause and Linux qualification open. See the
+  [source and control record](docs/plans/native-task-until-diagnostics-2026-11-07.md).
+
 ## 2026-11-07 — Linux technical recovery prerequisites complete
 
 - Accept non-author original compiler-build correspondence, fresh Linux 627-row

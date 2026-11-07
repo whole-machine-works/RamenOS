@@ -23,6 +23,12 @@ on macOS/Linux. That landed result is a trusted in-process host consumer. Models
 are unnecessary for the task. Target execution and target persistence remain
 unfinished.
 
+The latest hosted capacity failure is localized to history Save47, but its
+cause remains unknown. [Failure-only timeout diagnostics](docs/plans/native-task-until-diagnostics-2026-11-07.md)
+now retain the same-iteration observation and genuine Store state without
+changing the1500ms deadline or original panic. Source review and Darwin failure
+controls pass; a new Linux observation and final hosted qualification remain open.
+
 The recovery comparison has a default-off host adapter behind
 `recovery_decision_v0_dev`. It checks a pinned module and ABI, starts a fresh
 bounded Wasmtime instance for each observation, and checks the result against
