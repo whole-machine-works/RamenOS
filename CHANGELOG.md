@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## 2026-11-07 — Linux recovery technical fault result
+
+- Independently accept 32 frozen T2 recipes and 107 phases: 21 actual admission
+  rejections, 11 admitted faults and 32 separate fresh canonical successes.
+- Check all 86 full memory pages, actual public errors and projections, unchanged
+  sealed source/input identities and owned cleanup. Preserve 20 recovery gate
+  controls and add 24 substantive controls without selecting the canonical run.
+- Keep earlier-case Linux confirmation, compiler-build review, I1/live owners,
+  full Q1/all-18 acceptance, measured benefit and activation separate. See the
+  [result record](docs/plans/recovery-q1-t2-result-2026-11-07.md).
+
 ## 2026-11-07 — recovery ABI technical refusal result
 
 - Independently accept one exact six-case malformed-call run and six separate

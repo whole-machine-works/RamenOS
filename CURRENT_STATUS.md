@@ -51,8 +51,19 @@ keeps technical and live receiving acceptance separate. The later
 [accepted T1 run](docs/plans/recovery-q1-abi-result-2026-11-07.md) records all
 six malformed calls returning `1` without traps or memory changes, followed
 by six fresh exact successes on Darwin arm64. Independent review checked all
-24 memory pages, actual processes and unchanged execution identities. T2,
-independent Linux reproduction and all live receiving requirements remain open.
+24 memory pages, actual processes and unchanged execution identities. At that
+stage, T2 and independent Linux reproduction remained open.
+
+The [accepted T2 Linux result](docs/plans/recovery-q1-t2-result-2026-11-07.md)
+now records 32 fault recipes and 107 phases: 21 actual admission rejections,
+11 fault observations and public errors, and 32 separate fresh canonical raw
+successes and `Committed` decisions. Independent review checked all 86 complete
+memory pages and exact projection/error payloads; all 12,584 sealed files and
+owned process cleanup match. Ordinary CI preserves its 20 recovery controls and
+adds 24 substantive T2 controls. Fresh Linux confirmation of earlier corpus/T1
+cases and independent compiler-build review remain separate, as do I1, every
+remaining live owner obligation, update/rollback benefit and activation. The
+accepted T2 run does not release full Q1 or all-18 receiving acceptance.
 
 The default-off Linux process implementation merged through
 [PR52](https://github.com/whole-machine-works/RamenOS/pull/52) on November 5 as
