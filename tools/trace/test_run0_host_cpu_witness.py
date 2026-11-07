@@ -190,6 +190,40 @@ class ParentIntegrationControls(unittest.TestCase):
         self.addCleanup(helper.close)
         return helper, output
 
+    def test_hc11_trusted_helper_preserves_cache_free_source_tree(self):
+        import run0_host_cpu_reader as reader
+        with tempfile.TemporaryDirectory(prefix="wmw-helper-bytecode-", dir="/tmp") as directory:
+            root = Path(directory)
+            (root / "observer_dependency.py").write_text("VALUE = 7\n")
+            script = root / "reader.py"
+            script.write_text(
+                "import os, sys\nimport observer_dependency\n"
+                "fd = int(sys.argv[sys.argv.index('--result-fd') + 1])\n"
+                "os.write(fd, ('bytecode=' + str(int(sys.dont_write_bytecode)) + '\\n').encode())\n"
+                "os.close(fd)\n")
+            deadline = time.monotonic() + 3
+            budget = base.Budget(deadline, byte_limit=1 << 20)
+            observation = witness.OwnedCPUObservation(None, None, budget, None, None, None, None)
+            observation.deadline = deadline
+            observation.deadline_ns = int(deadline * 1_000_000_000)
+            observation._observation_port = SimpleNamespace(pump=lambda: None)
+            result, output = os.pipe()
+            helper = None
+            try:
+                with patch.object(reader, "__file__", str(script)):
+                    helper = observation._helper("fields", result, output, {}, [], 512)
+            finally:
+                os.close(output)
+                if helper is None:
+                    os.close(result)
+            try:
+                helper.drain()
+                self.assertEqual(helper.wait(pump=observation._pump), 0)
+                self.assertFalse((root / "__pycache__").exists())
+                self.assertEqual(bytes(helper.output), b"bytecode=1\n")
+            finally:
+                helper.close()
+
     def test_hc11_static_loader_selector_failure_precedes_spawn(self):
         with patch.object(witness.selectors, "DefaultSelector", side_effect=OSError("fixture")), \
              patch.object(witness.subprocess, "Popen") as spawn:

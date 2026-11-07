@@ -37,6 +37,168 @@ FlatView #1
   No rendered FlatView
 """
 
+# Exact failed-entry HMP reply, retained as a portable fixture (not live authority).
+ACTUAL_ENTRY_LAYOUT = """FlatView #0
+ AS "memory", root: system
+ AS "cpu-memory-0", root: system
+ AS "mch", root: bus master container
+ AS "ICH9-LPC", root: bus master container
+ AS "ICH9-SMB", root: bus master container
+ AS "VGA", root: bus master container
+ AS "virtio-blk-pci", root: bus master container
+ Root memory region: system
+  0000000000000000-000000000009ffff (prio 0, ram): pc.ram
+  00000000000a0000-00000000000affff (prio 1, ram): vga.vram
+  00000000000b0000-00000000000bffff (prio 1, i/o): vga-lowmem @0000000000010000
+  00000000000c0000-00000000000c3fff (prio 0, rom): pc.ram @00000000000c0000
+  00000000000c4000-00000000000dffff (prio 1, rom): pc.rom @0000000000004000
+  00000000000e0000-00000000000fffff (prio 1, rom): isa-bios
+  0000000000100000-000000001fffffff (prio 0, ram): pc.ram @0000000000100000
+  0000000080000000-0000000080ffffff (prio 1, ram): vga.vram
+  0000000081010000-000000008101001f (prio 0, i/o): msix-table
+  0000000081010800-0000000081010807 (prio 0, i/o): msix-pba
+  0000000081011000-000000008101117f (prio 0, i/o): edid
+  0000000081011180-00000000810113ff (prio 1, i/o): vga.mmio @0000000000000180
+  0000000081011400-000000008101141f (prio 0, i/o): vga ioports remapped
+  0000000081011420-00000000810114ff (prio 1, i/o): vga.mmio @0000000000000420
+  0000000081011500-0000000081011515 (prio 0, i/o): bochs dispi interface
+  0000000081011516-00000000810115ff (prio 1, i/o): vga.mmio @0000000000000516
+  0000000081011600-0000000081011607 (prio 0, i/o): qemu extended regs
+  0000000081011608-0000000081011fff (prio 1, i/o): vga.mmio @0000000000000608
+  00000000e0000000-00000000efffffff (prio 0, i/o): pcie-mmcfg-mmio
+  00000000fec00000-00000000fec00fff (prio 0, i/o): ioapic
+  00000000fed00000-00000000fed003ff (prio 0, i/o): hpet
+  00000000fed1c000-00000000fed1ffff (prio 1, i/o): lpc-rcrb-mmio
+  00000000fee00000-00000000feefffff (prio 4096, i/o): apic-msi
+  00000000ffc00000-00000000ffc83fff (prio 0, romd): system.flash1
+  00000000ffc84000-00000000ffffffff (prio 0, romd): system.flash0
+  000000c000000000-000000c000000fff (prio 0, i/o): virtio-pci-common-virtio-blk
+  000000c000001000-000000c000001fff (prio 0, i/o): virtio-pci-isr-virtio-blk
+  000000c000002000-000000c000002fff (prio 0, i/o): virtio-pci-device-virtio-blk
+  000000c000003000-000000c000003fff (prio 0, i/o): virtio-pci-notify-virtio-blk
+
+FlatView #1
+ AS "I/O", root: io
+ Root memory region: io
+  0000000000000000-0000000000000007 (prio 0, i/o): dma-chan
+  0000000000000008-000000000000000f (prio 0, i/o): dma-cont
+  0000000000000010-000000000000001f (prio 0, i/o): io @0000000000000010
+  0000000000000020-0000000000000021 (prio 0, i/o): pic
+  0000000000000022-000000000000003f (prio 0, i/o): io @0000000000000022
+  0000000000000040-0000000000000043 (prio 0, i/o): pit
+  0000000000000044-000000000000005f (prio 0, i/o): io @0000000000000044
+  0000000000000060-0000000000000060 (prio 0, i/o): i8042-data
+  0000000000000061-0000000000000061 (prio 0, i/o): pcspk
+  0000000000000062-0000000000000063 (prio 0, i/o): io @0000000000000062
+  0000000000000064-0000000000000064 (prio 0, i/o): i8042-cmd
+  0000000000000065-000000000000006f (prio 0, i/o): io @0000000000000065
+  0000000000000070-0000000000000070 (prio 0, i/o): rtc-index
+  0000000000000071-0000000000000071 (prio 0, i/o): rtc @0000000000000001
+  0000000000000072-000000000000007f (prio 0, i/o): io @0000000000000072
+  0000000000000080-0000000000000080 (prio 0, i/o): ioport80
+  0000000000000081-0000000000000083 (prio 0, i/o): dma-page
+  0000000000000084-0000000000000086 (prio 0, i/o): io @0000000000000084
+  0000000000000087-0000000000000087 (prio 0, i/o): dma-page
+  0000000000000088-0000000000000088 (prio 0, i/o): io @0000000000000088
+  0000000000000089-000000000000008b (prio 0, i/o): dma-page
+  000000000000008c-000000000000008e (prio 0, i/o): io @000000000000008c
+  000000000000008f-000000000000008f (prio 0, i/o): dma-page
+  0000000000000090-0000000000000091 (prio 0, i/o): io @0000000000000090
+  0000000000000092-0000000000000092 (prio 0, i/o): port92
+  0000000000000093-000000000000009f (prio 0, i/o): io @0000000000000093
+  00000000000000a0-00000000000000a1 (prio 0, i/o): pic
+  00000000000000a2-00000000000000b1 (prio 0, i/o): io @00000000000000a2
+  00000000000000b2-00000000000000b3 (prio 0, i/o): apm-io
+  00000000000000b4-00000000000000bf (prio 0, i/o): io @00000000000000b4
+  00000000000000c0-00000000000000cf (prio 0, i/o): dma-chan
+  00000000000000d0-00000000000000df (prio 0, i/o): dma-cont
+  00000000000000e0-00000000000000ef (prio 0, i/o): io @00000000000000e0
+  00000000000000f0-00000000000000f0 (prio 0, i/o): ioportF0
+  00000000000000f1-00000000000001cd (prio 0, i/o): io @00000000000000f1
+  00000000000001ce-00000000000001d1 (prio 0, i/o): vbe
+  00000000000001d2-0000000000000377 (prio 0, i/o): io @00000000000001d2
+  0000000000000378-000000000000037f (prio 0, i/o): parallel
+  0000000000000380-00000000000003b3 (prio 0, i/o): io @0000000000000380
+  00000000000003b4-00000000000003b5 (prio 0, i/o): vga
+  00000000000003b6-00000000000003b9 (prio 0, i/o): io @00000000000003b6
+  00000000000003ba-00000000000003ba (prio 0, i/o): vga
+  00000000000003bb-00000000000003bf (prio 0, i/o): io @00000000000003bb
+  00000000000003c0-00000000000003cf (prio 0, i/o): vga
+  00000000000003d0-00000000000003d3 (prio 0, i/o): io @00000000000003d0
+  00000000000003d4-00000000000003d5 (prio 0, i/o): vga
+  00000000000003d6-00000000000003d9 (prio 0, i/o): io @00000000000003d6
+  00000000000003da-00000000000003da (prio 0, i/o): vga
+  00000000000003db-00000000000003f7 (prio 0, i/o): io @00000000000003db
+  00000000000003f8-00000000000003ff (prio 0, i/o): serial
+  0000000000000400-0000000000000401 (prio 0, i/o): io @0000000000000400
+  0000000000000402-0000000000000402 (prio 0, i/o): isa-debugcon
+  0000000000000403-00000000000004cf (prio 0, i/o): io @0000000000000403
+  00000000000004d0-00000000000004d0 (prio 0, i/o): elcr
+  00000000000004d1-00000000000004d1 (prio 0, i/o): elcr
+  00000000000004d2-000000000000050f (prio 0, i/o): io @00000000000004d2
+  0000000000000510-0000000000000511 (prio 0, i/o): fwcfg
+  0000000000000512-0000000000000513 (prio 0, i/o): io @0000000000000512
+  0000000000000514-000000000000051b (prio 0, i/o): fwcfg.dma
+  000000000000051c-00000000000005ff (prio 0, i/o): io @000000000000051c
+  0000000000000600-0000000000000603 (prio 0, i/o): acpi-evt
+  0000000000000604-0000000000000605 (prio 0, i/o): acpi-cnt
+  0000000000000606-0000000000000607 (prio 0, i/o): io @0000000000000606
+  0000000000000608-000000000000060b (prio 0, i/o): acpi-tmr
+  000000000000060c-000000000000061f (prio 0, i/o): io @000000000000060c
+  0000000000000620-000000000000062f (prio 0, i/o): acpi-gpe0
+  0000000000000630-0000000000000637 (prio 0, i/o): acpi-smi
+  0000000000000638-000000000000065f (prio 0, i/o): io @0000000000000638
+  0000000000000660-000000000000067f (prio 0, i/o): sm-tco
+  0000000000000680-0000000000000cbf (prio 0, i/o): io @0000000000000680
+  0000000000000cc0-0000000000000cd7 (prio 0, i/o): acpi-pci-hotplug
+  0000000000000cd8-0000000000000ce3 (prio 0, i/o): acpi-cpu-hotplug
+  0000000000000ce4-0000000000000cf7 (prio 0, i/o): io @0000000000000ce4
+  0000000000000cf8-0000000000000cf8 (prio 0, i/o): pci-conf-idx
+  0000000000000cf9-0000000000000cf9 (prio 1, i/o): lpc-reset-control
+  0000000000000cfa-0000000000000cfb (prio 0, i/o): pci-conf-idx @0000000000000002
+  0000000000000cfc-0000000000000cff (prio 0, i/o): pci-conf-data
+  0000000000000d00-0000000000005657 (prio 0, i/o): io @0000000000000d00
+  0000000000005658-0000000000005658 (prio 0, i/o): vmport
+  0000000000005659-0000000000005fff (prio 0, i/o): io @0000000000005659
+  0000000000006000-000000000000607f (prio 1, i/o): virtio-pci
+  0000000000006080-00000000000060bf (prio 1, i/o): pm-smbus
+  00000000000060c0-000000000000ffff (prio 0, i/o): io @00000000000060c0
+
+FlatView #2
+ AS "cpu-smm-0", root: memory
+ Root memory region: memory
+  0000000000000000-000000000009ffff (prio 0, ram): pc.ram
+  00000000000a0000-00000000000affff (prio 1, ram): vga.vram
+  00000000000b0000-00000000000bffff (prio 1, i/o): vga-lowmem @0000000000010000
+  00000000000c0000-00000000000c3fff (prio 0, rom): pc.ram @00000000000c0000
+  00000000000c4000-00000000000dffff (prio 1, rom): pc.rom @0000000000004000
+  00000000000e0000-00000000000fffff (prio 1, rom): isa-bios
+  0000000000100000-000000001fffffff (prio 0, ram): pc.ram @0000000000100000
+  0000000080000000-0000000080ffffff (prio 1, ram): vga.vram
+  0000000081010000-000000008101001f (prio 0, i/o): msix-table
+  0000000081010800-0000000081010807 (prio 0, i/o): msix-pba
+  0000000081011000-000000008101117f (prio 0, i/o): edid
+  0000000081011180-00000000810113ff (prio 1, i/o): vga.mmio @0000000000000180
+  0000000081011400-000000008101141f (prio 0, i/o): vga ioports remapped
+  0000000081011420-00000000810114ff (prio 1, i/o): vga.mmio @0000000000000420
+  0000000081011500-0000000081011515 (prio 0, i/o): bochs dispi interface
+  0000000081011516-00000000810115ff (prio 1, i/o): vga.mmio @0000000000000516
+  0000000081011600-0000000081011607 (prio 0, i/o): qemu extended regs
+  0000000081011608-0000000081011fff (prio 1, i/o): vga.mmio @0000000000000608
+  00000000e0000000-00000000efffffff (prio 0, i/o): pcie-mmcfg-mmio
+  00000000fec00000-00000000fec00fff (prio 0, i/o): ioapic
+  00000000fed00000-00000000fed003ff (prio 0, i/o): hpet
+  00000000fed1c000-00000000fed1ffff (prio 1, i/o): lpc-rcrb-mmio
+  00000000fee00000-00000000feefffff (prio 4096, i/o): apic-msi
+  00000000ffc00000-00000000ffc83fff (prio 0, romd): system.flash1
+  00000000ffc84000-00000000ffffffff (prio 0, romd): system.flash0
+  000000c000000000-000000c000000fff (prio 0, i/o): virtio-pci-common-virtio-blk
+  000000c000001000-000000c000001fff (prio 0, i/o): virtio-pci-isr-virtio-blk
+  000000c000002000-000000c000002fff (prio 0, i/o): virtio-pci-device-virtio-blk
+  000000c000003000-000000c000003fff (prio 0, i/o): virtio-pci-notify-virtio-blk
+
+""".replace("\n", "\r\n")
+
 
 class Wire:
     def __init__(self, replies):
@@ -362,6 +524,65 @@ EFER=0000000000000000
         for layout in bad:
             with self.subTest(layout=layout), self.assertRaises(previous.ProbeError):
                 cap.parse_flatview(layout)
+
+    def test_cap05_actual_entry_readonly_shadow_is_excluded(self):
+        self.assertEqual(hashlib.sha256(ACTUAL_ENTRY_LAYOUT.encode('ascii')).hexdigest(),
+                         '5594634c2677e992170c6b7c84bd73a9937d9c519cc2e9f103bd4251adfc6260')
+        expected = ((0, 0xA0000), (0x100000, 0x20000000))
+        self.assertEqual(cap.parse_flatview(ACTUAL_ENTRY_LAYOUT), expected)
+        self.assertEqual(cap.validate_profile_layout(
+            ACTUAL_ENTRY_LAYOUT, previous.VAPIC_OFF_INVOCATION_PROFILE), expected)
+
+    def test_cap05_readonly_shadow_exception_is_exact(self):
+        row = '00000000000c0000-00000000000c3fff (prio 0, rom): pc.ram @00000000000c0000'
+        layout = LAYOUT.replace('  0000000000100000-', '  '+row+'\n  0000000000100000-')
+        bad = {
+            'priority': row.replace('prio 0', 'prio 1'),
+            'negative_priority': row.replace('prio 0', 'prio -1'),
+            'noncanonical_zero': row.replace('prio 0', 'prio 00'),
+            'oversized_priority': row.replace('prio 0', 'prio '+'9'*5000),
+            'offset': row.replace('@00000000000c0000', '@0000000000000000'),
+            'missing_offset': row.split(' @')[0],
+            'shortened': row.replace('c3fff', 'c1fff'),
+            'extended': row.replace('c3fff', 'c7fff'),
+            'shifted': row.replace('c0000', 'c1000').replace('c3fff', 'c4fff'),
+            'neighbor_slot': row.replace('c0000', 'c4000').replace('c3fff', 'c7fff'),
+            'split': row.replace('c3fff', 'c1fff')+'\n  '+row.replace('c0000', 'c2000'),
+            **{kind: row.replace(', rom)', ', '+kind+')') for kind in ('ramd', 'romd', 'nv-ram', 'i/o')},
+        }
+        self.assertEqual(layout.count(row), 1)
+        for label, replacement in bad.items():
+            with self.subTest(label=label), self.assertRaisesRegex(previous.ProbeError, 'flatview_ram_alias'):
+                cap.parse_flatview(layout.replace(row, replacement, 1))
+        # Other named ROM is excluded by existing rules, never promoted to RAM.
+        other = layout.replace(row, row.replace('pc.ram', 'other-rom'))
+        self.assertEqual(cap.parse_flatview(other), ((0, 0xA0000), (0x100000, 0x20000000)))
+        ordinary = LAYOUT.replace('prio 0', 'prio '+'9'*5000)
+        self.assertEqual(cap.parse_flatview(ordinary), ((0, 0xA0000), (0x100000, 0x20000000)))
+        # Existing identity-backed ordinary RAM semantics remain unchanged.
+        ram = layout.replace(row, row.replace(', rom)', ', ram)'))
+        self.assertEqual(cap.parse_flatview(ram), ((0, 0xA0000), (0xC0000, 0xC4000),
+                                                  (0x100000, 0x20000000)))
+
+    def test_cap05_shadow_never_bypasses_structure_alias_or_profile_checks(self):
+        row = '  00000000000c0000-00000000000c3fff (prio 0, rom): pc.ram @00000000000c0000\r\n'
+        variants = {
+            'overlap': (ACTUAL_ENTRY_LAYOUT.replace(row, row+'  00000000000c2000-00000000000c5fff (prio 0, i/o): overlay\r\n'), 'flatview_overlap'),
+            'out_of_order': (ACTUAL_ENTRY_LAYOUT.replace(row, row+'  0000000000000000-0000000000000fff (prio 0, i/o): earlier\r\n'), 'flatview_overlap'),
+            'unknown_kind': (ACTUAL_ENTRY_LAYOUT.replace(row, row.replace(', rom)', ', unknown)')), 'flatview_unknown_row'),
+            'wrap': (ACTUAL_ENTRY_LAYOUT.replace(row, row.replace('00000000000c3fff', 'ffffffffffffffff')), 'flatview_extent'),
+            'cpu_root': (ACTUAL_ENTRY_LAYOUT.replace(' AS "cpu-memory-0", root: system', ' AS "cpu-memory-0", root: different'), 'flatview_memory_identity'),
+            'missing_cpu': (ACTUAL_ENTRY_LAYOUT.replace(' AS "cpu-memory-0", root: system\r\n', ''), 'flatview_memory_unavailable'),
+            'ram_alias': (ACTUAL_ENTRY_LAYOUT.replace('@0000000000100000', '@0000000000000000'), 'flatview_ram_alias'),
+        }
+        for label, (raw, reason) in variants.items():
+            with self.subTest(label=label), self.assertRaisesRegex(previous.ProbeError, reason):
+                cap.parse_flatview(raw)
+        for device, reason in (('ich9-ahci', 'sata_off_ahci_visible'), ('kvmvapic', 'vapic_off_device_visible')):
+            raw = ACTUAL_ENTRY_LAYOUT.replace('vga', device)
+            self.assertNotEqual(raw, ACTUAL_ENTRY_LAYOUT)
+            with self.subTest(device=device), self.assertRaisesRegex(previous.ProbeError, reason):
+                cap.validate_profile_layout(raw, previous.VAPIC_OFF_INVOCATION_PROFILE)
 
     def test_cap06_real_child_late_tail_reap_and_eof(self):
         with tempfile.TemporaryDirectory() as tmp:

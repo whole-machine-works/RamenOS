@@ -2,8 +2,8 @@
 
 The collector now joins the accepted entry stop, host observation and typed RAM
 acquisition through one owned VM and one wire. Independent source review and
-354 sealed Linux trace controls pass. Three earlier actual reset captures still
-validate. Actual C0 execution and retained-runtime acceptance remain pending.
+360 sealed Linux trace controls pass. Three earlier actual reset captures still
+validate. Successful C0 capture and retained-runtime acceptance remain pending.
 
 ## Implemented boundary
 
@@ -60,12 +60,17 @@ Evidence root: `evidence/run0-c0-owned-collector-20261107/`.
   103 focused controls and operation/terminal-boundary counterexamples.
 - `collector-root-review-002.json` and `collector-root-review-003.json`:
   non-author collector review, 24 controls and the final teardown correction.
-- `linux-integrated-006.log`: all 354 controls pass under Linux Python 3.14.6;
+- `linux-integrated-008.log`: all 360 controls pass under Linux Python 3.14.6;
   all 35 source/test hashes match before and after. The sealed manifest is
-  `de166c13c84c4a08911e72abec1b94eeeb915b707f7cc4b2197823eea971efb5`.
+  `cff2405a56379213bf86a363728e2e78c40686b88fd72c2189d53ae03608a7b9`.
 - `endpoint-review-004/disposition.json`: independent acceptance of the fixed
   debugger socket mapping and actual UNIX connections derived from `build_argv`.
-- `historical-reset-replay-006.json`: three unchanged retained reset captures pass.
+- `historical-reset-replay-008.json`: three unchanged retained reset captures pass.
+- `rom-shadow-review-008/disposition.json` and
+  `rom-shadow-code-review-008/disposition.json`: authenticated Q35 source and
+  exact-row parser/real acquisition hole-denial controls.
+- `helper-review-008/disposition.json`: explicit child `-B` preserves the sealed
+  source tree; an actual helper import/EOF/wait regression passes.
 - `gate-review-001/disposition.json`: four additive test commands preserve every
   earlier gate command byte-for-byte.
 
@@ -87,6 +92,23 @@ current-registration and final-report call sites. Independent replay of the
 retained 124-entry closure passes, and missing/altered/extra inputs still refuse.
 The consumed attempt, traceback and unchanged source/input posthashes are retained;
 no unchanged retry occurred.
+
+Actual attempt007 reached one entry stop, 29 selected register reads and all
+three host helpers (14 reads/104 returned bytes), then refused the first current
+layout before any physical `m` request or current RAM binding. Q35's first PAM
+slot appeared as a read-only `pc.ram` ROM row. The corrected parser excludes
+only the source-proven global-system tuple `[0xC0000,0xC4000)`, identity offset
+`0xC0000`, priority token `0`, kind `rom`; it grants no access to the shadow.
+All other non-RAM `pc.ram` rows, malformed/overlapping rows and RAM aliases still
+refuse. Before/after raw equality and profile exclusions remain intact.
+
+The partial DENY and its secondary quit refusal remain preserved. QEMU was
+terminated, actually reaped with return code zero, and closed; all twelve VM/helper
+EOFs were recorded. The driver's separate postcheck failed because trusted
+helper imports created two cache files. Explicit `-B` is now propagated to the
+helper process; the strict source-cache guard remains enabled. Existing caches
+are retained with the failed run. This source-qualified correction still needs a
+fresh independently reviewed plan and actual C0 acceptance.
 
 ## Next outcome
 

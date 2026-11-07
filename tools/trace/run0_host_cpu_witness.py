@@ -906,7 +906,7 @@ class OwnedCPUObservation:
         helper = self.helpers[role] = OwnedHelper(role, result, self.deadline, pump=self._pump,
                                                  budget=self.budget)
         mode = "--field-reader" if role == "fields" else "--metadata-reader"
-        argv = [sys.executable, "-E", "-s", str(Path(reader.__file__).resolve()), mode]
+        argv = [sys.executable, "-E", "-s", "-B", str(Path(reader.__file__).resolve()), mode]
         inherited = dict(descriptors, result=output)
         for name, fd in inherited.items():
             argv.extend((f"--{name}-fd", str(fd)))

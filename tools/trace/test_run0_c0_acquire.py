@@ -362,6 +362,39 @@ class AcquisitionControls(unittest.TestCase):
         self.reject('ram_backing', s.next_request)
         self.assertEqual(s.ledger.values['frames'], 0)
 
+    def test_ac05_shadow_and_cross_hole_objects_never_receive_grants(self):
+        from test_run0_rsp_capability import ACTUAL_ENTRY_LAYOUT
+        from test_run0_c0_decode import synthetic_c0_hmp
+        layout = ACTUAL_ENTRY_LAYOUT.encode('ascii')
+        b = self.binding()
+        for system in (0xC0000, 0x9FFF0):
+            with self.subTest(system=hex(system)):
+                registers = tuple((n, width, system if n == 3 else value, seq)
+                                  for n, width, value, seq in b.registers)
+                hmp = synthetic_c0_hmp({n: value for n, _, value, _ in registers}).encode('ascii')
+                refs = tuple((name, raw_ref('shadow-layout.txt', layout) if name == 'layout_before'
+                              else raw_ref('shadow-hmp.txt', hmp) if name == 'hmp_before' else ref)
+                             for name, ref in b.evidence_refs)
+                bound = fixture_value(type(b), b, registers=registers, hmp_raw=hmp,
+                    layout_raw=layout, ranges=d._layout(layout), evidence_refs=refs)
+                session = self.session(bound)
+                memory = self.memory()
+                # Preserve the valid 2 MiB mapping for the fixed PE objects and
+                # map low physical memory for the RDX-supplied system table.
+                memory.update((0x3000+i, byte) for i, byte in enumerate(frame({0: 0x87, 1: 0x200087})))
+                harness = Harness(session, memory)
+                with self.assertRaisesRegex(d.C0DecodeError, 'ram_hole'):
+                    harness.complete()
+                self.assertEqual([g.intent.role for g in harness.grants if g.intent.role != 'frame'],
+                                 ['pe_header']*4+['entry_code'])
+                self.assertIsNone(session.pending)
+                self.assertFalse(any(g.intent.role == 'system_table' for g in harness.grants))
+                self.assertFalse(any(0xA0000 <= g.intent.physical < 0x100000 for g in harness.grants))
+                self.reject('ram_hole', session.next_request)
+        # A rejected session has no effect on a fresh ordinary-RAM acquisition.
+        fresh = self.session()
+        self.assertIsInstance(Harness(fresh, self.memory()).complete(), a.ReadsComplete)
+
     def test_ac05_malformed_parent_stops_before_child_demand(self):
         for value, reason in ((0, 'unmapped'), (0x2087, 'entry_reserved'), (0x1007, 'frame_level')):
             s = self.session(); memory = self.memory()

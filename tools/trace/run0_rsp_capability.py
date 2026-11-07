@@ -331,7 +331,8 @@ def parse_flatview(text):
         lo, hi = int(match[1], 16), int(match[2], 16)
         deny(lo <= hi < MAX_ADDRESS, "flatview_extent")
         deny(not view["rows"] or view["rows"][-1][1] <= lo, "flatview_overlap")
-        view["rows"].append((lo, hi + 1, match[4], match[5], int(match[6] or "0", 16)))
+        view["rows"].append((lo, hi + 1, match[4], match[5], int(match[6] or "0", 16),
+                             match[3]))
     deny(all(v["root"] is not None and (v["root"] == "(none)") == v["empty"]
              for v in views), "flatview_missing_root")
     incomplete("memory" in address_spaces and "cpu-memory-0" in address_spaces,
@@ -341,8 +342,12 @@ def parse_flatview(text):
     deny(memory is cpu and root == cpu_root == memory["root"] == "system",
          "flatview_memory_identity")
     ordinary = []
-    for lo, hi, kind, name, offset in memory["rows"]:
+    for lo, hi, kind, name, offset, priority in memory["rows"]:
         if name == "pc.ram":
+            # Q35's observed first PAM ROM shadow resolves to the pc.ram leaf.
+            # Recognize only this exact readonly tuple, never as grantable RAM.
+            if (lo, hi, kind, offset, priority) == (0xC0000, 0xC4000, "rom", 0xC0000, "0"):
+                continue
             deny(kind == "ram" and lo == offset, "flatview_ram_alias")
             ordinary.append((lo, hi))
     incomplete(bool(ordinary), "flatview_ram_unavailable")
