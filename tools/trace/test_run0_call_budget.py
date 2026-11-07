@@ -578,5 +578,136 @@ class DiscoveryMutationTests(unittest.TestCase):
         self.refuse_after_abort(ledger, cap, batch, key)
 
 
+class WireCopyCreditTests(unittest.TestCase):
+    def claim(self, ledger, batch, item):
+        request=ledger.view()['physical_claimed']+1
+        key=r.ReadKey(batch.epoch,request,request-1,ledger.view()['allocated_operations']+1)
+        ledger._claim(batch,item,key,batch.charges[item].target)
+        return key
+
+    def test_wire01_additional_credit_preserves_all_legacy_read_costs(self):
+        ledger=memory_ledger()
+        batch=ledger.reserve_reads('C0',frame_charges())
+        original=ledger.view()['committed_bytes']
+        ledger.reserve_wire_batch(batch)
+        amount=4*(14*2048+9216)
+        self.assertEqual(ledger.view()['committed_bytes'],original+amount)
+        self.assertEqual(ledger.view()['wire_committed_bytes'],amount)
+        key=self.claim(ledger,batch,0)
+        self.assertEqual(ledger._claimed[key]['remaining']['read'],8*2048+2048)
+        ledger.debit_wire_read(batch,key,14*2048+9216)
+        self.assertEqual(ledger.view()['wire_debited_bytes'],14*2048+9216)
+        self.assertEqual(ledger._claimed[key]['remaining']['read'],8*2048+2048)
+
+    def test_wire02_no_borrow_foreign_batch_or_future_key(self):
+        ledger=memory_ledger()
+        batch=ledger.reserve_reads('C0',frame_charges())
+        ledger.reserve_wire_batch(batch)
+        future=r.ReadKey('C0',1,0,ledger.view()['allocated_operations']+1)
+        with self.assertRaises(ProbeError):ledger.debit_wire_read(batch,future,1)
+        key=self.claim(ledger,batch,0)
+        ledger.debit_wire_read(batch,key,14*2048+9216)
+        before=dict(ledger.view())
+        with self.assertRaises(ProbeError):ledger.debit_wire_read(batch,key,1)
+        self.assertEqual(dict(ledger.view()),before)
+        foreign=memory_ledger().reserve_reads('C0',frame_charges())
+        with self.assertRaises(ProbeError):ledger.debit_wire_read(foreign,key,0)
+        fresh=memory_ledger();next_batch=fresh.reserve_reads('C0',frame_charges())
+        fresh.reserve_wire_batch(next_batch)
+        next_key=self.claim(fresh,next_batch,0)
+        fresh.debit_wire_read(next_batch,next_key,1)
+
+    def test_wire03_discovery_transfer_neither_recharges_nor_refunds_unused_credit(self):
+        ledger=memory_ledger('C2')
+        cap=ledger.reserve_c2_discovery_capacity(map_virtual=0x7f998,map_length=384)
+        before=ledger.view()['committed_bytes']
+        ledger.reserve_wire_discovery(cap)
+        amount=14*(4*32*2048+2*384)+9216*(4*32+2*17)
+        self.assertEqual(ledger.view()['committed_bytes'],before+amount)
+        frame=ledger.materialize_c2_frame(cap,ordinal=0,physical=0x2000)
+        mapped=ledger.materialize_c2_map(cap,requests=map_charges((1,)*16+(368,)))
+        self.assertEqual(ledger.view()['committed_bytes'],before+amount)
+        used=0
+        for batch in (frame,mapped):
+            for item,charge in enumerate(batch.charges):
+                key=self.claim(ledger,batch,item)
+                cost=14*charge.target.length+9216
+                ledger.debit_wire_read(batch,key,cost)
+                used+=cost
+        self.assertEqual(ledger.view()['wire_debited_bytes'],used)
+        self.assertEqual(ledger.view()['wire_discovery_remaining'],amount-used)
+        self.assertGreater(amount-used,0)
+        for name in b.AFTER['C2']:ledger.reserve_operation('C2',name)
+        self.assertEqual(ledger.view()['committed_bytes'],before+amount)
+
+    def test_wire04_late_duplicate_and_claimed_prepay_refuse_without_mutation(self):
+        ledger=memory_ledger('C2')
+        cap=ledger.reserve_c2_discovery_capacity(map_virtual=0x7f998,map_length=384)
+        frame=ledger.materialize_c2_frame(cap,ordinal=0,physical=0x2000)
+        before=dict(ledger.view())
+        with self.assertRaises(ProbeError):ledger.reserve_wire_discovery(cap)
+        with self.assertRaises(ProbeError):ledger.reserve_wire_batch(frame)
+        self.assertEqual(dict(ledger.view()),before)
+        fresh=memory_ledger();batch=fresh.reserve_reads('C0',frame_charges())
+        fresh.reserve_wire_batch(batch)
+        before=dict(fresh.view())
+        with self.assertRaises(ProbeError):fresh.reserve_wire_batch(batch)
+        self.assertEqual(dict(fresh.view()),before)
+        key=self.claim(fresh,batch,0)
+        with self.assertRaises(ProbeError):fresh.reserve_wire_batch(batch)
+        fresh.debit_wire_read(batch,key,1)
+
+    def test_wire05_insufficient_capacity_is_unchanged_and_no_key_is_invented(self):
+        ledger=memory_ledger();batch=ledger.reserve_reads('C0',frame_charges())
+        required=4*(14*2048+9216)
+        ledger.reserve_output(b.REGULAR_BYTES-ledger._regular-required+1)
+        before=dict(ledger.view())
+        with self.assertRaises(ProbeError):ledger.reserve_wire_batch(batch)
+        self.assertEqual(dict(ledger.view()),before)
+        self.assertEqual(ledger.view()['physical_claimed'],0)
+        self.assertEqual(ledger._wire_batches,{})
+
+    def test_wire06_interrupted_initial_credit_commit_aborts_without_legacy_cap(self):
+        class Interrupted(dict):
+            def __setitem__(self,key,value):
+                super().__setitem__(key,value)
+                raise KeyboardInterrupt
+        ledger=memory_ledger();batch=ledger.reserve_reads('C0',frame_charges())
+        ledger._wire_batches=Interrupted()
+        with self.assertRaises(KeyboardInterrupt):ledger.reserve_wire_batch(batch)
+        self.assertTrue(ledger.view()['aborted'])
+        with self.assertRaises(ProbeError):self.claim(ledger,batch,0)
+        ledger.reserve_output(0)
+        ledger.redeem_terminal(1,purpose='failure')
+
+    def test_wire07_interrupted_wire_debit_aborts_and_cannot_borrow_again(self):
+        class Interrupted(list):
+            def __setitem__(self,key,value):
+                super().__setitem__(key,value)
+                raise KeyboardInterrupt
+        ledger=memory_ledger();batch=ledger.reserve_reads('C0',frame_charges())
+        ledger.reserve_wire_batch(batch);key=self.claim(ledger,batch,0)
+        row=ledger._wire_batches[id(batch)]
+        row['remaining']=Interrupted(row['remaining'])
+        with self.assertRaises(KeyboardInterrupt):ledger.debit_wire_read(batch,key,1)
+        self.assertTrue(ledger.view()['aborted'])
+        with self.assertRaises(ProbeError):ledger.debit_wire_read(batch,key,1)
+
+    def test_wire08_interrupted_discovery_transfer_never_reopens_capacity(self):
+        class Interrupted(dict):
+            def __setitem__(self,key,value):
+                super().__setitem__(key,value)
+                raise KeyboardInterrupt
+        ledger=memory_ledger('C2')
+        cap=ledger.reserve_c2_discovery_capacity(map_virtual=0x7f998,map_length=384)
+        ledger.reserve_wire_discovery(cap)
+        ledger._wire_capacity=Interrupted(ledger._wire_capacity)
+        with self.assertRaises(KeyboardInterrupt):
+            ledger.materialize_c2_frame(cap,ordinal=0,physical=0x2000)
+        self.assertTrue(ledger.view()['aborted'])
+        with self.assertRaises(ProbeError):
+            ledger.materialize_c2_map(cap,requests=map_charges((384,)))
+
+
 if __name__ == '__main__':
     unittest.main()

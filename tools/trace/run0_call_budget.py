@@ -17,6 +17,8 @@ FAILURE_BYTES = 128*1024
 REGULAR_BYTES = MAX_BYTES-REPORT_BYTES-FAILURE_BYTES
 MAX_OPERATIONS = 1024
 PHASE_OPERATIONS = 512
+WIRE_READ_PER_BYTE = 14
+WIRE_READ_FIXED = 9216
 _SELECTED = tuple(f'p{n:x}' for n in SELECTED_REGISTERS)
 _HOST = ('query_status', 'query_cpus_fast', 'qom_realized', 'qom_phys_bits', 'hmp_registers')
 _COMMON_BEFORE = ('stop_ack', 'query_status', 'physical_mode_query')+_SELECTED+_HOST+_HOST+('hmp_flatview',)
@@ -102,6 +104,9 @@ class ParentAccounting:
         self._discovery_state = 'none'
         self._potential_reads = self._potential_parts = self._potential_objects = 0
         self._potential_frames = ()
+        self._wire_batches = {}
+        self._wire_capacity = None
+        self._wire_committed = self._wire_debited = 0
         self._aborted = False
 
     def _live(self):
@@ -116,7 +121,7 @@ class ParentAccounting:
         to make the failure safe. Ordinary pre-discovery behavior is unchanged.
         """
         self._live()
-        if self._capacity is None:
+        if self._capacity is None and not self._wire_committed:
             yield
             return
         self._aborted = True
@@ -129,6 +134,85 @@ class ParentAccounting:
              and capacity.owner is self and self._epoch_index == 2
              and self._stage == 'memory' and self._discovery_state == 'open',
              'call_budget_discovery_identity')
+
+    @staticmethod
+    def _wire_read_cost(length):
+        _int(length, 1, 2048)
+        return WIRE_READ_PER_BYTE*length + WIRE_READ_FIXED
+
+    def reserve_wire_batch(self, reservation):
+        """Prepay additional runtime wire copies; issue no key or read grant.
+
+        Legacy read/retention costs stay unchanged. This separate, permanent
+        charge must precede a runtime batch's first grant and accounting claim.
+        It does not prove the future wire's complete allocation schedule.
+        """
+        self._live()
+        deny(type(reservation) is ReadBatchReservation and reservation.owner is self,
+             'call_budget_wire_batch_identity')
+        row = self._batches.get(id(reservation))
+        deny(type(row) is dict and row.get('reservation') is reservation
+             and not row['claimed'] and id(reservation) not in self._wire_batches
+             and self._stage == 'memory' and reservation.epoch == EPOCHS[self._epoch_index],
+             'call_budget_wire_batch_phase')
+        if reservation.epoch == 'C2' and self._capacity is not None:
+            # Discovery targets must have prepaid wire capacity before walking,
+            # rather than paying for an already materialized batch afterward.
+            deny(not any((charge.target.kind == 'frame'
+                          and charge.target.target_ordinal in self._capacity.frame_ordinals)
+                         or (charge.target.kind == 'object' and charge.target.target_ordinal == 6)
+                         for charge in reservation.charges), 'call_budget_wire_discovery_late')
+        credits = [self._wire_read_cost(charge.target.length) for charge in reservation.charges]
+        amount = sum(credits)
+        incomplete(amount <= REGULAR_BYTES-self._regular, 'call_budget_wire_storage')
+        self._aborted = True
+        try:
+            self._regular += amount
+            self._wire_committed += amount
+            self._wire_batches[id(reservation)] = dict(reservation=reservation, remaining=credits)
+            self._aborted = False
+        except BaseException:
+            self._aborted = True
+            raise
+
+    def reserve_wire_discovery(self, capacity):
+        """Prepay unknown C2 wire targets in the same ledger before full-M walk."""
+        self._discovery(capacity)
+        deny(self._wire_capacity is None and self._potential_frames == capacity.frame_ordinals
+             and self._potential_parts == capacity.max_parts and 6 not in self._objects[2],
+             'call_budget_wire_discovery_phase')
+        frames, parts = len(capacity.frame_ordinals), capacity.max_parts
+        reads = 4*frames + 2*parts
+        length = 4*frames*2048 + 2*capacity.map_length
+        amount = WIRE_READ_PER_BYTE*length + WIRE_READ_FIXED*reads
+        incomplete(amount <= REGULAR_BYTES-self._regular, 'call_budget_wire_storage')
+        prepaid = dict(capacity=capacity, remaining=amount)
+        self._aborted = True
+        try:
+            self._regular += amount
+            self._wire_committed += amount
+            self._wire_capacity = prepaid
+            self._aborted = False
+        except BaseException:
+            self._aborted = True
+            raise
+
+    def debit_wire_read(self, reservation, key, count):
+        """Spend only this actual claimed item's prepaid logical wire credit."""
+        self._live()
+        _int(count, 0, REGULAR_BYTES)
+        deny(type(key) is ReadKey and key in self._claimed
+             and self._claimed[key]['reservation'] is reservation,
+             'call_budget_wire_claim_identity')
+        row = self._wire_batches.get(id(reservation))
+        deny(type(row) is dict and row.get('reservation') is reservation,
+             'call_budget_wire_unreserved')
+        item = self._claimed[key]['item']
+        incomplete(count <= row['remaining'][item], 'call_budget_wire_credit_exhausted')
+        with self._mutation():
+            row['remaining'][item] -= count
+            self._actual_bytes += count
+            self._wire_debited += count
 
     @staticmethod
     def _unknown_read_cost(length):
@@ -230,6 +314,14 @@ class ParentAccounting:
         batch = object.__new__(ReadBatchReservation)
         for name, value in (('owner', self), ('epoch', 'C2'), ('charges', requests)):
             object.__setattr__(batch, name, value)
+        wire_batches, wire_amount = None, 0
+        if self._wire_capacity is not None:
+            deny(self._wire_capacity['capacity'] is capacity, 'call_budget_wire_capacity_identity')
+            wire_credits = [self._wire_read_cost(charge.target.length) for charge in requests]
+            wire_amount = sum(wire_credits)
+            deny(wire_amount <= self._wire_capacity['remaining'], 'call_budget_wire_transfer')
+            wire_batches = dict(self._wire_batches)
+            wire_batches[id(batch)] = dict(reservation=batch, remaining=wire_credits)
         batches = dict(self._batches)
         batches[id(batch)] = dict(reservation=batch, claimed=set())
         frames = [set(items) for items in self._frames]
@@ -251,6 +343,9 @@ class ParentAccounting:
         try:
             # No additional regular-byte debit: unused upper credit stays held.
             self._batches = batches
+            if wire_batches is not None:
+                self._wire_batches = wire_batches
+                self._wire_capacity['remaining'] -= wire_amount
             self._frames, self._objects, self._parts = frames, objects, parts
             self._potential_frames = potential_frames
             self._potential_parts, self._potential_objects = potential_parts, potential_objects
@@ -285,6 +380,9 @@ class ParentAccounting:
             first_parts=tuple(self._parts), potential_reads=self._potential_reads,
             potential_frames=len(self._potential_frames), potential_parts=self._potential_parts,
             potential_objects=self._potential_objects, discovery_state=self._discovery_state,
+            wire_committed_bytes=self._wire_committed, wire_debited_bytes=self._wire_debited,
+            wire_discovery_remaining=(0 if self._wire_capacity is None else
+                                      self._wire_capacity['remaining']),
             aborted=self._aborted))
 
     def reserve_output(self, length, *, purpose='output'):
