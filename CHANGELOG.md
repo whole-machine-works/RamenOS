@@ -1,5 +1,30 @@
 # CHANGELOG
 
+## 2026-11-07 — Editor runner capacity and IO observations
+
+- Retain the separate agent-backend Docker-create timeout and add bounded
+  CI-only resource/daemon/event observations. Preserve required success,
+  the original budget, fresh isolation and reconciliation behavior.
+- Retain and audit the failed complete run: all57 new trace controls and eight
+  preservation stages passed; editor runtime failed during frame recording.
+- Prepare unused SDK space only on disposable hosted Linux editor runners and
+  report actual disk/inode observations. Preserve all compiler caches, test
+  outputs, checks, assertion deadlines and full recording evidence.
+- Add failure-only frame IO observations and extend the existing genuine
+  partial-write control; preserve sticky reservations and fresh-capture checks.
+  [Qualification record](docs/plans/editor-runner-storage-2026-11-07.md).
+
+## 2026-11-07 — Same-call capture source primitives
+
+- Add reviewed parent deadlines/cleanup and retained read/accounting primitives;
+  preserve clock, interruption, partial failure and exact copy evidence.
+- Pass57 new host integration controls and add three tooling-gate commands while
+  preserving every existing command. Actual same-VM C1/C2 remains unqualified.
+- Reuse PR75's exact reviewed original-task timeout diagnostics and metadata
+  registrations on byte-identical predecessors for final integration evidence;
+  preserve the unresolved failure, deadlines and cases. See the
+  [shared-primitives record](docs/plans/run0-call-map-shared-primitives-2026-11-07.md).
+
 ## 2026-11-07 — actual RUN0 stopped-entry inspection
 
 - Accept one owned stopped-entry inspection after independent host and unchanged

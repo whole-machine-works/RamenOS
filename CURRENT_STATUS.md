@@ -313,6 +313,26 @@ source/input closure are retained. No forced action was needed. The full-capture
 atomic-snapshot and device-quiescence flags remain false. Next, qualify a fresh
 same-VM C0/C1/C2 firmware-call history; this completed VM has already shut down.
 
+The [same-call shared primitives](docs/plans/run0-call-map-shared-primitives-2026-11-07.md)
+are implemented and independently source-reviewed. They provide fixed parent
+deadlines, owned cleanup, complete copy reservations and retained read/assembly
+evidence. All57 new integration controls also passed in Linux hosted run
+42367071792, but complete qualification failed in frame recording during the
+editor runtime stage. The retained run later reported zero MB free disk space;
+the original IO errno was not retained, so its cause remains unproved.
+[Runner preparation and failure diagnostics](docs/plans/editor-runner-storage-2026-11-07.md)
+are being qualified without reducing any checks or recordings. Actual wire
+issuance, current-stop authority and collector/history integration remain open;
+these fixtures do not establish another VM capture.
+
+Changed-candidate run42370785508 subsequently failed the existing agent-backend
+success test when Docker creation was not confirmed before its deadline. The
+backend correctly returned IO/reconciliation-required. Its environmental cause
+is unknown; a cold-daemon explanation is unsupported because real Linux
+container controls had just passed. Bounded CI-only failure observations are
+being added while preserving all original deadlines, success assertions,
+freshness checks and cleanup. Complete qualification remains held.
+
 The IPC diagnostic reproduced two zero-byte timeouts before a later valid
 reply on the same VM. The separate single-client run succeeded immediately.
 The retained CPU snapshots follow successful replies, so the cause of the

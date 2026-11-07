@@ -79,9 +79,16 @@ controls and three historical reset replays pass. The
 [actual stopped-entry inspection](docs/plans/run0-c0-result-2026-11-07.md) is
 independently accepted: 28 guarded physical reads, matching rereads, three table
 frames, eight selected objects and clean owned shutdown. Do not redispatch this
-completed standalone run. Freeze and review the successor parent contract for a
-fresh C0/C1/C2 history in one VM, then implement the firmware-call and return
-capture. Derive sites from the fresh loaded image and authenticated caller
+completed standalone run. The successor parent contract and
+[shared source primitives](docs/plans/run0-call-map-shared-primitives-2026-11-07.md)
+are reviewed; do not redispatch that completed preparation. Freeze the remaining
+pure-map/wire interfaces before parallel source work, then implement the closed
+collector and firmware-call/return capture for fresh C0/C1/C2 in one VM.
+Actual issuers, final history/inventory and Linux qualification remain separate.
+First finish the changed-candidate
+[editor runner qualification](docs/plans/editor-runner-storage-2026-11-07.md):
+the prior full run failed during frame export, and no unchanged retry is allowed.
+Derive sites from the fresh loaded image and authenticated caller
 bytes; revoke read authority at each resume and obtain a fresh same-stop witness
 and ordinary-RAM proof at each stop. Preserve complete parent command/child
 history, all existing budgets, checks and failed attempts. The

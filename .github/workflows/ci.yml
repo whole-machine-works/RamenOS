@@ -141,8 +141,23 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-${{ runner.arch }}-rust-downloads-${{ hashFiles('rust-toolchain.toml') }}-
       # This runner owns fresh outputs; only downloads/toolchain are cached.
+      - name: Observe agent runner before lane
+        run: python3 -B tools/ci/agent_runner_diagnostics.py begin
       - name: Run canonical agent lane (serialized)
         run: python3 tools/ci/ci_lanes.py lane agent
+      - name: Observe agent runner after failure
+        if: failure()
+        run: python3 -B tools/ci/agent_runner_diagnostics.py failure
+      - name: Retain agent runner observations and Linux controls
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-runner-observations-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            out/agent-runner-diagnostics/
+            out/agent-task-linux-control/
+          include-hidden-files: true
+          if-no-files-found: ignore
       - name: Retain actual agent stage timings
         if: always()
         uses: actions/upload-artifact@v4
@@ -216,6 +231,12 @@ jobs:
       RAMEN_FOUNDRY_BUILD_CACHE: "1"
     steps:
       - uses: actions/checkout@v4
+      # These preinstalled SDKs are unused here; preserve all compiler caches,
+      # assertion outputs and recordings on this disposable hosted runner.
+      - name: Prepare editor runner storage
+        env:
+          EDITOR_RUNNER_ENVIRONMENT: ${{ runner.environment }}
+        run: python3 -B tools/ci/editor_storage.py prepare
       - name: Install editor host prerequisites
         run: |
           sudo apt-get update -o Acquire::Retries=3 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30
@@ -240,8 +261,13 @@ jobs:
           key: ${{ runner.os }}-${{ runner.arch }}-foundry-compile-v2-${{ hashFiles('rust-toolchain.toml') }}-${{ hashFiles('Cargo.lock', 'rust-toolchain.toml', '**/*.rs', '**/Cargo.toml', 'idl/**', 'tools/**', 'docs/**', 'justfile', '.cargo/**', '.github/**', 'services/**/fixtures/**') }}
           restore-keys: |
             ${{ runner.os }}-${{ runner.arch }}-foundry-compile-v2-${{ hashFiles('rust-toolchain.toml') }}-
+      - name: Observe storage before editor lane
+        run: python3 -B tools/ci/editor_storage.py before-editor
       - name: Run canonical editor lane (serialized)
         run: python3 tools/ci/ci_lanes.py lane editor
+      - name: Observe storage after editor lane
+        if: always()
+        run: python3 -B tools/ci/editor_storage.py after-editor
       - name: Retain editor process runtime evidence
         if: always()
         uses: actions/upload-artifact@v4
