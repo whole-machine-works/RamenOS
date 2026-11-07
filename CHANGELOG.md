@@ -1,5 +1,17 @@
 # CHANGELOG
 
+## 2026-11-06 — scoped recovery correspondence result
+
+- Freeze the independently reviewed comparison registration before execution,
+  including independent update/rollback benefit and practical overhead budgets.
+- Record an independently accepted Darwin arm64 replay of all 627 frozen cases
+  through the actual Newcomputer module and bounded Wasmtime adapter. Every
+  return and all 16 observed output bytes match; no case is deduplicated.
+- Keep full fault/owner qualification, Linux reproduction, measured benefit,
+  live integration and activation open. The
+  [result record](docs/plans/recovery-q1-technical-result-2026-11-06.md) binds
+  the exact executed source and evidence.
+
 ## 2026-11-06 — RUN0 reset debugger capability
 
 - Add bounded, allowlisted RSP and an owned reset capability collector. Twenty-one

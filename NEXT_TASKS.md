@@ -43,6 +43,17 @@ and display contract/Vault preparation only where its inputs are ready. Freeze
 the missing RUN0 capture/profile handoff before dependent adapter work; missing
 physical setup does not block ready host/QEMU preparation.
 
+The parallel recovery experiment has an independently accepted 627-case
+Darwin arm64 correspondence result, recorded in the
+[technical result](docs/plans/recovery-q1-technical-result-2026-11-06.md).
+Advance the remaining frozen fault/resource/owner obligations and Linux
+reproduction before full Q1 acceptance. Then test the registered independent
+update and rollback benefit with the real host workflow. Preserve one Rust
+effect owner and the original operation, epoch and deadline throughout.
+The practical cost budgets are adoption criteria; exceeding them retains Rust
+and does not block correctness work or the target editing task. No activation
+or full Q1 result follows from the corpus replay alone.
+
 The strict external entry-input admission helper and its 22 synthetic controls
 are implemented and independently reviewed. Use it to validate a prepared
 profile's input identities, PE entry/relocations and retained prior diagnostic;
