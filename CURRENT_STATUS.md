@@ -259,6 +259,17 @@ readback. Existing reset capture controls keep their original limits.
 The live C0 collector still needs its own same-stop witness, source closure
 for ordinary-RAM persistence and RAM acquisition evidence.
 
+The [SATA/VAPIC-disabled successor](docs/plans/run0-vapic-off-requalification-2026-11-06.md)
+now qualifies a distinct exact profile with 217 Linux trace controls, a fresh
+DEBUG hint and independently reproduced admission, CAP1 and host reset evidence.
+Its 8/85/42 run files match the remote originals; both observed reset memory
+views exclude AHCI and `kvmvapic`. The host retains the unchanged 14-read/104-byte
+budget, four actual zero-exit waits and eleven EOFs. Pure prior-profile and CAP1
+joins pass. Original profiles and failures remain preserved. This does not
+establish global work quiescence or live C0: the successor still needs its exact
+RTC event policy, asynchronous entry stop, same-stop host witness and reviewed
+ordinary-RAM persistence condition before guest-memory acquisition.
+
 The IPC diagnostic reproduced two zero-byte timeouts before a later valid
 reply on the same VM. The separate single-client run succeeded immediately.
 The retained CPU snapshots follow successful replies, so the cause of the

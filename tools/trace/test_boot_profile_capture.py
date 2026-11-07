@@ -78,6 +78,18 @@ class ProbeTests(unittest.TestCase):
         expected[machine_index] = 'pc-q35-8.2,accel=tcg,sata=off'
         self.assertEqual(expected, changed)
 
+    def test_vapic_off_profile_changes_only_global_option(self):
+        inputs, run = Path('/inputs'), Path('/private/run')
+        old = probe.build_argv(inputs, run, probe.SATA_OFF_INVOCATION_PROFILE)
+        new = probe.build_argv(inputs, run, probe.VAPIC_OFF_INVOCATION_PROFILE)
+        expected = old.copy()
+        expected[3:3] = ['-global', 'apic.vapic=off']
+        self.assertEqual(expected, new)
+        self.assertEqual(probe.admission_machine(probe.SATA_OFF_INVOCATION_PROFILE),
+                         probe.admission_machine(probe.VAPIC_OFF_INVOCATION_PROFILE))
+        for other in (probe.INVOCATION_PROFILE, probe.SATA_OFF_INVOCATION_PROFILE):
+            self.assertNotIn('-global', probe.build_argv(inputs, run, other))
+
     def test_closed_invocation_and_admission_machine_mapping(self):
         inputs, run = Path('/inputs'), Path('/private/run')
         for name in ['q35-8.2-tcg-qemu64-virtio-ro-esp-debugcon-sata-off-v1',
@@ -98,7 +110,8 @@ class ProbeTests(unittest.TestCase):
             profile_path, run = inputs / 'profile.json', inputs / 'run'
             digests = []
             for name, machine in [(probe.INVOCATION_PROFILE, 'pc-q35-8.2,accel=tcg'),
-                    (probe.SATA_OFF_INVOCATION_PROFILE, 'pc-q35-8.2,accel=tcg,sata=off')]:
+                    (probe.SATA_OFF_INVOCATION_PROFILE, 'pc-q35-8.2,accel=tcg,sata=off'),
+                    (probe.VAPIC_OFF_INVOCATION_PROFILE, 'pc-q35-8.2,accel=tcg,sata=off')]:
                 with self.subTest(profile=name):
                     profile['invocation_profile'] = name
                     probe.validate_profile(profile, inputs)
@@ -126,7 +139,7 @@ class ProbeTests(unittest.TestCase):
                             probe.run_probe(profile, inputs, run))
                         builder.assert_called_once_with(inputs, run, name)
                         spawn.assert_not_called()
-            self.assertNotEqual(*digests)
+            self.assertEqual(len(digests), len(set(digests)))
 
     def test_forbidden_commands_never_reach_wire(self):
         control, wire = self.controller([{'return': {'running': False, 'status': 'prelaunch'}, 'id': 2}])

@@ -20,6 +20,7 @@ import boot_profile_inputs as entry
 
 PROFILE_SHA256 = "3e5916da4e1ec79eda8d967f4bd2fc26909fb509479c086db4576baa506a910e"
 SATA_OFF_PROFILE_SHA256 = "b3c4bd6caa30641a0f1859f4fbc88cad64254f602c7190108cb223ff0c32feef"
+VAPIC_OFF_PROFILE_SHA256 = "ab82f30ae31a03761b39088a4dd96c138203ed7d631909a953bc5224f7403da3"
 QEMU_SHA256 = "8a35ccba41582fc6c38b9df85fc9e35fa1d42f414d2d7d8090ee9b2f5e7c0854"
 SOURCE_DOSSIER_SHA256 = "f2dbb099816cc1dfad09f2ea2a938c4127a63e7985f8c363070ecab590973db9"
 CAPTURE_LIMIT = 32 * 1024 * 1024
@@ -64,13 +65,16 @@ def profile_pin(profile):
     invocation = profile.get("invocation_profile")
     if invocation == base.INVOCATION_PROFILE:
         return PROFILE_SHA256
-    deny(invocation == base.SATA_OFF_INVOCATION_PROFILE, "invocation_profile")
-    return SATA_OFF_PROFILE_SHA256
+    if invocation == base.SATA_OFF_INVOCATION_PROFILE:
+        return SATA_OFF_PROFILE_SHA256
+    deny(invocation == base.VAPIC_OFF_INVOCATION_PROFILE, "invocation_profile")
+    return VAPIC_OFF_PROFILE_SHA256
 
 
 def decode_pinned_profile(raw):
     digest = hashlib.sha256(raw).hexdigest()
-    deny(digest in (PROFILE_SHA256, SATA_OFF_PROFILE_SHA256), "pinned_file_digest")
+    deny(digest in (PROFILE_SHA256, SATA_OFF_PROFILE_SHA256, VAPIC_OFF_PROFILE_SHA256),
+         "pinned_file_digest")
     profile = entry.decode_packet(raw)
     deny(digest == profile_pin(profile), "profile_identity")
     return profile
@@ -481,6 +485,18 @@ def collect(plan_path, digest, inputs, run, dossier=None):
     return run_capability(plan, profile, profile_bytes, dossier_bytes, inputs, run)
 
 
+def validate_profile_layout(layout, invocation_profile):
+    """Validate the current FlatView and the selected profile's device exclusions."""
+    base.admission_machine(invocation_profile)
+    deny(type(layout) is str, "flatview_reply_shape")
+    ranges = parse_flatview(layout)
+    if invocation_profile in (base.SATA_OFF_INVOCATION_PROFILE, base.VAPIC_OFF_INVOCATION_PROFILE):
+        deny("ahci" not in layout.casefold(), "sata_off_ahci_visible")
+    if invocation_profile == base.VAPIC_OFF_INVOCATION_PROFILE:
+        deny("kvmvapic" not in layout.casefold(), "vapic_off_device_visible")
+    return ranges
+
+
 def observe(qmp, rsp, evidence, observation, invocation_profile=base.INVOCATION_PROFILE):
     commands = qmp.request("query-commands")
     incomplete(type(commands) is list and all(type(row) is dict and
@@ -502,9 +518,7 @@ def observe(qmp, rsp, evidence, observation, invocation_profile=base.INVOCATION_
     layout = qmp.request("human-monitor-command", {"command-line": HMP[1]})
     deny(type(layout) is str, "flatview_reply_shape")
     observation["layout_ref"] = evidence.put("flatview.txt", layout.encode())
-    parse_flatview(layout)
-    if invocation_profile == base.SATA_OFF_INVOCATION_PROFILE:
-        deny("ahci" not in layout.casefold(), "sata_off_ahci_visible")
+    validate_profile_layout(layout, invocation_profile)
     rsp.query_supported()
     rsp.query_threads()
     rsp.select_thread()

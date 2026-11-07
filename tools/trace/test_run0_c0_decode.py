@@ -229,7 +229,7 @@ def synthetic_c0_hmp(values):
     return "\r\n".join(lines)+"\r\n"
 
 
-def full_fixture(folder, invocation_profile=capture.INVOCATION_PROFILE):
+def full_fixture(folder, invocation_profile=capture.INVOCATION_PROFILE, *, current_layouts=None):
     import boot_profile_inputs as entry
     import run0_host_cpu_witness as witness
     import run0_rsp_capability as cap
@@ -248,7 +248,8 @@ def full_fixture(folder, invocation_profile=capture.INVOCATION_PROFILE):
                                        for name in capture.PROVENANCE_KEYS}}
     remap = {}
     host, blobs, put_blob = synthetic_host_report(folder, rsp_index=rsp_index, rsp_blobs=blobs,
-                                                 profile=profile, sequence_map=remap)
+                                                 profile=profile, sequence_map=remap,
+                                                 qmp_layouts=current_layouts)
     control = json.loads(blobs[host["control_ref"]["path"]])
     replay = d.validate_c0_rsp(control, blobs)
     for row in snapshot["tables"]+snapshot["objects"]:
@@ -323,6 +324,9 @@ def full_fixture(folder, invocation_profile=capture.INVOCATION_PROFILE):
 
     observations = cap.empty_observations()
     observations.update({key: cap_blob(key, b"synthetic prior capability") for key in cap.OBS_REFS})
+    if invocation_profile == capture.VAPIC_OFF_INVOCATION_PROFILE:
+        from test_run0_rsp_capability import LAYOUT
+        observations["layout_ref"] = cap_blob("prior-layout_ref", LAYOUT.encode())
     observations.update(realized=True, phys_bits=40, rsp_thread="01", physical_mode=1)
     capability_report = {"schema_version": 1, "kind": "run0_reset_capability_v0", "run_id": "prior-cap",
         "profile_ref": cap_blob("profile.json", profile),
@@ -678,6 +682,57 @@ class DecoderControls(unittest.TestCase):
             bad = report | {"capability_ref": put("prior-cap1/report.json", previous)}
             self.assertEqual(d.decode_c0("synthetic_fixture", put("wrong-c0.json", bad),
                                          blobs, host)["reason"], "retained_argv")
+
+    def test_vapic_off_replay_binds_both_prior_argv_and_layout(self):
+        for target in ("probe", "capability", "layout"):
+            with self.subTest(target=target), tempfile.TemporaryDirectory() as directory:
+                report, ref, blobs, host, put = full_fixture(
+                    Path(directory), capture.VAPIC_OFF_INVOCATION_PROFILE)
+                self.assertEqual(d.decode_c0("synthetic_fixture", ref, blobs, host)["status"], "PASS")
+                if target == "probe":
+                    mapping = json.loads(blobs[report["profile_mapping_ref"]["path"]])
+                    path = mapping["probe_report_ref"]["path"]
+                    prior = json.loads(blobs[path])
+                    prior["argv"] = prior["argv"][:3] + prior["argv"][5:]
+                    mapping["probe_report_ref"] = put(path, prior)
+                    bad = report | {"profile_mapping_ref": put("changed-mapping.json", mapping)}
+                    reason = "retained_argv"
+                else:
+                    prior = json.loads(blobs["prior-cap1/report.json"])
+                    if target == "capability":
+                        argv = json.loads(blobs["prior-cap1/" + prior["argv_ref"]["path"]])
+                        argv = argv[:3] + argv[5:]
+                        prior["argv_ref"] = put("prior-cap1/argv.json", argv) | {"path": "argv.json"}
+                        reason = "retained_argv"
+                    else:
+                        name = prior["observations"]["layout_ref"]["path"]
+                        raw = blobs["prior-cap1/" + name].replace(b"vga", b"kvmvapic")
+                        prior["observations"]["layout_ref"] = put("prior-cap1/" + name, raw) | {"path": name}
+                        reason = "vapic_off_device_visible"
+                    bad = report | {"capability_ref": put("prior-cap1/report.json", prior)}
+                result = d.decode_c0("synthetic_fixture", put("bad-successor.json", bad), blobs, host)
+                self.assertEqual((result["status"], result["reason"]), ("DENY", reason))
+
+    def test_vapic_off_rejects_device_in_each_current_layout(self):
+        from test_run0_rsp_capability import LAYOUT
+        for phases in ((0,), (1,), (0, 1)):
+            for device, reason in (("kvmvapic", "vapic_off_device_visible"),
+                                   ("ich9-ahci", "sata_off_ahci_visible")):
+                with self.subTest(phases=phases, device=device), tempfile.TemporaryDirectory() as directory:
+                    layouts = [LAYOUT, LAYOUT]
+                    for phase in phases:
+                        layouts[phase] = LAYOUT.replace("vga", device)
+                    report, ref, blobs, host, _ = full_fixture(
+                        Path(directory), capture.VAPIC_OFF_INVOCATION_PROFILE,
+                        current_layouts=tuple(layouts))
+                    result = d.decode_c0("synthetic_fixture", ref, blobs, host)
+                    self.assertEqual((result["status"], result["reason"]), ("DENY", reason))
+        for invocation in (capture.INVOCATION_PROFILE, capture.SATA_OFF_INVOCATION_PROFILE):
+            with self.subTest(legacy_profile=invocation), tempfile.TemporaryDirectory() as directory:
+                layout = LAYOUT.replace("vga", "kvmvapic")
+                _, ref, blobs, host, _ = full_fixture(
+                    Path(directory), invocation, current_layouts=(layout, layout))
+                self.assertEqual(d.decode_c0("synthetic_fixture", ref, blobs, host)["status"], "PASS")
 
     def test_prior_capability_namespace_has_no_current_fallback(self):
         with tempfile.TemporaryDirectory() as directory:

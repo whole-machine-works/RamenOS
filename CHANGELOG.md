@@ -1,5 +1,21 @@
 # CHANGELOG
 
+## 2026-11-06 — SATA/VAPIC-disabled RUN0 prerequisites
+
+- Add a third exact profile with `sata=off` and `apic.vapic=off`, preserving the
+  two older profiles. Enforce full argv identity and exclusion of both removed
+  devices in prior CAP1 and current C0 memory views; 217 Linux trace controls pass.
+- Independently qualify one DEBUG diagnostic, one CAP1 reset and one separate
+  host reset witness across 8/85/42 retained files. Reproduce the assembled prior
+  admission and pure C0 input joins; retain the original 14-read/104-byte host
+  budget, actual waits and complete EOFs. The
+  [result record](docs/plans/run0-vapic-off-requalification-2026-11-06.md)
+  pins source, plans, artifacts and reviews.
+- Keep exact-profile RTC policy, asynchronous entry-stop control, a fresh
+  same-stop witness and ordinary-RAM persistence source closure as C0
+  prerequisites. No live C0, global work quiescence or guest-access claim is added;
+  earlier failures remain unexplained.
+
 ## 2026-11-06 — RUN0 reset debugger capability
 
 - Add bounded, allowlisted RSP and an owned reset capability collector. Twenty-one

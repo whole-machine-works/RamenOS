@@ -274,6 +274,16 @@ class EntryInputsTests(unittest.TestCase):
         self.rehint()
         self.assertEqual(original, self.result('ADMIT')['profile_sha256'])
 
+    def test_same_machine_invocation_pin_requires_fresh_hint(self):
+        self.packet['profile']['machine'] = 'pc-q35-8.2,sata=off'
+        self.rehint()
+        original = self.result('ADMIT')['profile_sha256']
+        self.packet['profile']['artifacts']['invocation'] = self.blob(
+            'invocation', b'{"machine":"pc-q35-8.2,sata=off","global":"apic.vapic=off"}')
+        self.assertEqual('hint_profile_mismatch', self.result('DENY')['reason'])
+        self.rehint()
+        self.assertNotEqual(original, self.result('ADMIT')['profile_sha256'])
+
     def test_unknown_machine_denies_without_profile_fallback(self):
         for machine in ['pc-q35-8.2,sata=on', 'pc-q35-8.2,accel=tcg,sata=off',
                         'pc-q35-8.2,sata=off,usb=off', '', True, 0, None, [], {}]:

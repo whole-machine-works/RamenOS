@@ -37,6 +37,7 @@ import boot_profile_inputs as entry
 VM_SECONDS = 60
 INVOCATION_PROFILE = 'q35-8.2-tcg-qemu64-virtio-ro-esp-debugcon-v0'
 SATA_OFF_INVOCATION_PROFILE = 'q35-8.2-tcg-qemu64-virtio-ro-esp-debugcon-sata-off-v0'
+VAPIC_OFF_INVOCATION_PROFILE = 'q35-8.2-tcg-qemu64-virtio-ro-esp-debugcon-sata-vapic-off-v0'
 TEARDOWN_SECONDS = 5
 BOOT_SECONDS = 20
 RESPONSE_SECONDS = 5
@@ -218,9 +219,10 @@ def create_run(path):
 
 def admission_machine(invocation_profile):
     deny(type(invocation_profile) is str and
-         invocation_profile in (INVOCATION_PROFILE, SATA_OFF_INVOCATION_PROFILE),
+         invocation_profile in (INVOCATION_PROFILE, SATA_OFF_INVOCATION_PROFILE,
+                                VAPIC_OFF_INVOCATION_PROFILE),
          'invocation_profile')
-    return 'pc-q35-8.2,sata=off' if invocation_profile == SATA_OFF_INVOCATION_PROFILE else 'pc-q35-8.2'
+    return 'pc-q35-8.2' if invocation_profile == INVOCATION_PROFILE else 'pc-q35-8.2,sata=off'
 
 
 def build_argv(inputs, run, invocation_profile=INVOCATION_PROFILE):
@@ -229,7 +231,8 @@ def build_argv(inputs, run, invocation_profile=INVOCATION_PROFILE):
     safe_path(run)
     deny(len(str(run / 'serial.sock').encode()) < 104, 'unix_socket_path_length')
     machine_argv = 'pc-q35-8.2,accel=tcg' + (',sata=off' if machine.endswith(',sata=off') else '')
-    return [str(inputs / 'qemu'), '-machine', machine_argv,
+    global_argv = ['-global', 'apic.vapic=off'] if invocation_profile == VAPIC_OFF_INVOCATION_PROFILE else []
+    return [str(inputs / 'qemu'), '-machine', machine_argv, *global_argv,
         '-cpu', 'qemu64', '-smp', '1', '-m', '512M', '-nic', 'none', '-S',
         '-display', 'none', '-no-reboot',
         '-drive', 'if=pflash,format=raw,readonly=on,file=' + str(inputs / 'ovmf_code'),
