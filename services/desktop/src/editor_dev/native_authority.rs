@@ -1483,6 +1483,39 @@ impl super::native_save::SaveIssuer {
 
 #[cfg(feature = "editor_native_save_v0_dev")]
 impl RegistryWitness {
+    /// Read the actual authenticated completed outcome without issuing a proof.
+    /// Missing or reserved history is not completion; Panicked stays Panicked.
+    #[cfg(feature = "editor_recovery_shadow_v0_dev")]
+    pub fn save_join_observation_for(
+        &self,
+        id: &ProducerId,
+    ) -> Result<Option<super::native_save::NativeJoinObservation>, Status> {
+        if !same(&self.authority, &id.authority) {
+            return Err(Status::Denied);
+        }
+        let Some(origin) = id.origin.upgrade() else {
+            return Ok(None);
+        };
+        if origin.save_object.is_none() {
+            return Err(Status::Denied);
+        }
+        if locked(&origin.save_installed)?.get(&id.id) != Some(&(id.kind, 1)) {
+            return Err(Status::Denied);
+        }
+        let memo = locked(&origin.save_joined)?;
+        let Some(Some(observation)) = memo.get(&id.id) else {
+            return Ok(None);
+        };
+        if observation.producer_id != id.id
+            || observation.producer_generation != 1
+            || observation.origin_id != origin.id
+            || observation.kind != id.kind
+        {
+            return Err(Status::Denied);
+        }
+        Ok(Some(observation.clone()))
+    }
+
     /// Authenticated completed join; true includes a genuinely panicked thread.
     /// Missing history never proves completion or successful execution.
     pub fn save_producer_joined(&self, id: &ProducerId) -> Result<bool, Status> {
@@ -1512,3 +1545,7 @@ impl RegistryWitness {
         Ok(true)
     }
 }
+
+#[cfg(all(test, feature = "editor_recovery_shadow_v0_dev"))]
+#[path = "native_shadow_identity_tests.rs"]
+mod native_shadow_identity_tests;
