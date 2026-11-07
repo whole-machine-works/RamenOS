@@ -1,0 +1,107 @@
+{
+  "activation": "Receiving-project independent approval after complete qualified comparison and genuine P0-P3 shadow/in-flight rollback/reopen/fresh-Save evidence. Actual merge and release authority remain separately assigned.",
+  "benefit": {
+    "attribution": "A result concerns the packaging and host boundary. Language/compiler causation would need an additional same-boundary comparator.",
+    "comparator": "The competent current Rust recovery/release path receives the same abstract maintenance request and the same authorized original observations. Record only its actual required source, executable and release changes. If Rust needs no executable replacement, retain that result.",
+    "correctness_boundary": "One Rust effect owner, authorized original lookup, original identity/epoch, exact receipt checking, no extra Commit. Allocation continuation stays in Rust.",
+    "failure_rule": "Any disagreement, authority fault, duplicate write or original-operation loss refuses adoption. No change advantage or an exceeded cost budget records no demonstrated benefit and retains Rust.",
+    "hypothesis": "A reviewed recovery-decision implementation revision and reversal can deploy as an independent module while trusted editor and Store executable bytes remain identical and the original in-flight Save retains its outcome, owner and deadline.",
+    "primary_pass": "For the same reviewed revision and reversal, candidate updates and reverses only the approved decision module/selector, preserves editor/Store executable bytes, all outcomes and authority, and performs zero additional writes. The primary improvement is strictly fewer trusted editor/Store executable replacement events across update and reversal than the actual competent Rust comparator.",
+    "replacement_event": "Count one event per editor or Store executable whose complete bytes change during each update or reversal. Returning to the original bytes still counts as a reversal event. Identical output is zero events. A Rust comparator needing no replacement records no demonstrated deployment benefit.",
+    "revision_request": "A separately reviewed compiler lowering successor replaces the redundant local.set sum; local.get sum immediately after i64.add with local.tee sum, preserving left-to-right source evaluation and checked-add semantics. Freeze the exact changed source/artifact and independent correspondence review before the workflow confirmation."
+  },
+  "cost_budgets": {
+    "cold_condition": "Fresh process/engine for each paired observation.",
+    "cold_p95_added_setup_latency_ms": 250,
+    "cost_boundary": "Include artifact validation, engine construction, compilation, fresh instantiation, copying, execution, Rust recheck, temporary storage, teardown and fallback. Report end-to-end observation separately and count actual writes.",
+    "end_to_end_p95_added_outcome_latency_ms": 25,
+    "memory_condition": "One comparison process and one active call. Record baseline and peak process RSS with the same OS sampler and cadence, including compilation and teardown.",
+    "peak_added_host_rss_bytes": 67108864,
+    "rationale": "These adoption budgets allow 10 ms warm decision overhead, 250 ms cold setup, 25 ms added end-to-end recovery and 64 MiB extra RSS for a single runner. They leave room within existing multi-second fault deadlines while recording the complete cost. Cost failure retains Rust and does not block functional evaluation.",
+    "runtime_limit_relaxation_permitted": false,
+    "warm_condition": "Resident engine/module, fresh Store/Instance for every call.",
+    "warm_p95_added_latency_ms": 10
+  },
+  "date": "2026-11-06",
+  "inputs": {
+    "abi_sha256": "49daf52dd669411376770b3bc2a007d7c6a8b346843bcd123a45da8139b0da60",
+    "adapter_obligations_sha256": "f820a7c3264186b68158078fc79a09405cd2780e9aef061fb21689669c24c914",
+    "candidate_module_bytes": 1349,
+    "candidate_module_sha256": "6458a173cd09e73fe0be59b1a2d339c2070c33ac05628b3d2dd5fb264cb2e079",
+    "case_corpus_sha256": "84eece3246d9b4521a5b8ac48fa6324cb4be4e98889277ab46837f6764aeda49",
+    "case_rows": 627,
+    "distinct_input_strings": 623,
+    "newcomputer_candidate_source": "192715a77b497d370e4f956b38751aa310c9c1c3",
+    "newcomputer_evaluator_template": "2d6b8dfc8464dd7e04297ca6a1e958478d68dba2",
+    "qualified_workflow_reference": "2688f245f382ea8262502bf2717ef5a14fc0b148",
+    "ramenos_evaluator_template": "f0aaea99eef5c9ee435bd148cb25cf8e2f9aeb46",
+    "rust_semantic_reference": "958a6f1713129930b217c16b1a21140e8fab9ed0"
+  },
+  "kind": "recovery_comparison_registration_v1",
+  "measurement": {
+    "acceptance_scope": "Apply each latency budget and its bootstrap upper endpoint independently to every named class or workflow scenario under that condition. Every class/scenario must pass. No pooled result can replace a failing class/scenario. Memory and correctness rules apply to every attempted run.",
+    "calibration": "Use separately labeled synthetic inputs and harness self-tests only. Preserve calibration. Never use confirmation observations to select artifacts, budgets or scenarios.",
+    "classes": [
+      "committed",
+      "definitive_noncommit",
+      "pending",
+      "denied",
+      "invalid_or_foreign_receipt",
+      "stale_original_epoch",
+      "lost_post_dispatch_reply",
+      "child_death",
+      "revocation",
+      "unrelated_session_progress"
+    ],
+    "cold_pairs_per_class": 100,
+    "independent_reproduction": "A non-author repeats the frozen build and named qualified comparison in fresh output locations before final acceptance.",
+    "memory_rule": "Every recorded peak added RSS must fit the declared budget. Report sampler cadence and sampling limitations.",
+    "pair_order": "Alternate AB and BA by fixed source case/run ordinal. Both arms receive the same authorized bytes with Rust retaining effects.",
+    "primary_quantile": "Nearest-rank p95 of paired added milliseconds, using ceil(0.95*n)-1 after sorting.",
+    "secondary_metrics": [
+      "p50",
+      "p99",
+      "maximum",
+      "fuel",
+      "module_size",
+      "one_time_build_cost",
+      "release_change_set"
+    ],
+    "secondary_rule": "Descriptive only. They cannot replace the primary benefit or cost decision.",
+    "stopping": "Run the fixed inventory once. Retain and count every attempted pair. Missing/failed pairs prevent a passing decision. No silent reruns, exclusions, threshold changes or optional early stopping.",
+    "target": "Use the exact accepted Linux host workflow and locked toolchain. Freeze actual host/OS/runtime/source identities before confirmation. No physical or cross-platform generalization.",
+    "uncertainty": "Record the observed quantile and a seeded percentile bootstrap 95% interval from 10000 paired resamples, seed 20261106. Cost acceptance requires its upper endpoint within the declared budget.",
+    "warm_pairs_per_class": 1000,
+    "workflow_pairs_per_failure_scenario": 30
+  },
+  "owner_decision": "Test independent decision-artifact updates and rollback. Coordinator chooses practical overhead budgets. Cost failure retains Rust and does not stop correctness work.",
+  "qualification": {
+    "concurrent_calls_per_instance": 1,
+    "configured_wasm_stack_bytes": 32768,
+    "engine_bound_scope": "Configured engine limits and observed traps. Physical stack and time guarantees require distinct evidence.",
+    "fuel_per_fresh_call": 100000,
+    "identity_release": "Record final evaluator and adapter commits, complete source/lock inventories, compiled test executable, actual tool/engine/configuration/platform, exact commands, module/corpus/obligation hashes and accepted registration SHA before execution.",
+    "imports": 0,
+    "memory_pages_min_max": [
+      1,
+      1
+    ],
+    "rule": "Replay every exact named row in source order through fresh bounded instances. Match return and all 16 observed bytes. Keep faults, refusals, partial attempts and mismatches. All 18 fault/owner obligations require their own named evidence before full Q1 acceptance.",
+    "strategy": "Cranelift",
+    "technical_replay_release": "Independent acceptance of this exact registration and resulting source release permits the fixed corpus replay. Its result is a scoped correspondence result. Remaining obligations, measured comparison and activation have separate release requirements.",
+    "wasmtime_version": "27.0.0"
+  },
+  "roles": {
+    "adapter_author": "recovery_a1",
+    "candidate_authors": [
+      "recovery_interpreter",
+      "recovery_compiler",
+      "root"
+    ],
+    "independent_evaluator": "q1_evaluator",
+    "integration_owner": "root",
+    "registration_and_final_reviewer": "q1_protocol_review"
+  },
+  "schema_version": 1,
+  "scope": "Host recovery v0. Qualification, measured benefit and activation are separate decisions."
+}

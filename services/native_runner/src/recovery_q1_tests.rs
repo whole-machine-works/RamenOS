@@ -142,6 +142,26 @@ mod controls {
     }
 
     #[test]
+    fn q1_bridge_registration_requires_exact_reviewed_bytes() {
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("registration.json");
+        let accepted = include_bytes!("../../../docs/contracts/recovery-comparison-v1.json");
+        std::fs::write(&path, accepted).unwrap();
+        std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o600)).unwrap();
+        assert_eq!(
+            reviewed_registration(REVIEWED_REGISTRATION_SHA256, &path).unwrap(),
+            REVIEWED_REGISTRATION_SHA256.unwrap()
+        );
+        std::fs::write(&path, b"changed").unwrap();
+        assert!(
+            reviewed_registration(REVIEWED_REGISTRATION_SHA256, &path)
+                .unwrap_err()
+                .to_string()
+                .contains("registration digest mismatch")
+        );
+    }
+
+    #[test]
     fn q1_bridge_stays_held_until_reviewed_registration_is_pinned() {
         let error = reviewed_registration(None, std::path::Path::new("never-opened")).unwrap_err();
         assert!(
@@ -166,7 +186,8 @@ use std::{
 const CORPUS_SHA256: &str = "84eece3246d9b4521a5b8ac48fa6324cb4be4e98889277ab46837f6764aeda49";
 const MODULE_SHA256: &str = "6458a173cd09e73fe0be59b1a2d339c2070c33ac05628b3d2dd5fb264cb2e079";
 const REFERENCE_REVISION: &str = "958a6f1713129930b217c16b1a21140e8fab9ed0";
-const REVIEWED_REGISTRATION_SHA256: Option<&str> = None;
+const REVIEWED_REGISTRATION_SHA256: Option<&str> =
+    Some("185957fc5f45900995de9c4705c7936ac834cffea3006c67b6596e7e33e656e2");
 const MAX_CORPUS_BYTES: u64 = 2 * 1024 * 1024;
 
 #[derive(Clone, Copy)]
