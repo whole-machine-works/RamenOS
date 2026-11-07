@@ -229,7 +229,8 @@ def synthetic_c0_hmp(values):
     return "\r\n".join(lines)+"\r\n"
 
 
-def full_fixture(folder, invocation_profile=capture.INVOCATION_PROFILE, *, current_layouts=None):
+def full_fixture(folder, invocation_profile=capture.INVOCATION_PROFILE, *, current_layouts=None,
+                 qmp_events=None):
     import boot_profile_inputs as entry
     import run0_host_cpu_witness as witness
     import run0_rsp_capability as cap
@@ -249,7 +250,7 @@ def full_fixture(folder, invocation_profile=capture.INVOCATION_PROFILE, *, curre
     remap = {}
     host, blobs, put_blob = synthetic_host_report(folder, rsp_index=rsp_index, rsp_blobs=blobs,
                                                  profile=profile, sequence_map=remap,
-                                                 qmp_layouts=current_layouts)
+                                                 qmp_layouts=current_layouts, qmp_events=qmp_events)
     control = json.loads(blobs[host["control_ref"]["path"]])
     replay = d.validate_c0_rsp(control, blobs)
     for row in snapshot["tables"]+snapshot["objects"]:
@@ -712,6 +713,23 @@ class DecoderControls(unittest.TestCase):
                     bad = report | {"capability_ref": put("prior-cap1/report.json", prior)}
                 result = d.decode_c0("synthetic_fixture", put("bad-successor.json", bad), blobs, host)
                 self.assertEqual((result["status"], result["reason"]), ("DENY", reason))
+
+    def test_full_profile_join_selects_the_exact_rtc_path(self):
+        from test_run0_host_cpu_witness import SharedQMPEventControls
+        events = SharedQMPEventControls
+        for invocation in (capture.INVOCATION_PROFILE, capture.SATA_OFF_INVOCATION_PROFILE,
+                           capture.VAPIC_OFF_INVOCATION_PROFILE):
+            for correct in (False, True):
+                use_one = (invocation == capture.VAPIC_OFF_INVOCATION_PROFILE) == correct
+                raw = events.RTC.replace(b"device[2]", b"device[1]") if use_one else events.RTC
+                bracket = {4: ((events.RESUME, None), (raw, None), (events.STOP, None))}
+                with self.subTest(invocation=invocation, correct=correct), tempfile.TemporaryDirectory() as tmp:
+                    if not correct:
+                        with self.assertRaisesRegex(capture.ProbeError, "shared_qmp_event_forbidden"):
+                            full_fixture(Path(tmp), invocation, qmp_events=bracket)
+                    else:
+                        _, ref, blobs, host, _ = full_fixture(Path(tmp), invocation, qmp_events=bracket)
+                        self.assertEqual(d.decode_c0("synthetic_fixture", ref, blobs, host)["status"], "PASS")
 
     def test_vapic_off_rejects_device_in_each_current_layout(self):
         from test_run0_rsp_capability import LAYOUT

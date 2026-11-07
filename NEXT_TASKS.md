@@ -67,14 +67,17 @@ transitions and handles the pinned RTC notifications.
 Use the [requalified SATA/VAPIC-disabled profile](docs/plans/run0-vapic-off-requalification-2026-11-06.md)
 with its fresh prior hint, independently reproduced admission, CAP1 and host
 reset witness; preserve both older exact profiles and their evidence. The
-bounded wire, paused QMP handshake and typed debugger reset setup are ready.
-Freeze the admitted-entry breakpoint and asynchronous stop interface, then
-staff that transport and RAM-admitted acquisition in parallel. Derive the third
-profile's closed RTC policy from pinned source and actual `device[1]/rtc` events;
-preserve `device[2]/rtc` for the older profiles. The live collector needs a fresh
-host witness within the same stop and reviewed source closure for ordinary-RAM
-persistence, including remaining asynchronous/global work, before any
-guest-memory read. Qualify C0, then the same-call C1/C2 capture.
+bounded wire, paused QMP handshake, typed debugger reset setup and
+[checked entry-stop prefix](docs/plans/run0-c0-entry-prefix-2026-11-06.md) are ready.
+The exact-profile RTC policy is implemented and replayed: `device[1]/rtc` for
+VAPIC-off, `device[2]/rtc` for older profiles. Advance the RAM-admitted acquisition
+driver and owned collector join. The live collector needs a fresh
+host witness within the same stop before any guest-memory read. The
+[source persistence condition](docs/plans/run0-c0-source-persistence-2026-11-06.md)
+is now conditionally accepted for this exact profile: remaining queued CPU
+callbacks do not change the global ordinary-RAM view or architectural page-walk
+inputs. The collector must still prove every listed fresh stop/state/view and
+command condition. Qualify C0, then the same-call C1/C2 capture.
 The prior address is only a candidate:
 a missed stop or missing new profile-bound hint remains `INCOMPLETE`; present
 mismatched or malformed inputs are `DENY`. No scan, guessed address or automatic

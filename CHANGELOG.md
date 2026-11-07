@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## 2026-11-06 — checked C0 entry-stop preparation
+
+- Add the pure prior-entry token and bounded breakpoint/continue/stop/ACK prefix,
+  with separate fresh debug-status confirmation and exact receive event ordering.
+- Join exact-profile RTC policy through host and C0 replay. All 253 Linux trace
+  controls and three historical reset replays pass; the complete tooling gate passes.
+- Accept the exact-profile source persistence condition. Current owned-launch,
+  stopped-state/witness/RAM acquisition and complete C0 remain pending. See the
+  [prefix](docs/plans/run0-c0-entry-prefix-2026-11-06.md) and
+  [source decision](docs/plans/run0-c0-source-persistence-2026-11-06.md).
+
 ## 2026-11-06 — SATA/VAPIC-disabled RUN0 prerequisites
 
 - Add a third exact profile with `sata=off` and `apic.vapic=off`, preserving the

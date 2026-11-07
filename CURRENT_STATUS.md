@@ -270,6 +270,20 @@ establish global work quiescence or live C0: the successor still needs its exact
 RTC event policy, asynchronous entry stop, same-stop host witness and reviewed
 ordinary-RAM persistence condition before guest-memory acquisition.
 
+The later [source follow-up](docs/plans/run0-c0-source-persistence-2026-11-06.md)
+conditionally accepts that persistence condition for the exact SATA/VAPIC-off
+profile. Its finite callback inventory distinguishes implementation cache
+updates from global mapping and architectural-state writers. Current C0
+launch/stop/state/view/witness joins and actual acquisition remain pending;
+this source decision supplies no live-read permit or global-quiescence claim.
+
+The [entry-stop prefix](docs/plans/run0-c0-entry-prefix-2026-11-06.md) now
+implements the checked prior token, sole breakpoint/continue, silent asynchronous
+stop, separate acknowledgment and fresh debug-status confirmation. Its
+exact-profile RTC policy joins host and C0 replay. All 253 Linux trace controls
+and three retained reset replays pass. These are source/socket preparation
+results; the owned launch and current-state/witness/RAM joins remain pending.
+
 The IPC diagnostic reproduced two zero-byte timeouts before a later valid
 reply on the same VM. The separate single-client run succeeded immediately.
 The retained CPU snapshots follow successful replies, so the cause of the

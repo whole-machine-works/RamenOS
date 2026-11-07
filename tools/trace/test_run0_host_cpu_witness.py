@@ -631,6 +631,24 @@ class SharedQMPEventControls(unittest.TestCase):
         self.assertEqual(witness.shared_control_index(*self.control(both), retained_runtime=True)[1],
                          123)
 
+    def test_shared_qmp_selects_one_exact_profile_rtc_path(self):
+        for invocation in (base.INVOCATION_PROFILE, base.SATA_OFF_INVOCATION_PROFILE,
+                           base.VAPIC_OFF_INVOCATION_PROFILE):
+            correct = (self.RTC.replace(b"device[2]", b"device[1]")
+                       if invocation == base.VAPIC_OFF_INVOCATION_PROFILE else self.RTC)
+            wrong = (self.RTC if invocation == base.VAPIC_OFF_INVOCATION_PROFILE
+                     else self.RTC.replace(b"device[2]", b"device[1]"))
+            for raw, accepted in ((correct, True), (wrong, False)):
+                events = {4: ((self.RESUME, None), (raw, None), (self.STOP, None))}
+                args = self.control(events)
+                with self.subTest(invocation=invocation, accepted=accepted):
+                    if accepted:
+                        self.assertEqual(witness.shared_control_index(
+                            *args, invocation_profile=invocation)[1], 123)
+                    else:
+                        with self.assertRaisesRegex(base.ProbeError, "shared_qmp_event_forbidden"):
+                            witness.shared_control_index(*args, invocation_profile=invocation)
+
     def test_shared_qmp_denies_wrong_payload_phase_clock_and_wire(self):
         before_debug = ((self.RESUME, None), (self.STOP, None))
         for events, tail, reason in (
@@ -705,7 +723,7 @@ class SharedQMPEventControls(unittest.TestCase):
 
 
 def synthetic_host_report(folder, *, rsp_index=None, rsp_blobs=None, profile=None,
-                          sequence_map=None, qmp_layouts=None):
+                          sequence_map=None, qmp_layouts=None, qmp_events=None):
     """Test-only evidence producer. The production validator constructs the witness."""
     reader = reader_controls.reader
     mutate = None
@@ -781,7 +799,7 @@ def synthetic_host_report(folder, *, rsp_index=None, rsp_blobs=None, profile=Non
     else:
         control, binding, after_pidfd, qemu_wait = synthetic_shared_control(
             put, rsp_index, blobs, profile_digest, first, last, sequence_map,
-            qmp_layouts=qmp_layouts,
+            qmp_layouts=qmp_layouts, qmp_events=qmp_events,
         )
         in_ref = control["raw_qmp_in_ref"]
     rows = []
