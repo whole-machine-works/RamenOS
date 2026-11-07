@@ -70,8 +70,12 @@ reset witness; preserve both older exact profiles and their evidence. The
 bounded wire, paused QMP handshake, typed debugger reset setup and
 [checked entry-stop prefix](docs/plans/run0-c0-entry-prefix-2026-11-06.md) are ready.
 The exact-profile RTC policy is implemented and replayed: `device[1]/rtc` for
-VAPIC-off, `device[2]/rtc` for older profiles. Advance the RAM-admitted acquisition
-driver and owned collector join. The live collector needs a fresh
+VAPIC-off, `device[2]/rtc` for older profiles. Advance the join between the
+acquisition driver and owned collector. The
+[pure/typed driver](docs/plans/run0-c0-acquisition-driver-2026-11-06.md) is now
+implemented and independently reviewed. Join its actual current/after issuers,
+shared-wire final-send/revocation hook and accounting to the owned collector.
+The live collector needs a fresh
 host witness within the same stop before any guest-memory read. The
 [source persistence condition](docs/plans/run0-c0-source-persistence-2026-11-06.md)
 is now conditionally accepted for this exact profile: remaining queued CPU

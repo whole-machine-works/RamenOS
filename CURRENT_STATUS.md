@@ -284,6 +284,12 @@ exact-profile RTC policy joins host and C0 replay. All 253 Linux trace controls
 and three retained reset replays pass. These are source/socket preparation
 results; the owned launch and current-state/witness/RAM joins remain pending.
 
+The [acquisition driver](docs/plans/run0-c0-acquisition-driver-2026-11-06.md)
+now implements the fixed paging/object/recheck schedule and one-use typed
+requests. Eighteen new controls and complete synthetic replay pass independent
+review. Production current/after issuers, shared-wire dispatch/accounting and
+the real owned collector remain pending; no live RAM was acquired.
+
 The IPC diagnostic reproduced two zero-byte timeouts before a later valid
 reply on the same VM. The separate single-client run succeeded immediately.
 The retained CPU snapshots follow successful replies, so the cause of the
