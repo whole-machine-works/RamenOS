@@ -1034,7 +1034,9 @@ def _witness_binding(origin, report, store, prerequisites):
         _require(_same(report[our], host[theirs]), "host_source_binding")
     plan = _json(store.get(host["plan_ref"], REPORT_LIMIT))
     _require(_same(_json(store.get(report["argv_ref"], 65536), 65536), plan["argv"]), "host_argv_binding")
-    control, tid = witness.validate_control_index(host["control_ref"], store.values.copy(), binding)
+    bound_profile = _json(store.get(host["profile_ref"], 65536), 65536)
+    control, tid = witness.validate_control_index(host["control_ref"], store.values.copy(), binding,
+        invocation_profile=bound_profile.get("invocation_profile", capture.INVOCATION_PROFILE))
     _require(tid == binding["qmp_thread_id"], "host_tid_binding")
     return host, binding, state, control, actual["report_ref"]
 

@@ -1,6 +1,11 @@
-"""Bounded C0 wire ownership and the fixed QMP prelaunch handshake."""
+"""Bounded C0 wire and admitted-entry prefix; no guest-memory authority.
+
+Borrowed sockets do not prove an owned launch/profile join. A future collector
+must bind that join before releasing this fixture-qualified prefix on a VM.
+"""
 
 from collections import deque
+from contextlib import contextmanager
 from dataclasses import dataclass, replace
 import io
 import json
@@ -25,6 +30,7 @@ MAX_QMP_FRAMES = 128
 MAX_QMP_BYTES = 1024 * 1024
 OWNER_NS = 90_000_000_000
 TEARDOWN_NS = RESPONSE_NS = 5_000_000_000
+CONTINUE_NS = 60_000_000_000
 READ_CHUNK = 65_536
 _COMMANDS = ("qmp_capabilities", "query-commands", "query-status")
 _PASSIVE_STREAMS = frozenset(("rsp", "serial", "debug", "qemu_stdout", "qemu_stderr"))
@@ -84,6 +90,24 @@ class Prelaunch:
     observed_ns: int
 
 
+@dataclass(frozen=True, slots=True)
+class EntryStop:
+    _session: object
+    entry_address: int
+    breakpoint_seq: int
+    resume_seq: int
+    stop_event_seq: int
+    acknowledge_stop_seq: int
+    received_ns: int
+
+
+@dataclass(frozen=True, slots=True)
+class ConfirmedEntryStop:
+    stop: EntryStop
+    query_status_seq: int
+    observed_ns: int
+
+
 class C0Wire:
     """One owner-thread wire. Endpoints stay borrowed, including after failure."""
 
@@ -129,6 +153,12 @@ class C0Wire:
         self._used = self._closed = self._greeted = self._qmp_eof = False
         self._frames = deque()
         self._frame_count = self._frame_start = self._scan_at = 0
+        self._qmp_identifier = self._receive_ordinal = 0
+        self._event_ordinals = []
+        self._rsp_ready = self._boot_active = self._boot_resumed = self._boot_stopped = False
+        self._entry_state = "new"
+        self._entry = self._entry_stop = None
+        self._session = object()
 
         self._selector = selectors.DefaultSelector()
         try:
@@ -197,7 +227,13 @@ class C0Wire:
             incomplete(length <= MAX_FRAME and self._frame_count < MAX_QMP_FRAMES,
                        "qmp_frame_limit")
             self._frame_count += 1
-            self._frames.append((WireSlice("qmp-in", self._frame_start, length), observed_ns))
+            wire = WireSlice("qmp-in", self._frame_start, length)
+            value = self._decode(wire)
+            self._receive_ordinal += 1
+            if ("event" in value and set(value) <= {"event", "timestamp", "data"}
+                    and type(value["event"]) is str and type(value.get("timestamp")) is dict):
+                self._record_event("qmp", value["event"], wire, observed_ns)
+            self._frames.append((value, wire, observed_ns))
             self._frame_start = self._scan_at = end + 1
         self._scan_at = len(raw)
         # One extra CR can be the first half of the delimiter.
@@ -243,6 +279,10 @@ class C0Wire:
                 if frame.kind in ("ACK", "NACK"):
                     incomplete(self._rsp_acks < MAX_RSP_ACKS, "rsp_ack_limit")
                     self._rsp_acks += 1
+                self._receive_ordinal += 1
+                if self._boot_active and frame.kind == "PACKET":
+                    name = frame.payload.decode("ascii") if frame.payload.isascii() else "invalid"
+                    self._record_event("rsp", name, wire, observed)
                 self._rsp_frames.append((frame, wire, observed))
 
     def _poll(self, deadline, reason, *, wait=True, writing=False):
@@ -267,30 +307,60 @@ class C0Wire:
     def _decode(self, wire):
         return decode_frame(bytes(self._raw[wire.stream][wire.offset:wire.offset + wire.length]))
 
+    def _record_event(self, protocol, name, wire, observed):
+        """Assign order at complete-frame recognition, never later queue parsing."""
+        incomplete(len(self._events) < MAX_EVENTS, "c0_event_limit")
+        self._events.append(Event(len(self._events) + 1, protocol, name, wire, observed))
+        self._event_ordinals.append(self._receive_ordinal)
+
     def _refuse_event(self, value, wire, observed):
         if "event" in value:
-            if (set(value) <= {"event", "timestamp", "data"}
-                    and type(value["event"]) is str and type(value.get("timestamp")) is dict):
-                incomplete(len(self._events) < MAX_EVENTS, "c0_event_limit")
-                self._events.append(Event(len(self._events) + 1, "qmp", value["event"], wire,
-                                          observed))
             raise ProbeError("DENY", "qmp_prelaunch_event")
 
+    def _boot_event(self, value):
+        from run0_host_cpu_witness import shared_qmp_boot_event
+        deny(self._boot_active and shared_qmp_boot_event(value, self._entry["invocation_profile"]),
+             "c0_boot_event")
+        name = value["event"]
+        if name == "RESUME":
+            deny(not self._boot_resumed and self._entry_state != "confirmed", "c0_boot_event_order")
+            self._boot_resumed = True
+        elif name == "STOP":
+            deny(self._boot_resumed and not self._boot_stopped
+                 and self._entry_state != "confirmed", "c0_boot_event_order")
+            self._boot_stopped = True
+        else:
+            deny(self._boot_resumed, "c0_boot_event_order")
+
+    def _drain_boot_events(self):
+        while self._frames and "event" in self._frames[0][0]:
+            value, _, _ = self._frames.popleft()
+            self._boot_event(value)
+
     def _next_frame(self, deadline):
-        while not self._frames:
+        while True:
+            if self._boot_active:
+                self._drain_boot_events()
+            if self._frames:
+                break
             self._poll(deadline, "qmp_response_timeout")
         self._time_left(deadline, "qmp_response_timeout")
-        wire, observed = self._frames.popleft()
-        value = self._decode(wire)
+        value, wire, observed = self._frames.popleft()
         self._refuse_event(value, wire, observed)
         return value, wire, observed
 
     def _require_quiet(self, deadline, reason):
+        if self._boot_active:
+            self._poll(deadline, reason, wait=False)
+            self._drain_boot_events()
+            deny(not self._frames, "qmp_unsolicited")
+            incomplete(not self._qmp_eof, "qmp_eof")
+            return
         if not self._frames and self._frame_start == len(self._raw["qmp-in"]):
             self._poll(deadline, reason, wait=False)
         if self._frames:
-            wire, observed = self._frames[0]
-            self._refuse_event(self._decode(wire), wire, observed)
+            value, wire, observed = self._frames[0]
+            self._refuse_event(value, wire, observed)
         deny(not self._frames and self._frame_start == len(self._raw["qmp-in"]),
              "qmp_unsolicited")
         incomplete(not self._qmp_eof, "qmp_eof")
@@ -317,7 +387,7 @@ class C0Wire:
                 self._require_quiet(deadline, "qmp_request_timeout")
 
     @staticmethod
-    def _value(command, value):
+    def _value(command, value, *, debug=False):
         if command == "qmp_capabilities":
             deny(value == {}, "qmp_capabilities_reply")
         elif command == "query-commands":
@@ -330,15 +400,17 @@ class C0Wire:
         else:
             incomplete(type(value) is dict and set(value) == {"running", "singlestep", "status"}
                        and value["running"] is False and value["singlestep"] is False
-                       and value["status"] == "prelaunch", "qmp_not_prelaunch")
+                       and value["status"] == ("debug" if debug else "prelaunch"),
+                       "qmp_not_debug" if debug else "qmp_not_prelaunch")
         return None
 
-    def _exchange(self):
-        index = len(self._operations)
+    def _exchange(self, *, debug=False):
+        index = self._qmp_identifier
         deny(self._greeted and not self._closed and self._failure is None
-             and index < len(_COMMANDS)
-             and (not index or self._operations[-1].result == "ok"), "qmp_session_state")
-        identifier, command = index + 1, _COMMANDS[index]
+             and (debug and index == len(_COMMANDS) and self._entry_state == "stopped"
+                  or not debug and index < len(_COMMANDS))
+             and (not self._operations or self._operations[-1].result == "ok"), "qmp_session_state")
+        identifier, command = index + 1, "query-status" if debug else _COMMANDS[index]
         self._require_quiet(self._deadline, "qmp_request_timeout")
         started = time.monotonic_ns()
         deadline = min(started + RESPONSE_NS, self._deadline)
@@ -351,6 +423,7 @@ class C0Wire:
         self.reserve_output(len(request))
         row = Operation(len(self._operations) + 1, "qmp", command.replace("-", "_"), started)
         self._operations.append(row)
+        self._qmp_identifier = identifier
         accepted, finished, result = None, None, "error"
         try:
             self._send(request, deadline)
@@ -359,7 +432,9 @@ class C0Wire:
                  and type(reply["id"]) is int and reply["id"] == identifier,
                  "qmp_response_identity")
             incomplete("error" not in reply, "qmp_command_error")
-            value = self._value(command, reply["return"])
+            value = self._value(command, reply["return"], debug=debug)
+            if debug:
+                incomplete(self._boot_resumed and self._boot_stopped, "c0_boot_events_missing")
             self._time_left(deadline, "qmp_response_timeout")
             accepted, finished, result = wire, observed, "ok"
             return value, observed
@@ -400,9 +475,14 @@ class C0Wire:
             raise
 
     def _rsp_qmp_quiet(self):
+        if self._boot_active:
+            self._drain_boot_events()
+            deny(not self._frames, "qmp_unsolicited")
+            incomplete(not self._qmp_eof, "qmp_eof")
+            return
         if self._frames:
-            wire, observed = self._frames[0]
-            self._refuse_event(self._decode(wire), wire, observed)
+            value, wire, observed = self._frames[0]
+            self._refuse_event(value, wire, observed)
         deny(not self._frames and self._frame_start == len(self._raw["qmp-in"]),
              "qmp_unsolicited")
         incomplete(not self._qmp_eof, "qmp_eof")
@@ -413,12 +493,12 @@ class C0Wire:
         deny(not self._rsp_frames and not self._rsp_decoder.pending, "rsp_unsolicited")
         incomplete(not self._rsp_eof, "rsp_eof")
 
-    def _rsp_next(self, deadline):
+    def _rsp_next(self, deadline, reason="rsp_response_timeout"):
         while not self._rsp_frames:
             incomplete(not self._rsp_eof, "rsp_eof")
-            self._poll(deadline, "rsp_response_timeout")
+            self._poll(deadline, reason)
             self._rsp_qmp_quiet()
-        self._time_left(deadline, "rsp_response_timeout")
+        self._time_left(deadline, reason)
         return self._rsp_frames.popleft()
 
     def _rsp_send(self, request, deadline):
@@ -508,7 +588,9 @@ class C0Wire:
             self._rsp_quiet(self._deadline)
             from run0_c0_rsp import _C0Reset
             self._rsp_reset = _C0Reset(self)
-            return self._rsp_reset.prepare()
+            result = self._rsp_reset.prepare()
+            self._rsp_ready = True
+            return result
         except ProbeError as error:
             self._failure = Failure(error.status, error.reason)
             raise
@@ -518,3 +600,153 @@ class C0Wire:
         except KeyboardInterrupt:
             self._failure = Failure("INCOMPLETE", "c0_cancelled")
             raise
+
+    @contextmanager
+    def _entry_attempt(self):
+        """Only admitted effects terminalize the session; retain the first cause."""
+        try:
+            yield
+        except ProbeError as error:
+            if self._failure is None:
+                self._failure = Failure(error.status, error.reason)
+            raise
+        except OSError as error:
+            if self._failure is None:
+                self._failure = Failure("INCOMPLETE", "c0_selector_error")
+            raise ProbeError(self._failure.status, self._failure.reason) from error
+        except KeyboardInterrupt:
+            if self._failure is None:
+                self._failure = Failure("INCOMPLETE", "c0_cancelled")
+            raise
+
+    def _entry_local_state(self, state):
+        deny(self._rsp_ready and self._failure is None and not self._closed
+             and self._entry_state == state, "c0_entry_state")
+
+    def install_entry_breakpoint(self, token):
+        """Install one candidate-derived breakpoint after typed reset setup.
+
+        The token proves retained prior inputs, not the borrowed sockets' launch
+        identity. That same-profile owned-launch join remains a collector duty.
+        """
+        self._entry_local_state("new")
+        from run0_c0_entry import export_validated_prior_entry
+        from run0_c0_decode import C0DecodeError
+        try:
+            admitted = export_validated_prior_entry(token)
+        except C0DecodeError as error:
+            # A local bad argument has not admitted any operation or wire byte.
+            raise ProbeError(error.status, error.reason) from error
+        with self._entry_attempt():
+            self._entry = admitted
+            reply = self._rsp_exchange("hardware_breakpoint_set",
+                                       f"Z1,{admitted['entry_address']:x},1".encode())
+            if reply != b"OK":
+                self._rsp_semantic("rsp_breakpoint_reply", "DENY")
+            self._breakpoint_seq = self._operations[-1].seq
+            self._entry_state = "installed"
+            return self._operations[-1]
+
+    def _continue_ack(self):
+        self._rsp_quiet(self._deadline)
+        started = time.monotonic_ns()
+        ack_deadline = min(started + RESPONSE_NS, self._deadline)
+        # The silent wait begins at the original c start, never at its ACK.
+        self._stop_deadline = min(started + CONTINUE_NS, self._deadline)
+        request = rsp.encode_packet(b"c")
+        incomplete(len(self._operations) <= MAX_OPERATIONS - 2, "c0_operation_limit")
+        incomplete(len(self._events) <= MAX_EVENTS - 3, "c0_event_limit")
+        incomplete(self._rsp_acks <= MAX_RSP_ACKS - 2, "rsp_ack_limit")
+        self._time_left(ack_deadline, "rsp_request_timeout")
+        self.reserve_output(len(request))
+        index, offset = len(self._operations), len(self._raw["rsp-out"])
+        row = Operation(index + 1, "rsp", "resume", started)
+        self._operations.append(row)
+        accepted = finished = None
+        result = "error"
+        try:
+            # While c is only a prefix, all incoming traffic is still forbidden.
+            self._rsp_send(request, ack_deadline)
+            self._boot_active = True
+            self._entry_state = "continuing"
+            ack, wire, observed = self._rsp_next(ack_deadline)
+            rsp.require(ack.kind == "ACK", "rsp_request_ack",
+                        status="INCOMPLETE" if ack.kind == "NACK" else "DENY")
+            accepted, finished, result = wire, observed, "ok"
+            return row.seq
+        except ProbeError as error:
+            if "timeout" in error.reason:
+                result = "timeout"
+            raise
+        finally:
+            length = len(self._raw["rsp-out"]) - offset
+            prefix = WireSlice("rsp-out", offset, length) if length else None
+            self._operations[index] = replace(row, request=prefix, response=accepted, result=result,
+                finished_ns=time.monotonic_ns() if finished is None else finished)
+
+    def _acknowledge_stop(self, stop_event):
+        # Drain a coalesced or newly readable tail before any outgoing stop ACK.
+        # Boot QMP events may arrive independently; only their own order matters.
+        self._rsp_quiet(self._stop_deadline)
+        started = time.monotonic_ns()
+        deny(started > stop_event.received_ns, "rsp_stop_ack_clock")
+        deadline = min(started + RESPONSE_NS, self._stop_deadline)
+        incomplete(len(self._operations) < MAX_OPERATIONS, "c0_operation_limit")
+        incomplete(self._rsp_acks < MAX_RSP_ACKS, "rsp_ack_limit")
+        self._time_left(deadline, "rsp_request_timeout")
+        self.reserve_output(1)
+        index, offset = len(self._operations), len(self._raw["rsp-out"])
+        row = Operation(index + 1, "rsp", "acknowledge_stop", started)
+        self._operations.append(row)
+        result = "error"
+        try:
+            self._rsp_send(b"+", deadline)
+            self._rsp_acks += 1
+            self._time_left(deadline, "rsp_request_timeout")
+            result = "ok"
+            return row.seq
+        except ProbeError as error:
+            if "timeout" in error.reason:
+                result = "timeout"
+            raise
+        finally:
+            length = len(self._raw["rsp-out"]) - offset
+            self._operations[index] = replace(row, result=result,
+                request=WireSlice("rsp-out", offset, length) if length else None,
+                finished_ns=time.monotonic_ns())
+
+    def resume_to_entry(self):
+        """One c, real request ACK, silent stop wait, then one separate stop ACK.
+
+        The returned receipt proves this transport prefix only. It supplies no
+        breakpoint-cause, actual RIP, RAM, witness or live-read authority.
+        """
+        self._entry_local_state("installed")
+        with self._entry_attempt():
+            resume_seq = self._continue_ack()
+            response, wire, observed = self._rsp_next(self._stop_deadline, "rsp_stop_timeout")
+            rsp.require(response.kind == "PACKET", "rsp_stop_packet")
+            rsp.require(response.payload == b"T05thread:01;", "rsp_stop_identity")
+            stop_event = next(event for event in self._events
+                              if event.protocol == "rsp" and event.wire == wire)
+            deny(observed >= self._operations[resume_seq-1].finished_ns, "rsp_stop_clock")
+            ack_seq = self._acknowledge_stop(stop_event)
+            self._entry_stop = EntryStop(self._session, self._entry["entry_address"],
+                self._breakpoint_seq, resume_seq, stop_event.seq, ack_seq, observed)
+            self._entry_state = "stopped"
+            return self._entry_stop
+
+    def confirm_entry_stop(self):
+        """Bind the separate fresh QMP debug reply to this wire's stop receipt."""
+        self._entry_local_state("stopped")
+        with self._entry_attempt():
+            self._rsp_quiet(self._deadline)
+            _, observed = self._exchange(debug=True)
+            status_seq = self._operations[-1].seq
+            self._entry_state = "confirmed"
+            self._require_quiet(self._deadline, "qmp_response_timeout")
+            # A QMP read can also receive unsolicited RSP bytes on the common
+            # selector. Never publish a complete prefix with an unclaimed tail.
+            deny(not self._rsp_frames and not self._rsp_decoder.pending, "rsp_unsolicited")
+            incomplete(not self._rsp_eof, "rsp_eof")
+            return ConfirmedEntryStop(self._entry_stop, status_seq, observed)

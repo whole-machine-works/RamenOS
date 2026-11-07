@@ -1278,14 +1278,16 @@ def checked_process(report, blobs, abi_index, plan, before, after, field):
     return process, peer, signal_times
 
 
-def validate_control_index(ref, blobs, binding, *, retained_runtime=False):
+def validate_control_index(ref, blobs, binding, *, retained_runtime=False,
+                           invocation_profile=base.INVOCATION_PROFILE):
     index = json_index(ref, blobs, (
         "schema_version", "scope", "run_id", "profile_sha256", "clock",
         "raw_qmp_in_ref", "raw_qmp_out_ref", "raw_rsp_in_ref", "raw_rsp_out_ref",
         "operations", "events", "before", "after",
     ), "control_index")
     if binding["context"] == "c0":
-        return shared_control_index(index, blobs, binding, retained_runtime=retained_runtime)
+        return shared_control_index(index, blobs, binding, retained_runtime=retained_runtime,
+                                    invocation_profile=invocation_profile)
     deny(index["scope"] == "reset_witness" and index["raw_rsp_in_ref"] is None
          and index["raw_rsp_out_ref"] is None, "reset_control_scope")
     ops, events = index["operations"], index["events"]
@@ -1466,7 +1468,7 @@ def validate_complete_report(report_ref, report, blobs):
         deny(plan["observer_ref"] == report["observer_ref"], "observer_plan_binding")
         retained_blob(report["observer_ref"], blobs, 65536)
     control, tid = validate_control_index(report["control_ref"], blobs, binding,
-                                          retained_runtime=runtime)
+                                          retained_runtime=runtime, invocation_profile=invocation)
     before, bvalue = metadata_index(report["metadata_before_ref"], blobs, "before")
     after, avalue = metadata_index(report["metadata_after_ref"], blobs, "after")
     for metadata in (bvalue, avalue):
@@ -1612,20 +1614,28 @@ def shared_qmp_event_timestamp(value):
             and exact_int(timestamp["microseconds"], 0, 999999))
 
 
-def shared_qmp_boot_event(value):
-    if not shared_qmp_event_timestamp(value):
+def shared_qmp_boot_event(value, invocation_profile=base.INVOCATION_PROFILE):
+    # The exact profile selects one source/observed canonical RTC path. VAPIC
+    # consumes an earlier unattached device number when enabled; never admit a
+    # union of both paths or derive the selected identity from an event itself.
+    paths = {base.INVOCATION_PROFILE: "/machine/unattached/device[2]/rtc",
+             base.SATA_OFF_INVOCATION_PROFILE: "/machine/unattached/device[2]/rtc",
+             base.VAPIC_OFF_INVOCATION_PROFILE: "/machine/unattached/device[1]/rtc"}
+    if (type(value) is not dict or type(invocation_profile) is not str
+            or invocation_profile not in paths or not shared_qmp_event_timestamp(value)):
         return False
-    if value["event"] in ("RESUME", "STOP"):
+    if value.get("event") in ("RESUME", "STOP"):
         return set(value) == {"event", "timestamp"}
-    if value["event"] != "RTC_CHANGE" or set(value) != {"event", "timestamp", "data"}:
+    if value.get("event") != "RTC_CHANGE" or set(value) != {"event", "timestamp", "data"}:
         return False
     data = value["data"]
     return (type(data) is dict and set(data) == {"offset", "qom-path"}
             and exact_int(data["offset"], -(1 << 63), (1 << 63) - 1)
-            and data["qom-path"] == "/machine/unattached/device[2]/rtc")
+            and data["qom-path"] == paths[invocation_profile])
 
 
-def verify_shared_qmp(index, blobs, binding, rsp, *, retained_runtime):
+def verify_shared_qmp(index, blobs, binding, rsp, *, retained_runtime,
+                      invocation_profile=base.INVOCATION_PROFILE):
     """Validate all QMP bytes without letting the RSP evidence stand in for QMP."""
     from run0_rsp_capability import parse_flatview
 
@@ -1671,7 +1681,8 @@ def verify_shared_qmp(index, blobs, binding, rsp, *, retained_runtime):
             shutdown_seq = op["seq"]
             return
 
-        deny(initial_status and resume["seq"] < op["seq"] and shared_qmp_boot_event(value),
+        deny(initial_status and resume["seq"] < op["seq"]
+             and shared_qmp_boot_event(value, invocation_profile),
              "shared_qmp_event_forbidden")
         lower = max(previous_reply_ns, resume["started_ns"])
         deny(exact_int(event["received_ns"], lower, upper), "shared_qmp_event_clock")
@@ -1819,7 +1830,8 @@ def c0_registers(raw, values):
         deny(len(found) == 1 and int(found[0], 16) == values[register], "c0_hmp_rsp_mismatch")
 
 
-def shared_control_index(index, blobs, binding, *, retained_runtime=False):
+def shared_control_index(index, blobs, binding, *, retained_runtime=False,
+                         invocation_profile=base.INVOCATION_PROFILE):
     from run0_c0_decode import validate_c0_rsp
 
     deny(index["scope"] == "shared_c0" and index["clock"] == "host_monotonic_ns"
@@ -1856,7 +1868,8 @@ def shared_control_index(index, blobs, binding, *, retained_runtime=False):
     offset, size = event["offset"], event["length"]
     deny(retained_blob(binding["stop_ref"], blobs, 8192) == raw_rsp[offset:offset + size],
          "shared_stop_binding")
-    tid = verify_shared_qmp(index, blobs, binding, rsp, retained_runtime=retained_runtime)
+    tid = verify_shared_qmp(index, blobs, binding, rsp, retained_runtime=retained_runtime,
+                            invocation_profile=invocation_profile)
     return index, tid
 
 
