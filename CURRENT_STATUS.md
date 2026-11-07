@@ -252,7 +252,9 @@ paused host CPU witness pass. The diagnostic and CAP1 reset memory views contain
 no AHCI region. The offline C0 decoder verifies the unchanged prior CAP1
 report and artifacts in a reserved namespace and uses a pure bounded paging
 step. Shared C0 replay covers QMP boot transitions and delayed RTC events.
-The live C0 collector still needs its own same-stop witness, source closure
+The C0 wire now checks the fixed paused QMP handshake with bounded real socket
+fixtures and retains raw slices and operation timing. The live C0 collector
+still needs its own same-stop witness, source closure
 for ordinary-RAM persistence and RAM acquisition evidence.
 
 The IPC diagnostic reproduced two zero-byte timeouts before a later valid
