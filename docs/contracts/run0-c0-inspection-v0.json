@@ -29,6 +29,11 @@
       "behavior": "Later pure strict C0 artifact, ordinary-RAM layout, paging and public EFI decoder. Implementation remains held for source-bitmask/schema review and actual CAP1 result."
     },
     {
+      "slice": "C0W",
+      "files": ["tools/trace/run0_c0_wire.py", "tools/trace/test_run0_c0_wire.py"],
+      "behavior": "One C0-only multiplexed wire with a shared ledger and fixed paused QMP prelaunch handshake on borrowed unbuffered endpoints. Retains actual partial writes and frame receipt clocks. Socket fixtures exercise the boundary. The future collector owns launch, endpoint closure and final drain."
+    },
+    {
       "slice": "C0C",
       "files": ["tools/trace/run0_c0_capture.py", "tools/trace/test_run0_c0_capture.py"],
       "behavior": "Later owned fresh-C0 collector. Root must separately freeze its typed transport additions, source audit, assertions and exact launch plan."
