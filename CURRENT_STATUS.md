@@ -1,6 +1,6 @@
 # Current Status
 
-**Last Updated:** 2026-11-06
+**Last Updated:** 2026-11-07
 **Status:** Active and authoritative for landed state
 **Current Slice:** RUN0 target runtime preparation after merged UI1.1d host process delivery
 **Physical Lane:** S12.4 HIL appliance observation/actuation awaits setup
@@ -321,7 +321,8 @@ evidence. All57 new integration controls also passed in Linux hosted run
 editor runtime stage. The retained run later reported zero MB free disk space;
 the original IO errno was not retained, so its cause remains unproved.
 [Runner preparation and failure diagnostics](docs/plans/editor-runner-storage-2026-11-07.md)
-are being qualified without reducing any checks or recordings. Actual wire
+are now independently qualified at the exact source below, with all checks and
+recordings preserved. Actual wire
 issuance, current-stop authority and collector/history integration remain open;
 these fixtures do not establish another VM capture.
 
@@ -329,9 +330,24 @@ Changed-candidate run42370785508 subsequently failed the existing agent-backend
 success test when Docker creation was not confirmed before its deadline. The
 backend correctly returned IO/reconciliation-required. Its environmental cause
 is unknown; a cold-daemon explanation is unsupported because real Linux
-container controls had just passed. Bounded CI-only failure observations are
-being added while preserving all original deadlines, success assertions,
-freshness checks and cleanup. Complete qualification remains held.
+container controls had just passed. Bounded CI-only failure observations now
+preserve all original deadlines, success assertions, freshness checks and cleanup.
+
+[PR76](https://github.com/whole-machine-works/RamenOS/pull/76) has complete,
+independently accepted hosted qualification at
+`dbbb8e0b3ebe9df58d80ce539b1af96cefe844fe` from
+[run 42372873439](https://github.com/whole-machine-works/RamenOS/actions/runs/42372873439),
+attempt 1. All nine checks passed, including the complete canonical and
+preservation inventories. The agent lane succeeded, so its failure-only journal
+and event queries were skipped; no live query history or cause is established.
+Both failed runs and all sixteen prior ZIPs remain unchanged. PR76 is open and
+ready for separate A3 review, not merged; main remains `2688f245`.
+The [qualification record](docs/plans/editor-runner-storage-2026-11-07.md) binds
+this result to the tested code, not a new execution on this prose successor.
+Full same-VM capture and live I1 remain open. Boot preparation continues through
+the remaining pure-map, wire and collector joins. The pending recovery-benefit
+criterion choice holds further live I1, update and performance experiments;
+it does not block this independent boot preparation.
 
 The IPC diagnostic reproduced two zero-byte timeouts before a later valid
 reply on the same VM. The separate single-client run succeeded immediately.

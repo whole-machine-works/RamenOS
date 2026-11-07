@@ -1,5 +1,21 @@
 # CHANGELOG
 
+## 2026-11-07 — PR76 complete hosted qualification
+
+- Record independently accepted [run 42372873439](https://github.com/whole-machine-works/RamenOS/actions/runs/42372873439),
+  attempt 1, at `dbbb8e0b3ebe9df58d80ce539b1af96cefe844fe`: all nine checks and
+  the complete canonical, preservation and runtime inventories passed.
+- Preserve both earlier failed runs and all sixteen prior ZIPs with unknown
+  causes. The successful agent lane skipped failure-only journal/event queries;
+  no live failure-query or repaired-cause claim follows.
+- Close the CI preparation blocker while retaining source-fixture scope and
+  pending same-VM capture and live I1. Boot preparation keeps its existing
+  priority; the owner's recovery-benefit criterion choice remains open for
+  further live I1, update and performance experiments. PR76 remains
+  open and ready for separate review, not merged; main remains `2688f245`.
+  This prose successor records tested code rather than a new code execution.
+  [Qualification record](docs/plans/editor-runner-storage-2026-11-07.md).
+
 ## 2026-11-07 — Editor runner capacity and IO observations
 
 - Retain the separate agent-backend Docker-create timeout and add bounded

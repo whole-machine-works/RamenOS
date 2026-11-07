@@ -1,8 +1,8 @@
 # Editor runner storage and frame IO observations
 
 This is CI preparation and diagnostic work for PR76, not a change to editor
-behavior or a claim that the earlier failure's cause is fixed. Complete
-changed-candidate qualification remains pending.
+behavior or a claim that either earlier failure's cause is fixed. Complete
+hosted qualification is independently accepted at the exact code revision below.
 
 ## Retained failure
 
@@ -53,15 +53,28 @@ It changes no success-path IO, retry, cleanup, identity check, capacity,
 reservation or frame sequence. The existing Linux RLIMIT_FSIZE partial-write
 control checks a genuine EFBIG observation, sticky reservation, original error
 and successful fresh separate capture. This is not an ENOSPC reproduction.
-Exact source registrations must be refreshed before full qualification.
+The exact source registrations were refreshed and included in full qualification.
 
 ## Qualification
 
-Independent source review and one complete hosted run on the changed candidate
-are required before readiness. No unchanged retry, deadline increase, skipped
-assertion, reduced recording or duplicate full local campaign is part of this
-packet. Earlier failures remain retained even if the fresh run passes. A fresh
-pass alone will not establish the original IO cause.
+Independent source review and
+[run 42372873439](https://github.com/whole-machine-works/RamenOS/actions/runs/42372873439),
+attempt 1, qualify code revision `dbbb8e0b3ebe9df58d80ce539b1af96cefe844fe`.
+All nine checks passed. The independent audit verifies all 57 canonical stages,
+eight preservation stages, six Linux prerequisite controls, all 57 new trace
+controls and 55 runtime probes, with 244 recording runs and three Cargo-bound
+archived binaries. The audit is
+`evidence/run0-c1-c2-next-20261107/hosted-pr76-diagnostic-candidate-audit-001/disposition.json`,
+SHA256 `3f3a9a3c6ed66a3e0de35dbf1cdbf0e22de19b822e9cae9029998a8357ffedd4`.
+
+Both earlier failed runs and all sixteen prior ZIPs remain unchanged. No
+unchanged retry, deadline increase, skipped assertion, reduced recording or
+duplicate full local campaign supplied this result. It does not establish either
+original cause. PR76 is open and ready for separate A3 review, not merged; main
+remains `2688f245`. This documentation closeout records the tested code and does
+not claim a new execution on its prose successor. The included queue update is
+an executable CI input and requires a separate complete hosted Foundry run under
+the unchanged classification; no validation exception is introduced.
 
 ## Separate agent-runner failure
 
@@ -90,5 +103,11 @@ These stage-wide observations can reveal a named daemon error or retained event;
 they do not locate an event inside the request's actual create interval.
 No source fix for the underlying stall, extra budget, reused container, weakened
 success assertion or stale-image accommodation is claimed. The original failed
-run remains retained; the changed observation packet needs independent review
-and a separately released bounded diagnostic qualification run.
+run remains retained. The observation packet has independent source review and
+the complete hosted qualification above. Its begin record and raw Linux-control
+records were retained. Because the agent lane passed, the failure-only step was
+skipped: no live journal/event queries, query-history completeness, absence proof
+or cause finding is claimed. Full same-VM C0/C1/C2 capture and live I1 remain
+separate unfinished work. Independent boot preparation retains its existing
+priority; the pending recovery-benefit criterion choice holds further live I1,
+update and performance experiments without blocking that boot work.

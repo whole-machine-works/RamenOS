@@ -1,6 +1,6 @@
 # Next Tasks
 
-**Last Updated:** 2026-11-06
+**Last Updated:** 2026-11-07
 **Status:** Authoritative ready work and acceptance dependencies
 
 [Current Status](CURRENT_STATUS.md) records landed behavior; [Roadmap](ROADMAP.md)
@@ -81,13 +81,20 @@ independently accepted: 28 guarded physical reads, matching rereads, three table
 frames, eight selected objects and clean owned shutdown. Do not redispatch this
 completed standalone run. The successor parent contract and
 [shared source primitives](docs/plans/run0-call-map-shared-primitives-2026-11-07.md)
-are reviewed; do not redispatch that completed preparation. Freeze the remaining
+are reviewed and hosted-qualified at PR76 head `dbbb8e0`; do not redispatch that
+completed preparation or its CI blockers. The
+[runner qualification](docs/plans/editor-runner-storage-2026-11-07.md) records
+accepted run 42372873439 and both retained failures. PR76 remains open and ready
+for separate A3 review; this prose closeout adds no fresh code qualification.
+`NEXT_TASKS.md` remains an executable CI input, so this documentation successor
+requires its own complete hosted Foundry run under the unchanged classification.
+Freeze the remaining
 pure-map/wire interfaces before parallel source work, then implement the closed
 collector and firmware-call/return capture for fresh C0/C1/C2 in one VM.
-Actual issuers, final history/inventory and Linux qualification remain separate.
-First finish the changed-candidate
-[editor runner qualification](docs/plans/editor-runner-storage-2026-11-07.md):
-the prior full run failed during frame export, and no unchanged retry is allowed.
+Actual issuers, final history/inventory and qualification of that future collector
+remain separate. Full capture and live I1 are not released by this CI result.
+The pending recovery-benefit criterion choice holds further live I1, update and
+performance experiments; it does not block authorized independent boot preparation.
 Derive sites from the fresh loaded image and authenticated caller
 bytes; revoke read authority at each resume and obtain a fresh same-stop witness
 and ordinary-RAM proof at each stop. Preserve complete parent command/child
