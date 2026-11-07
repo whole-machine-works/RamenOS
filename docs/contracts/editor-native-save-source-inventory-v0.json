@@ -16,8 +16,8 @@
     },
     {
       "relative_path": "apps/artifact_editor/tests/native_task_support/recording.rs",
-      "byte_len": 102561,
-      "sha256": "ab13f1a1d7b6154aa2698de842d949e63ee76f2d72b5924c66afad98525f3727"
+      "byte_len": 105797,
+      "sha256": "9fa92153f98bab3c9989e4aec0552172938ebb338c113450293ade5be9d03447"
     },
     {
       "relative_path": "apps/artifact_editor/tests/native_task_support/protected_goldens.rs",

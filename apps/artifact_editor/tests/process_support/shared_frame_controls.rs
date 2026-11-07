@@ -390,7 +390,7 @@ fn partial_child() {
         unsafe { libc::signal(libc::SIGXFSZ, handler) },
         libc::SIG_ERR
     );
-    assert!(refused.is_err());
+    assert_eq!(refused.unwrap_err().0, "bounded frame export write");
     drop(pending);
     let bytes = fs::metadata(leaf(&destination, "left", "frame-0.bgra"))
         .unwrap()
@@ -453,6 +453,50 @@ fn shared_frame_partial_write_retains_owner_and_fresh_root_succeeds() {
             .is_file()
     );
     fs::write(root.join("child-wait.json"), serde_json::to_vec(&serde_json::json!({"pid":pid,"exit_code":status.code(),"reaped":true,"partial_bytes":bytes})).unwrap()).unwrap();
+    let stderr = fs::read_to_string(root.join("child.stderr")).unwrap();
+    let prefix = "NATIVE_RECORDING_IO_FAILURE ";
+    let diagnostics = stderr
+        .lines()
+        .filter(|line| line.starts_with(prefix))
+        .collect::<Vec<_>>();
+    assert_eq!(
+        diagnostics.len(),
+        1,
+        "one actual write error, no success log"
+    );
+    assert!(diagnostics[0].len() < 4096);
+    let actual: serde_json::Value =
+        serde_json::from_str(diagnostics[0].strip_prefix(prefix).unwrap()).unwrap();
+    assert_eq!(actual.as_object().unwrap().len(), 15);
+    assert_eq!(actual["schema_version"], 1);
+    assert_eq!(actual["acceptance"], false);
+    assert_eq!(actual["operation"], "write_all");
+    assert_eq!(actual["original_reason"], "bounded frame export write");
+    assert_eq!(actual["case"], "left");
+    assert_eq!(actual["scenario"], "frames");
+    assert_eq!(actual["leg"], 0);
+    assert_eq!(actual["kind"], "composed_frame");
+    assert_eq!(actual["expected_bytes"], FRAME_BYTES as u64);
+    assert_eq!(actual["successful_write_bytes"], bytes);
+    assert_eq!(actual["raw_os_error"], libc::EFBIG);
+    assert_eq!(
+        actual["error_kind"],
+        format!(
+            "{:?}",
+            std::io::Error::from_raw_os_error(libc::EFBIG).kind()
+        )
+    );
+    let path = leaf(&destination, "left", "frame-0.bgra");
+    let raw_path = path.as_os_str().as_encoded_bytes();
+    assert_eq!(actual["path_byte_len"], raw_path.len());
+    assert_eq!(actual["path_truncated"], false);
+    assert_eq!(
+        actual["path_bytes_hex"],
+        raw_path
+            .iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect::<String>()
+    );
 }
 
 #[test]

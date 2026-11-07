@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## 2026-11-07 — Editor runner capacity and IO observations
+
+- Retain and audit the failed complete run: all57 new trace controls and eight
+  preservation stages passed; editor runtime failed during frame recording.
+- Prepare unused SDK space only on disposable hosted Linux editor runners and
+  report actual disk/inode observations. Preserve all compiler caches, test
+  outputs, checks, assertion deadlines and full recording evidence.
+- Add failure-only frame IO observations and extend the existing genuine
+  partial-write control; preserve sticky reservations and fresh-capture checks.
+  [Qualification record](docs/plans/editor-runner-storage-2026-11-07.md).
+
 ## 2026-11-07 — Same-call capture source primitives
 
 - Add reviewed parent deadlines/cleanup and retained read/accounting primitives;

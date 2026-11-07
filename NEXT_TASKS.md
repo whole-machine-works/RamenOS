@@ -85,6 +85,9 @@ are reviewed; do not redispatch that completed preparation. Freeze the remaining
 pure-map/wire interfaces before parallel source work, then implement the closed
 collector and firmware-call/return capture for fresh C0/C1/C2 in one VM.
 Actual issuers, final history/inventory and Linux qualification remain separate.
+First finish the changed-candidate
+[editor runner qualification](docs/plans/editor-runner-storage-2026-11-07.md):
+the prior full run failed during frame export, and no unchanged retry is allowed.
 Derive sites from the fresh loaded image and authenticated caller
 bytes; revoke read authority at each resume and obtain a fresh same-stop witness
 and ordinary-RAM proof at each stop. Preserve complete parent command/child

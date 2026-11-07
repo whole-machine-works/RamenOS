@@ -316,9 +316,14 @@ same-VM C0/C1/C2 firmware-call history; this completed VM has already shut down.
 The [same-call shared primitives](docs/plans/run0-call-map-shared-primitives-2026-11-07.md)
 are implemented and independently source-reviewed. They provide fixed parent
 deadlines, owned cleanup, complete copy reservations and retained read/assembly
-evidence. All57 new integration controls pass on host. Actual wire issuance,
-current-stop authority, collector/history integration and final Linux hosted
-qualification remain open; these fixtures do not establish another VM capture.
+evidence. All57 new integration controls also passed in Linux hosted run
+42367071792, but complete qualification failed in frame recording during the
+editor runtime stage. The retained run later reported zero MB free disk space;
+the original IO errno was not retained, so its cause remains unproved.
+[Runner preparation and failure diagnostics](docs/plans/editor-runner-storage-2026-11-07.md)
+are being qualified without reducing any checks or recordings. Actual wire
+issuance, current-stop authority and collector/history integration remain open;
+these fixtures do not establish another VM capture.
 
 The IPC diagnostic reproduced two zero-byte timeouts before a later valid
 reply on the same VM. The separate single-client run succeeded immediately.

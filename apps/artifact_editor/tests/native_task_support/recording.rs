@@ -1581,6 +1581,51 @@ impl ScenarioRecorder {
         fs::remove_file(marker).map_err(|_| RecordingError("settled reservation removal"))?;
         Ok(actual_hash)
     }
+    fn frame_io_error(
+        &self,
+        path: &Path,
+        kind: &str,
+        operation: &'static str,
+        reason: &'static str,
+        expected: u64,
+        written: u64,
+        error: io::Error,
+    ) -> RecordingError {
+        // Called only for an actual failed frame IO operation. The original
+        // reason and sticky reservation survive any diagnostic failure.
+        let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            const PREFIX: &[u8] = b"NATIVE_RECORDING_IO_FAILURE ";
+            let path_bytes = path.as_os_str().as_encoded_bytes();
+            let retained_path = &path_bytes[..path_bytes.len().min(1024)];
+            let value = json!({
+                "schema_version": 1,
+                "acceptance": false,
+                "operation": operation,
+                "original_reason": reason,
+                "case": self.case.case,
+                "scenario": self.spec.scenario,
+                "leg": self.spec.leg,
+                "kind": kind,
+                "expected_bytes": expected,
+                // Successful File::write bytes, not durable length or a fence.
+                "successful_write_bytes": written,
+                "raw_os_error": error.raw_os_error(),
+                "error_kind": format!("{:?}", error.kind()),
+                "path_bytes_hex": hex(retained_path),
+                "path_byte_len": path_bytes.len(),
+                "path_truncated": retained_path.len() != path_bytes.len(),
+            });
+            if let Ok(bytes) = serde_json::to_vec(&value) {
+                if PREFIX.len() + bytes.len() < 4096 {
+                    let mut stderr = io::stderr().lock();
+                    let _ = stderr.write_all(PREFIX);
+                    let _ = stderr.write_all(&bytes);
+                    let _ = stderr.write_all(b"\n");
+                }
+            }
+        }));
+        RecordingError(reason)
+    }
     fn write_frame_leaf(&self, file: &str, kind: &str, bytes: &[u8]) -> Result<Value> {
         check_directory(&self.case.root, &self.case.held_root)?;
         check_directory(&self.path, &self.held)?;
@@ -1591,10 +1636,28 @@ impl ScenarioRecorder {
             .mode(0o600)
             .custom_flags(NOFOLLOW)
             .open(&p)
-            .map_err(|_| RecordingError("fresh frame export file"))?;
-        let before = opened
-            .metadata()
-            .map_err(|_| RecordingError("opened frame export stat"))?;
+            .map_err(|error| {
+                self.frame_io_error(
+                    &p,
+                    kind,
+                    "create_new",
+                    "fresh frame export file",
+                    bytes.len() as u64,
+                    0,
+                    error,
+                )
+            })?;
+        let before = opened.metadata().map_err(|error| {
+            self.frame_io_error(
+                &p,
+                kind,
+                "metadata_before",
+                "opened frame export stat",
+                bytes.len() as u64,
+                0,
+                error,
+            )
+        })?;
         require(
             before.is_file() && before.nlink() == 1,
             "owned regular frame export",
@@ -1604,17 +1667,40 @@ impl ScenarioRecorder {
             left: bytes.len() as u64,
             hash: Sha256::new(),
         };
-        writer
-            .write_all(bytes)
-            .map_err(|_| RecordingError("bounded frame export write"))?;
-        writer
-            .flush()
-            .map_err(|_| RecordingError("frame export flush"))?;
+        writer.write_all(bytes).map_err(|error| {
+            self.frame_io_error(
+                &p,
+                kind,
+                "write_all",
+                "bounded frame export write",
+                bytes.len() as u64,
+                bytes.len() as u64 - writer.left,
+                error,
+            )
+        })?;
+        writer.flush().map_err(|error| {
+            self.frame_io_error(
+                &p,
+                kind,
+                "flush",
+                "frame export flush",
+                bytes.len() as u64,
+                bytes.len() as u64 - writer.left,
+                error,
+            )
+        })?;
         require(writer.left == 0, "complete reserved frame export")?;
-        let after = writer
-            .file
-            .metadata()
-            .map_err(|_| RecordingError("frame export final stat"))?;
+        let after = writer.file.metadata().map_err(|error| {
+            self.frame_io_error(
+                &p,
+                kind,
+                "metadata_after",
+                "frame export final stat",
+                bytes.len() as u64,
+                bytes.len() as u64 - writer.left,
+                error,
+            )
+        })?;
         require(
             after.is_file()
                 && after.nlink() == 1
@@ -1626,8 +1712,17 @@ impl ScenarioRecorder {
         drop(writer.file);
         check_directory(&self.case.root, &self.case.held_root)?;
         check_directory(&self.path, &self.held)?;
-        let final_stat =
-            fs::symlink_metadata(&p).map_err(|_| RecordingError("final frame export path stat"))?;
+        let final_stat = fs::symlink_metadata(&p).map_err(|error| {
+            self.frame_io_error(
+                &p,
+                kind,
+                "path_metadata_after",
+                "final frame export path stat",
+                bytes.len() as u64,
+                bytes.len() as u64,
+                error,
+            )
+        })?;
         require(
             final_stat.is_file()
                 && final_stat.nlink() == 1

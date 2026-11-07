@@ -55,7 +55,11 @@ commands remain unchanged. Gate SHA256 is
 `373424422325a0d7319dab19febb5d51a19e36e60d8357a1399a183c1fcbd1a9`;
 `gate-source-review-001/disposition.json` is
 `f3020112086714b4ec25715c60de36a4d65f9d92d948d88f7c8c3503fc388a18`.
-Final integrated Linux hosted qualification remains pending.
+That gate hash identifies the initial source packet. All57 new controls passed
+in Linux hosted run42367071792, but complete qualification failed during editor
+frame recording. The changed candidate adds one storage-tooling test command;
+all prior commands remain intact. Full integration is held on the
+[runner qualification](editor-runner-storage-2026-11-07.md).
 
 The branch also reuses PR75's exact reviewed original-task timeout hook and
 four source registrations, applied to byte-identical predecessors. This retains
