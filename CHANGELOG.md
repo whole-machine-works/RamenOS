@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## 2026-11-07 — actual RUN0 stopped-entry inspection
+
+- Accept one owned stopped-entry inspection after independent host and unchanged
+  retained-runtime decoder replay: 28 physical reads, 26,752 returned bytes,
+  three distinct table frames, eight selected objects and matching rereads.
+- Retain all 129 paired operations, twelve EOFs, four actual zero-exit waits and
+  unchanged source/input closure. No forced action was needed. Full capture and
+  same-call C1/C2 remain open; advance a fresh versioned parent capture. See the
+  [result record](docs/plans/run0-c0-result-2026-11-07.md).
+
 ## 2026-11-07 — owned C0 collector source qualification
 
 - Join immutable prepared inputs, current/after issuers, one physical-read

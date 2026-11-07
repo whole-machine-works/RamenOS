@@ -273,9 +273,10 @@ persistence condition remained prerequisites for guest-memory acquisition.
 The later [source follow-up](docs/plans/run0-c0-source-persistence-2026-11-06.md)
 conditionally accepts that persistence condition for the exact SATA/VAPIC-off
 profile. Its finite callback inventory distinguishes implementation cache
-updates from global mapping and architectural-state writers. Current C0
-launch/stop/state/view/witness joins and actual acquisition remain pending;
-this source decision supplies no live-read permit or global-quiescence claim.
+updates from global mapping and architectural-state writers. At that stage,
+current C0 launch/stop/state/view/witness joins and actual acquisition remained
+pending. The source decision supplies no live-read permit or global-quiescence
+claim by itself.
 
 The [entry-stop prefix](docs/plans/run0-c0-entry-prefix-2026-11-06.md) now
 implements the checked prior token, sole breakpoint/continue, silent asynchronous
@@ -301,14 +302,22 @@ The [owned C0 collector](docs/plans/run0-c0-owned-collector-2026-11-07.md)
 now joins private current/after issuers, shared physical-send accounting and owned
 cleanup. Independent source review, all 360 sealed Linux trace controls and three
 historical reset replays pass. The runtime policy checks the exact profile, ABI,
-prior/persistence inputs and seventeen observer source files. Actual C0 capture
-and retained-runtime acceptance remain pending; no live RAM result is claimed.
+prior/persistence inputs and seventeen observer source files.
+
+The [stopped-entry result](docs/plans/run0-c0-result-2026-11-07.md) now accepts
+one actual owned C0 inspection after independent retained replay. Its 28 guarded
+physical reads returned 26,752 bytes across three distinct table frames and eight
+selected objects, with matching rereads and eight reproduced translations. All
+129 paired operations, twelve EOFs, four actual zero-exit waits and unchanged
+source/input closure are retained. No forced action was needed. The full-capture,
+atomic-snapshot and device-quiescence flags remain false. Next, qualify a fresh
+same-VM C0/C1/C2 firmware-call history; this completed VM has already shut down.
 
 The IPC diagnostic reproduced two zero-byte timeouts before a later valid
 reply on the same VM. The separate single-client run succeeded immediately.
 The retained CPU snapshots follow successful replies, so the cause of the
 earlier timeouts remains open.
-Actual relocated-entry capture, complete retained-range collection, final firmware
+The same-call C1/C2 capture, complete retained-range collection, final firmware
 exit map, allocator installation and target application execution remain pending.
 Native USB/HID input and device-backed storage also remain pending. Independent
 software preparation proceeds without SW0 model trials or physical H0–H3.

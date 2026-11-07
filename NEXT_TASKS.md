@@ -75,14 +75,20 @@ VAPIC-off, `device[2]/rtc` for older profiles. The
 [receiving host adapter](docs/plans/run0-c0-host-observation-2026-11-07.md) and
 [owned collector/shared dispatch](docs/plans/run0-c0-owned-collector-2026-11-07.md)
 are implemented and independently source-reviewed. All 360 sealed Linux trace
-controls and three historical reset replays pass. Finish independent review of
-the exact prepared source/input/launch plan, then run one actual C0 capture and
-independently replay its retained evidence. Preserve all existing budgets,
-checks, owned cleanup and failed attempts. The live collector must produce its
-fresh host witness in the same stop before any guest-memory read. The
+controls and three historical reset replays pass. The
+[actual stopped-entry inspection](docs/plans/run0-c0-result-2026-11-07.md) is
+independently accepted: 28 guarded physical reads, matching rereads, three table
+frames, eight selected objects and clean owned shutdown. Do not redispatch this
+completed standalone run. Freeze and review the successor parent contract for a
+fresh C0/C1/C2 history in one VM, then implement the firmware-call and return
+capture. Derive sites from the fresh loaded image and authenticated caller
+bytes; revoke read authority at each resume and obtain a fresh same-stop witness
+and ordinary-RAM proof at each stop. Preserve complete parent command/child
+history, all existing budgets, checks and failed attempts. The
 [source persistence condition](docs/plans/run0-c0-source-persistence-2026-11-06.md)
 remains conditional on the listed actual stop/state/view and closed command
-history. After actual C0 acceptance, advance the same-call C1/C2 capture.
+history. Full capture, retained ranges, exit map, allocator and application
+execution remain separate qualifications.
 The prior address is only a candidate:
 a missed stop or missing new profile-bound hint remains `INCOMPLETE`; present
 mismatched or malformed inputs are `DENY`. No scan, guessed address or automatic

@@ -3,7 +3,8 @@
 The collector now joins the accepted entry stop, host observation and typed RAM
 acquisition through one owned VM and one wire. Independent source review and
 360 sealed Linux trace controls pass. Three earlier actual reset captures still
-validate. Successful C0 capture and retained-runtime acceptance remain pending.
+validate. The later [actual result](run0-c0-result-2026-11-07.md) is independently
+accepted for stopped-entry host/translation/selected-object consistency.
 
 ## Implemented boundary
 
@@ -107,13 +108,14 @@ terminated, actually reaped with return code zero, and closed; all twelve VM/hel
 EOFs were recorded. The driver's separate postcheck failed because trusted
 helper imports created two cache files. Explicit `-B` is now propagated to the
 helper process; the strict source-cache guard remains enabled. Existing caches
-are retained with the failed run. This source-qualified correction still needs a
-fresh independently reviewed plan and actual C0 acceptance.
+are retained with the failed run. A fresh independently reviewed plan then
+produced accepted actual run009, preserving the failed run and all strict source
+postchecks. See the [result and review identities](run0-c0-result-2026-11-07.md).
 
 ## Next outcome
 
-Independently review the exact frozen preparation and one-attempt execution
-plan, then qualify actual C0 using unchanged public preparation/capture APIs.
-Replay the retained host and C0 records independently before claiming acceptance.
-C1/C2, complete retained-range collection, the final firmware exit map, allocator
-installation and application execution remain separate outcomes.
+The actual C0 inspection and independent retained replay are complete. Advance
+a reviewed successor parent contract for a fresh same-VM C0/C1/C2 history,
+preserving the existing standalone validator and its scope. Complete retained
+ranges, the final firmware exit map, allocator installation and application
+execution remain separate outcomes.
