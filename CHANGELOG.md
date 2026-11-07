@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## 2026-11-07 — Same-call capture source primitives
+
+- Add reviewed parent deadlines/cleanup and retained read/accounting primitives;
+  preserve clock, interruption, partial failure and exact copy evidence.
+- Pass57 new host integration controls and add three tooling-gate commands while
+  preserving every existing command. Actual same-VM C1/C2 remains unqualified.
+- Reuse PR75's exact reviewed original-task timeout diagnostics and metadata
+  registrations on byte-identical predecessors for final integration evidence;
+  preserve the unresolved failure, deadlines and cases. See the
+  [shared-primitives record](docs/plans/run0-call-map-shared-primitives-2026-11-07.md).
+
 ## 2026-11-07 — actual RUN0 stopped-entry inspection
 
 - Accept one owned stopped-entry inspection after independent host and unchanged

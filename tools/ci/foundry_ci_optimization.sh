@@ -43,5 +43,8 @@ python3 tools/trace/test_run0_c0_budget.py
 python3 tools/trace/test_run0_c0_wire_owned.py
 python3 tools/trace/test_run0_c0_capture.py
 python3 tools/trace/test_run0_c0_runtime.py
+python3 -B tools/trace/test_run0_call_owner.py
+python3 -B tools/trace/test_run0_call_budget.py
+python3 -B tools/trace/test_run0_call_read.py
 cargo test --locked -p idl_codegen --test content_stable
 printf '%s\n' 'FOUNDRY_CI_OPTIMIZATION: PASS scope=tooling'
