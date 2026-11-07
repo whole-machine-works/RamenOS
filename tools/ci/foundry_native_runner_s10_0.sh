@@ -58,6 +58,12 @@ if python3 "$ROOT_DIR/tools/ci/selected_test_runner.py" \
     --require-filter 'recovery_decision::q1_tests::controls::' \
     --filter 'recovery_decision::q1_runtime_tests::controls::' \
     --require-filter 'recovery_decision::q1_runtime_tests::controls::' \
+    --filter 'recovery_decision::q1_runtime_tests::t2::t2_static_' \
+    --require-filter 'recovery_decision::q1_runtime_tests::t2::t2_static_' \
+    --filter 'recovery_decision::q1_runtime_tests::t2::runtime_controls::' \
+    --require-filter 'recovery_decision::q1_runtime_tests::t2::runtime_controls::' \
+    --filter 'recovery_decision::q1_runtime_tests::t2::stage_controls::' \
+    --require-filter 'recovery_decision::q1_runtime_tests::t2::stage_controls::' \
     --output "$SELECTED_RUN_ROOT/recovery"; then
     pass "recovery adapter controls pass"
 else

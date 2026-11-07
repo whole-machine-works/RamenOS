@@ -1,0 +1,2401 @@
+{
+  "schema_version": 3,
+  "kind": "recovery_q1_t2_exact_schema_handshake_proposal_v3",
+  "status": "PENDING_ROOT_EVALUATOR_NONAUTHOR_FREEZE_NO_HANDLERS_RELEASED",
+  "preserved_prior_proposals": [
+    {
+      "path": "schema-proposal-001.json",
+      "sha256": "dc53af1b0d02fea4c724441e5003fb8e083851d49eea87c8fb2c5e5b581fe343"
+    },
+    {
+      "path": "schema-proposal-002.json",
+      "sha256": "93578676723090006088c9abf48862525a70d78e92bcc6c0048902c074a4d88c"
+    }
+  ],
+  "inventory_schema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "schema_version": {
+        "const": 1
+      },
+      "kind": {
+        "const": "recovery_q1_t2_static_fixture_inventory_v1"
+      },
+      "recipe_contract_sha256": {
+        "const": "6f96425bf55222eea630b15926284400a57488c8885ab5fb6c3372a35c62d1dd"
+      },
+      "c1_ref": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "path": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_.-]{1,100}$",
+            "not": {
+              "enum": [
+                ".",
+                ".."
+              ]
+            }
+          },
+          "length": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 65537
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        },
+        "required": [
+          "path",
+          "length",
+          "sha256"
+        ]
+      },
+      "execution_released": {
+        "const": false
+      },
+      "campaigns_run": {
+        "const": 0
+      },
+      "new_binary_pins_reviewed": {
+        "const": false
+      },
+      "cases": {
+        "type": "array",
+        "minItems": 32,
+        "maxItems": 32,
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "id": {
+              "enum": [
+                "A01-malformed-magic",
+                "A02-module-one-over",
+                "A03-contract-identity",
+                "A04-artifact-identity",
+                "A05-host-callback-import",
+                "A06-wasi-import",
+                "A07-imported-memory",
+                "A08-start-function",
+                "A09-shared-memory",
+                "A10-threads-opcode",
+                "A11-absent-memory",
+                "A12-extra-memory",
+                "A13-memory-min0-max1",
+                "A14-memory-min2-max2",
+                "A15-memory-min1-max2",
+                "A16-memory-no-maximum",
+                "A17-missing-recover-export",
+                "A18-wrong-recover-signature",
+                "A19-missing-memory-export",
+                "A20-extra-export",
+                "A21-invalid-code",
+                "R01-fuel",
+                "R02-stack",
+                "E01-trap-after-plausible-output",
+                "E02-return7-after-plausible-output",
+                "O01-version1",
+                "O02-length15",
+                "O03-disposition5",
+                "O04-reserved1",
+                "O05-incomplete-header",
+                "S01-foreign-operation-plausible-commit",
+                "S02-foreign-generation-plausible-noncommit"
+              ]
+            },
+            "input_case": {
+              "enum": [
+                "outcome-0",
+                "outcome-0-receipt-foreign-operation_id",
+                "outcome-1-receipt-foreign-original_instance_generation"
+              ]
+            },
+            "input_sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "actual_module": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "path": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9_.-]{1,100}$",
+                  "not": {
+                    "enum": [
+                      ".",
+                      ".."
+                    ]
+                  }
+                },
+                "length": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 65537
+                },
+                "sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                }
+              },
+              "required": [
+                "path",
+                "length",
+                "sha256"
+              ]
+            },
+            "wat": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "path": {
+                      "type": "string",
+                      "pattern": "^[A-Za-z0-9_.-]{1,100}$",
+                      "not": {
+                        "enum": [
+                          ".",
+                          ".."
+                        ]
+                      }
+                    },
+                    "length": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 65537
+                    },
+                    "sha256": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{64}$"
+                    }
+                  },
+                  "required": [
+                    "path",
+                    "length",
+                    "sha256"
+                  ]
+                }
+              ]
+            },
+            "declared_abi_sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "declared_module_sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "qualified_new_binary_sha256": {
+              "type": "null"
+            }
+          },
+          "required": [
+            "id",
+            "input_case",
+            "input_sha256",
+            "actual_module",
+            "wat",
+            "declared_abi_sha256",
+            "declared_module_sha256",
+            "qualified_new_binary_sha256"
+          ]
+        }
+      }
+    },
+    "required": [
+      "schema_version",
+      "kind",
+      "recipe_contract_sha256",
+      "c1_ref",
+      "execution_released",
+      "campaigns_run",
+      "new_binary_pins_reviewed",
+      "cases"
+    ]
+  },
+  "expected_cases_schema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "schema_version": {
+        "const": 1
+      },
+      "kind": {
+        "const": "recovery_q1_t2_expected_cases_v1"
+      },
+      "recipe_contract_sha256": {
+        "const": "6f96425bf55222eea630b15926284400a57488c8885ab5fb6c3372a35c62d1dd"
+      },
+      "abi_sha256": {
+        "const": "49daf52dd669411376770b3bc2a007d7c6a8b346843bcd123a45da8139b0da60"
+      },
+      "corpus_sha256": {
+        "const": "84eece3246d9b4521a5b8ac48fa6324cb4be4e98889277ab46837f6764aeda49"
+      },
+      "receiving_original": {
+        "const": {
+          "actor": {
+            "owner_id": 101,
+            "session_id": 202,
+            "session_generation": 303,
+            "instance_id": 404,
+            "instance_generation": 505
+          },
+          "allocation": {
+            "selected_object_id": 606,
+            "selected_generation": 707,
+            "operation_id": 808,
+            "expected_revision": 909,
+            "expected_content_hash_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f"
+          },
+          "source": {
+            "source_object_id": 1101,
+            "source_generation": 1102,
+            "byte_len": 1103,
+            "content_hash_hex": "e0e1e2e3e4e5e6e7e8e9eaebecedeeeff0f1f2f3f4f5f6f7f8f9fafbfcfdfeff"
+          },
+          "original_store_epoch": 1010
+        }
+      },
+      "canonical_case": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "const": "outcome-0"
+          },
+          "input_hex": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{672}$"
+          },
+          "input_sha256": {
+            "const": "e635728a7387ed65ae7e9ea5253193660ec311fbbdf61ca6214af1245442634c"
+          }
+        },
+        "required": [
+          "id",
+          "input_hex",
+          "input_sha256"
+        ]
+      },
+      "cases": {
+        "type": "array",
+        "minItems": 32,
+        "maxItems": 32,
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "id": {
+              "enum": [
+                "A01-malformed-magic",
+                "A02-module-one-over",
+                "A03-contract-identity",
+                "A04-artifact-identity",
+                "A05-host-callback-import",
+                "A06-wasi-import",
+                "A07-imported-memory",
+                "A08-start-function",
+                "A09-shared-memory",
+                "A10-threads-opcode",
+                "A11-absent-memory",
+                "A12-extra-memory",
+                "A13-memory-min0-max1",
+                "A14-memory-min2-max2",
+                "A15-memory-min1-max2",
+                "A16-memory-no-maximum",
+                "A17-missing-recover-export",
+                "A18-wrong-recover-signature",
+                "A19-missing-memory-export",
+                "A20-extra-export",
+                "A21-invalid-code",
+                "R01-fuel",
+                "R02-stack",
+                "E01-trap-after-plausible-output",
+                "E02-return7-after-plausible-output",
+                "O01-version1",
+                "O02-length15",
+                "O03-disposition5",
+                "O04-reserved1",
+                "O05-incomplete-header",
+                "S01-foreign-operation-plausible-commit",
+                "S02-foreign-generation-plausible-noncommit"
+              ]
+            },
+            "input_case": {
+              "type": "string"
+            },
+            "input_hex": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{672}$"
+            },
+            "input_sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "expected_fault_admitted": {
+              "type": "boolean"
+            },
+            "expected_receiving_error": {
+              "enum": [
+                "module_shape",
+                "artifact_identity",
+                "engine",
+                "fuel",
+                "stack",
+                "trap",
+                "guest_return",
+                "invalid_output",
+                "disagreement"
+              ]
+            },
+            "expected_raw_output_hex": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$"
+                }
+              ]
+            },
+            "expected_raw_guest_return": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "integer",
+                  "minimum": -2147483648,
+                  "maximum": 2147483647
+                }
+              ]
+            },
+            "expected_raw_trap_kind": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "enum": [
+                    "fuel",
+                    "stack",
+                    "trap"
+                  ]
+                }
+              ]
+            },
+            "expected_receiving_return_code": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "integer",
+                  "minimum": -2147483648,
+                  "maximum": 2147483647
+                }
+              ]
+            },
+            "expected_disagreement": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "candidate": {
+                      "enum": [
+                        "Pending",
+                        "Committed",
+                        "DefinitiveNoncommit",
+                        "Denied",
+                        "Invalid"
+                      ]
+                    },
+                    "expected": {
+                      "enum": [
+                        "Pending",
+                        "Committed",
+                        "DefinitiveNoncommit",
+                        "Denied",
+                        "Invalid"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "candidate",
+                    "expected"
+                  ]
+                }
+              ]
+            }
+          },
+          "required": [
+            "id",
+            "input_case",
+            "input_hex",
+            "input_sha256",
+            "expected_fault_admitted",
+            "expected_receiving_error",
+            "expected_raw_output_hex",
+            "expected_raw_guest_return",
+            "expected_raw_trap_kind",
+            "expected_receiving_return_code",
+            "expected_disagreement"
+          ]
+        }
+      }
+    },
+    "required": [
+      "schema_version",
+      "kind",
+      "recipe_contract_sha256",
+      "abi_sha256",
+      "corpus_sha256",
+      "receiving_original",
+      "canonical_case",
+      "cases"
+    ]
+  },
+  "plan_schema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "schema_version": {
+        "const": 1
+      },
+      "kind": {
+        "const": "recovery_q1_t2_plan_v1"
+      },
+      "manifest_sha256": {
+        "type": "string",
+        "pattern": "^[0-9a-f]{64}$"
+      },
+      "recipe_contract_sha256": {
+        "const": "6f96425bf55222eea630b15926284400a57488c8885ab5fb6c3372a35c62d1dd"
+      },
+      "fixture_inventory_ref": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "path": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_.-]{1,100}$",
+            "not": {
+              "enum": [
+                ".",
+                ".."
+              ]
+            }
+          },
+          "length": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 65537
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        },
+        "required": [
+          "path",
+          "length",
+          "sha256"
+        ]
+      },
+      "expected_cases_ref": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "path": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_.-]{1,100}$",
+            "not": {
+              "enum": [
+                ".",
+                ".."
+              ]
+            }
+          },
+          "length": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 65537
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        },
+        "required": [
+          "path",
+          "length",
+          "sha256"
+        ]
+      },
+      "abi_sha256": {
+        "const": "49daf52dd669411376770b3bc2a007d7c6a8b346843bcd123a45da8139b0da60"
+      },
+      "candidate_module_sha256": {
+        "const": "6458a173cd09e73fe0be59b1a2d339c2070c33ac05628b3d2dd5fb264cb2e079"
+      },
+      "registration_sha256": {
+        "const": "185957fc5f45900995de9c4705c7936ac834cffea3006c67b6596e7e33e656e2"
+      },
+      "owner_lifecycle_exercised": {
+        "const": false
+      },
+      "live_parent_authority_exercised": {
+        "const": false
+      },
+      "measured_benefit": {
+        "const": false
+      },
+      "activation_accepted": {
+        "const": false
+      },
+      "full_q1_qualified": {
+        "const": false
+      },
+      "full_18_receiving_acceptance": {
+        "const": false
+      }
+    },
+    "required": [
+      "schema_version",
+      "kind",
+      "manifest_sha256",
+      "recipe_contract_sha256",
+      "fixture_inventory_ref",
+      "expected_cases_ref",
+      "abi_sha256",
+      "candidate_module_sha256",
+      "registration_sha256",
+      "owner_lifecycle_exercised",
+      "live_parent_authority_exercised",
+      "measured_benefit",
+      "activation_accepted",
+      "full_q1_qualified",
+      "full_18_receiving_acceptance"
+    ]
+  },
+  "raw_report_schema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "schema_version": {
+        "const": 1
+      },
+      "kind": {
+        "const": "recovery_q1_t2_raw_v1"
+      },
+      "plan_sha256": {
+        "type": "string",
+        "pattern": "^[0-9a-f]{64}$"
+      },
+      "manifest_sha256": {
+        "type": "string",
+        "pattern": "^[0-9a-f]{64}$"
+      },
+      "fixture_inventory_sha256": {
+        "type": "string",
+        "pattern": "^[0-9a-f]{64}$"
+      },
+      "expected_cases_sha256": {
+        "type": "string",
+        "pattern": "^[0-9a-f]{64}$"
+      },
+      "claims": {
+        "const": {
+          "owner_lifecycle_exercised": false,
+          "live_parent_authority_exercised": false,
+          "measured_benefit": false,
+          "activation_accepted": false,
+          "full_q1_qualified": false,
+          "full_18_receiving_acceptance": false
+        }
+      },
+      "records": {
+        "type": "array",
+        "minItems": 32,
+        "maxItems": 32,
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "id": {
+              "enum": [
+                "A01-malformed-magic",
+                "A02-module-one-over",
+                "A03-contract-identity",
+                "A04-artifact-identity",
+                "A05-host-callback-import",
+                "A06-wasi-import",
+                "A07-imported-memory",
+                "A08-start-function",
+                "A09-shared-memory",
+                "A10-threads-opcode",
+                "A11-absent-memory",
+                "A12-extra-memory",
+                "A13-memory-min0-max1",
+                "A14-memory-min2-max2",
+                "A15-memory-min1-max2",
+                "A16-memory-no-maximum",
+                "A17-missing-recover-export",
+                "A18-wrong-recover-signature",
+                "A19-missing-memory-export",
+                "A20-extra-export",
+                "A21-invalid-code",
+                "R01-fuel",
+                "R02-stack",
+                "E01-trap-after-plausible-output",
+                "E02-return7-after-plausible-output",
+                "O01-version1",
+                "O02-length15",
+                "O03-disposition5",
+                "O04-reserved1",
+                "O05-incomplete-header",
+                "S01-foreign-operation-plausible-commit",
+                "S02-foreign-generation-plausible-noncommit"
+              ]
+            },
+            "phases": {
+              "type": "array",
+              "minItems": 3,
+              "maxItems": 4,
+              "items": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "phase": {
+                        "const": "admission"
+                      },
+                      "module_sha256": {
+                        "type": "string",
+                        "pattern": "^[0-9a-f]{64}$"
+                      },
+                      "result": {
+                        "oneOf": [
+                          {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                              "status": {
+                                "const": "accepted"
+                              }
+                            },
+                            "required": [
+                              "status"
+                            ]
+                          },
+                          {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                              "status": {
+                                "const": "error"
+                              },
+                              "error": {
+                                "oneOf": [
+                                  {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "kind": {
+                                        "const": "artifact_identity"
+                                      }
+                                    },
+                                    "required": [
+                                      "kind"
+                                    ]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "kind": {
+                                        "const": "module_shape"
+                                      }
+                                    },
+                                    "required": [
+                                      "kind"
+                                    ]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "kind": {
+                                        "const": "engine"
+                                      },
+                                      "detail": {
+                                        "type": "string",
+                                        "maxLength": 512
+                                      }
+                                    },
+                                    "required": [
+                                      "kind",
+                                      "detail"
+                                    ]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "kind": {
+                                        "const": "invalid_original"
+                                      }
+                                    },
+                                    "required": [
+                                      "kind"
+                                    ]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "kind": {
+                                        "const": "fuel"
+                                      }
+                                    },
+                                    "required": [
+                                      "kind"
+                                    ]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "kind": {
+                                        "const": "stack"
+                                      }
+                                    },
+                                    "required": [
+                                      "kind"
+                                    ]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "kind": {
+                                        "const": "trap"
+                                      },
+                                      "detail": {
+                                        "type": "string",
+                                        "maxLength": 512
+                                      }
+                                    },
+                                    "required": [
+                                      "kind",
+                                      "detail"
+                                    ]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "kind": {
+                                        "const": "guest_return"
+                                      },
+                                      "code": {
+                                        "type": "integer",
+                                        "minimum": -2147483648,
+                                        "maximum": 2147483647
+                                      }
+                                    },
+                                    "required": [
+                                      "kind",
+                                      "code"
+                                    ]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "kind": {
+                                        "const": "invalid_output"
+                                      }
+                                    },
+                                    "required": [
+                                      "kind"
+                                    ]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "kind": {
+                                        "const": "disagreement"
+                                      },
+                                      "candidate": {
+                                        "enum": [
+                                          "Pending",
+                                          "Committed",
+                                          "DefinitiveNoncommit",
+                                          "Denied",
+                                          "Invalid"
+                                        ]
+                                      },
+                                      "expected": {
+                                        "enum": [
+                                          "Pending",
+                                          "Committed",
+                                          "DefinitiveNoncommit",
+                                          "Denied",
+                                          "Invalid"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "kind",
+                                      "candidate",
+                                      "expected"
+                                    ]
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "status",
+                              "error"
+                            ]
+                          }
+                        ]
+                      },
+                      "raw": {
+                        "type": "null"
+                      }
+                    },
+                    "required": [
+                      "phase",
+                      "module_sha256",
+                      "result",
+                      "raw"
+                    ]
+                  },
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "phase": {
+                        "enum": [
+                          "fault_raw",
+                          "fresh_raw"
+                        ]
+                      },
+                      "module_sha256": {
+                        "type": "string",
+                        "pattern": "^[0-9a-f]{64}$"
+                      },
+                      "admission": {
+                        "oneOf": [
+                          {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                              "status": {
+                                "const": "accepted"
+                              }
+                            },
+                            "required": [
+                              "status"
+                            ]
+                          },
+                          {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                              "status": {
+                                "const": "error"
+                              },
+                              "error": {
+                                "oneOf": [
+                                  {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "kind": {
+                                        "const": "artifact_identity"
+                                      }
+                                    },
+                                    "required": [
+                                      "kind"
+                                    ]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "kind": {
+                                        "const": "module_shape"
+                                      }
+                                    },
+                                    "required": [
+                                      "kind"
+                                    ]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "kind": {
+                                        "const": "engine"
+                                      },
+                                      "detail": {
+                                        "type": "string",
+                                        "maxLength": 512
+                                      }
+                                    },
+                                    "required": [
+                                      "kind",
+                                      "detail"
+                                    ]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "kind": {
+                                        "const": "invalid_original"
+                                      }
+                                    },
+                                    "required": [
+                                      "kind"
+                                    ]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "kind": {
+                                        "const": "fuel"
+                                      }
+                                    },
+                                    "required": [
+                                      "kind"
+                                    ]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "kind": {
+                                        "const": "stack"
+                                      }
+                                    },
+                                    "required": [
+                                      "kind"
+                                    ]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "kind": {
+                                        "const": "trap"
+                                      },
+                                      "detail": {
+                                        "type": "string",
+                                        "maxLength": 512
+                                      }
+                                    },
+                                    "required": [
+                                      "kind",
+                                      "detail"
+                                    ]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "kind": {
+                                        "const": "guest_return"
+                                      },
+                                      "code": {
+                                        "type": "integer",
+                                        "minimum": -2147483648,
+                                        "maximum": 2147483647
+                                      }
+                                    },
+                                    "required": [
+                                      "kind",
+                                      "code"
+                                    ]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "kind": {
+                                        "const": "invalid_output"
+                                      }
+                                    },
+                                    "required": [
+                                      "kind"
+                                    ]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "kind": {
+                                        "const": "disagreement"
+                                      },
+                                      "candidate": {
+                                        "enum": [
+                                          "Pending",
+                                          "Committed",
+                                          "DefinitiveNoncommit",
+                                          "Denied",
+                                          "Invalid"
+                                        ]
+                                      },
+                                      "expected": {
+                                        "enum": [
+                                          "Pending",
+                                          "Committed",
+                                          "DefinitiveNoncommit",
+                                          "Denied",
+                                          "Invalid"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "kind",
+                                      "candidate",
+                                      "expected"
+                                    ]
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "status",
+                              "error"
+                            ]
+                          }
+                        ]
+                      },
+                      "observation": {
+                        "oneOf": [
+                          {
+                            "type": "null"
+                          },
+                          {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                              "guest_return": {
+                                "oneOf": [
+                                  {
+                                    "type": "null"
+                                  },
+                                  {
+                                    "type": "integer",
+                                    "minimum": -2147483648,
+                                    "maximum": 2147483647
+                                  }
+                                ]
+                              },
+                              "trap": {
+                                "oneOf": [
+                                  {
+                                    "type": "null"
+                                  },
+                                  {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "kind": {
+                                        "enum": [
+                                          "fuel",
+                                          "stack",
+                                          "trap"
+                                        ]
+                                      },
+                                      "detail": {
+                                        "type": "string",
+                                        "maxLength": 512
+                                      }
+                                    },
+                                    "required": [
+                                      "kind",
+                                      "detail"
+                                    ]
+                                  }
+                                ]
+                              },
+                              "memory_before_hex": {
+                                "type": "string",
+                                "pattern": "^[0-9a-f]{131072}$"
+                              },
+                              "memory_after_hex": {
+                                "type": "string",
+                                "pattern": "^[0-9a-f]{131072}$"
+                              }
+                            },
+                            "required": [
+                              "guest_return",
+                              "trap",
+                              "memory_before_hex",
+                              "memory_after_hex"
+                            ],
+                            "oneOf": [
+                              {
+                                "properties": {
+                                  "guest_return": {
+                                    "type": "integer",
+                                    "minimum": -2147483648,
+                                    "maximum": 2147483647
+                                  },
+                                  "trap": {
+                                    "type": "null"
+                                  }
+                                }
+                              },
+                              {
+                                "properties": {
+                                  "guest_return": {
+                                    "type": "null"
+                                  },
+                                  "trap": {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "kind": {
+                                        "enum": [
+                                          "fuel",
+                                          "stack",
+                                          "trap"
+                                        ]
+                                      },
+                                      "detail": {
+                                        "type": "string",
+                                        "maxLength": 512
+                                      }
+                                    },
+                                    "required": [
+                                      "kind",
+                                      "detail"
+                                    ]
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      "observation_error": {
+                        "oneOf": [
+                          {
+                            "type": "null"
+                          },
+                          {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                              "detail": {
+                                "type": "string",
+                                "maxLength": 512
+                              }
+                            },
+                            "required": [
+                              "detail"
+                            ]
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "phase",
+                      "module_sha256",
+                      "admission",
+                      "observation",
+                      "observation_error"
+                    ],
+                    "oneOf": [
+                      {
+                        "properties": {
+                          "admission": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                              "status": {
+                                "const": "error"
+                              },
+                              "error": {
+                                "oneOf": [
+                                  {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "kind": {
+                                        "const": "artifact_identity"
+                                      }
+                                    },
+                                    "required": [
+                                      "kind"
+                                    ]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "kind": {
+                                        "const": "module_shape"
+                                      }
+                                    },
+                                    "required": [
+                                      "kind"
+                                    ]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "kind": {
+                                        "const": "engine"
+                                      },
+                                      "detail": {
+                                        "type": "string",
+                                        "maxLength": 512
+                                      }
+                                    },
+                                    "required": [
+                                      "kind",
+                                      "detail"
+                                    ]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "kind": {
+                                        "const": "invalid_original"
+                                      }
+                                    },
+                                    "required": [
+                                      "kind"
+                                    ]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "kind": {
+                                        "const": "fuel"
+                                      }
+                                    },
+                                    "required": [
+                                      "kind"
+                                    ]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "kind": {
+                                        "const": "stack"
+                                      }
+                                    },
+                                    "required": [
+                                      "kind"
+                                    ]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "kind": {
+                                        "const": "trap"
+                                      },
+                                      "detail": {
+                                        "type": "string",
+                                        "maxLength": 512
+                                      }
+                                    },
+                                    "required": [
+                                      "kind",
+                                      "detail"
+                                    ]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "kind": {
+                                        "const": "guest_return"
+                                      },
+                                      "code": {
+                                        "type": "integer",
+                                        "minimum": -2147483648,
+                                        "maximum": 2147483647
+                                      }
+                                    },
+                                    "required": [
+                                      "kind",
+                                      "code"
+                                    ]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "kind": {
+                                        "const": "invalid_output"
+                                      }
+                                    },
+                                    "required": [
+                                      "kind"
+                                    ]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "kind": {
+                                        "const": "disagreement"
+                                      },
+                                      "candidate": {
+                                        "enum": [
+                                          "Pending",
+                                          "Committed",
+                                          "DefinitiveNoncommit",
+                                          "Denied",
+                                          "Invalid"
+                                        ]
+                                      },
+                                      "expected": {
+                                        "enum": [
+                                          "Pending",
+                                          "Committed",
+                                          "DefinitiveNoncommit",
+                                          "Denied",
+                                          "Invalid"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "kind",
+                                      "candidate",
+                                      "expected"
+                                    ]
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "status",
+                              "error"
+                            ]
+                          },
+                          "observation": {
+                            "type": "null"
+                          },
+                          "observation_error": {
+                            "type": "null"
+                          }
+                        }
+                      },
+                      {
+                        "properties": {
+                          "admission": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                              "status": {
+                                "const": "accepted"
+                              }
+                            },
+                            "required": [
+                              "status"
+                            ]
+                          },
+                          "observation": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                              "guest_return": {
+                                "oneOf": [
+                                  {
+                                    "type": "null"
+                                  },
+                                  {
+                                    "type": "integer",
+                                    "minimum": -2147483648,
+                                    "maximum": 2147483647
+                                  }
+                                ]
+                              },
+                              "trap": {
+                                "oneOf": [
+                                  {
+                                    "type": "null"
+                                  },
+                                  {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "kind": {
+                                        "enum": [
+                                          "fuel",
+                                          "stack",
+                                          "trap"
+                                        ]
+                                      },
+                                      "detail": {
+                                        "type": "string",
+                                        "maxLength": 512
+                                      }
+                                    },
+                                    "required": [
+                                      "kind",
+                                      "detail"
+                                    ]
+                                  }
+                                ]
+                              },
+                              "memory_before_hex": {
+                                "type": "string",
+                                "pattern": "^[0-9a-f]{131072}$"
+                              },
+                              "memory_after_hex": {
+                                "type": "string",
+                                "pattern": "^[0-9a-f]{131072}$"
+                              }
+                            },
+                            "required": [
+                              "guest_return",
+                              "trap",
+                              "memory_before_hex",
+                              "memory_after_hex"
+                            ],
+                            "oneOf": [
+                              {
+                                "properties": {
+                                  "guest_return": {
+                                    "type": "integer",
+                                    "minimum": -2147483648,
+                                    "maximum": 2147483647
+                                  },
+                                  "trap": {
+                                    "type": "null"
+                                  }
+                                }
+                              },
+                              {
+                                "properties": {
+                                  "guest_return": {
+                                    "type": "null"
+                                  },
+                                  "trap": {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "kind": {
+                                        "enum": [
+                                          "fuel",
+                                          "stack",
+                                          "trap"
+                                        ]
+                                      },
+                                      "detail": {
+                                        "type": "string",
+                                        "maxLength": 512
+                                      }
+                                    },
+                                    "required": [
+                                      "kind",
+                                      "detail"
+                                    ]
+                                  }
+                                }
+                              }
+                            ]
+                          },
+                          "observation_error": {
+                            "type": "null"
+                          }
+                        }
+                      },
+                      {
+                        "properties": {
+                          "admission": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                              "status": {
+                                "const": "accepted"
+                              }
+                            },
+                            "required": [
+                              "status"
+                            ]
+                          },
+                          "observation": {
+                            "type": "null"
+                          },
+                          "observation_error": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                              "detail": {
+                                "type": "string",
+                                "maxLength": 512
+                              }
+                            },
+                            "required": [
+                              "detail"
+                            ]
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "phase": {
+                        "enum": [
+                          "fault_receiving",
+                          "fresh_receiving"
+                        ]
+                      },
+                      "module_sha256": {
+                        "type": "string",
+                        "pattern": "^[0-9a-f]{64}$"
+                      },
+                      "stage": {
+                        "enum": [
+                          "new",
+                          "decide"
+                        ]
+                      },
+                      "projected_input_hex": {
+                        "oneOf": [
+                          {
+                            "type": "null"
+                          },
+                          {
+                            "type": "string",
+                            "pattern": "^[0-9a-f]{672}$"
+                          }
+                        ]
+                      },
+                      "projection_error": {
+                        "oneOf": [
+                          {
+                            "type": "null"
+                          },
+                          {
+                            "oneOf": [
+                              {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "properties": {
+                                  "kind": {
+                                    "const": "artifact_identity"
+                                  }
+                                },
+                                "required": [
+                                  "kind"
+                                ]
+                              },
+                              {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "properties": {
+                                  "kind": {
+                                    "const": "module_shape"
+                                  }
+                                },
+                                "required": [
+                                  "kind"
+                                ]
+                              },
+                              {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "properties": {
+                                  "kind": {
+                                    "const": "engine"
+                                  },
+                                  "detail": {
+                                    "type": "string",
+                                    "maxLength": 512
+                                  }
+                                },
+                                "required": [
+                                  "kind",
+                                  "detail"
+                                ]
+                              },
+                              {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "properties": {
+                                  "kind": {
+                                    "const": "invalid_original"
+                                  }
+                                },
+                                "required": [
+                                  "kind"
+                                ]
+                              },
+                              {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "properties": {
+                                  "kind": {
+                                    "const": "fuel"
+                                  }
+                                },
+                                "required": [
+                                  "kind"
+                                ]
+                              },
+                              {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "properties": {
+                                  "kind": {
+                                    "const": "stack"
+                                  }
+                                },
+                                "required": [
+                                  "kind"
+                                ]
+                              },
+                              {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "properties": {
+                                  "kind": {
+                                    "const": "trap"
+                                  },
+                                  "detail": {
+                                    "type": "string",
+                                    "maxLength": 512
+                                  }
+                                },
+                                "required": [
+                                  "kind",
+                                  "detail"
+                                ]
+                              },
+                              {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "properties": {
+                                  "kind": {
+                                    "const": "guest_return"
+                                  },
+                                  "code": {
+                                    "type": "integer",
+                                    "minimum": -2147483648,
+                                    "maximum": 2147483647
+                                  }
+                                },
+                                "required": [
+                                  "kind",
+                                  "code"
+                                ]
+                              },
+                              {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "properties": {
+                                  "kind": {
+                                    "const": "invalid_output"
+                                  }
+                                },
+                                "required": [
+                                  "kind"
+                                ]
+                              },
+                              {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "properties": {
+                                  "kind": {
+                                    "const": "disagreement"
+                                  },
+                                  "candidate": {
+                                    "enum": [
+                                      "Pending",
+                                      "Committed",
+                                      "DefinitiveNoncommit",
+                                      "Denied",
+                                      "Invalid"
+                                    ]
+                                  },
+                                  "expected": {
+                                    "enum": [
+                                      "Pending",
+                                      "Committed",
+                                      "DefinitiveNoncommit",
+                                      "Denied",
+                                      "Invalid"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "kind",
+                                  "candidate",
+                                  "expected"
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      "result": {
+                        "oneOf": [
+                          {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                              "status": {
+                                "const": "ok"
+                              },
+                              "disposition": {
+                                "enum": [
+                                  "Pending",
+                                  "Committed",
+                                  "DefinitiveNoncommit",
+                                  "Denied",
+                                  "Invalid"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "status",
+                              "disposition"
+                            ]
+                          },
+                          {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                              "status": {
+                                "const": "error"
+                              },
+                              "error": {
+                                "oneOf": [
+                                  {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "kind": {
+                                        "const": "artifact_identity"
+                                      }
+                                    },
+                                    "required": [
+                                      "kind"
+                                    ]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "kind": {
+                                        "const": "module_shape"
+                                      }
+                                    },
+                                    "required": [
+                                      "kind"
+                                    ]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "kind": {
+                                        "const": "engine"
+                                      },
+                                      "detail": {
+                                        "type": "string",
+                                        "maxLength": 512
+                                      }
+                                    },
+                                    "required": [
+                                      "kind",
+                                      "detail"
+                                    ]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "kind": {
+                                        "const": "invalid_original"
+                                      }
+                                    },
+                                    "required": [
+                                      "kind"
+                                    ]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "kind": {
+                                        "const": "fuel"
+                                      }
+                                    },
+                                    "required": [
+                                      "kind"
+                                    ]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "kind": {
+                                        "const": "stack"
+                                      }
+                                    },
+                                    "required": [
+                                      "kind"
+                                    ]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "kind": {
+                                        "const": "trap"
+                                      },
+                                      "detail": {
+                                        "type": "string",
+                                        "maxLength": 512
+                                      }
+                                    },
+                                    "required": [
+                                      "kind",
+                                      "detail"
+                                    ]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "kind": {
+                                        "const": "guest_return"
+                                      },
+                                      "code": {
+                                        "type": "integer",
+                                        "minimum": -2147483648,
+                                        "maximum": 2147483647
+                                      }
+                                    },
+                                    "required": [
+                                      "kind",
+                                      "code"
+                                    ]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "kind": {
+                                        "const": "invalid_output"
+                                      }
+                                    },
+                                    "required": [
+                                      "kind"
+                                    ]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "kind": {
+                                        "const": "disagreement"
+                                      },
+                                      "candidate": {
+                                        "enum": [
+                                          "Pending",
+                                          "Committed",
+                                          "DefinitiveNoncommit",
+                                          "Denied",
+                                          "Invalid"
+                                        ]
+                                      },
+                                      "expected": {
+                                        "enum": [
+                                          "Pending",
+                                          "Committed",
+                                          "DefinitiveNoncommit",
+                                          "Denied",
+                                          "Invalid"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "kind",
+                                      "candidate",
+                                      "expected"
+                                    ]
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "status",
+                              "error"
+                            ]
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "phase",
+                      "module_sha256",
+                      "stage",
+                      "projected_input_hex",
+                      "projection_error",
+                      "result"
+                    ],
+                    "oneOf": [
+                      {
+                        "properties": {
+                          "stage": {
+                            "const": "new"
+                          },
+                          "projected_input_hex": {
+                            "type": "null"
+                          },
+                          "projection_error": {
+                            "type": "null"
+                          },
+                          "result": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                              "status": {
+                                "const": "error"
+                              },
+                              "error": {
+                                "oneOf": [
+                                  {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "kind": {
+                                        "const": "artifact_identity"
+                                      }
+                                    },
+                                    "required": [
+                                      "kind"
+                                    ]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "kind": {
+                                        "const": "module_shape"
+                                      }
+                                    },
+                                    "required": [
+                                      "kind"
+                                    ]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "kind": {
+                                        "const": "engine"
+                                      },
+                                      "detail": {
+                                        "type": "string",
+                                        "maxLength": 512
+                                      }
+                                    },
+                                    "required": [
+                                      "kind",
+                                      "detail"
+                                    ]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "kind": {
+                                        "const": "invalid_original"
+                                      }
+                                    },
+                                    "required": [
+                                      "kind"
+                                    ]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "kind": {
+                                        "const": "fuel"
+                                      }
+                                    },
+                                    "required": [
+                                      "kind"
+                                    ]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "kind": {
+                                        "const": "stack"
+                                      }
+                                    },
+                                    "required": [
+                                      "kind"
+                                    ]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "kind": {
+                                        "const": "trap"
+                                      },
+                                      "detail": {
+                                        "type": "string",
+                                        "maxLength": 512
+                                      }
+                                    },
+                                    "required": [
+                                      "kind",
+                                      "detail"
+                                    ]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "kind": {
+                                        "const": "guest_return"
+                                      },
+                                      "code": {
+                                        "type": "integer",
+                                        "minimum": -2147483648,
+                                        "maximum": 2147483647
+                                      }
+                                    },
+                                    "required": [
+                                      "kind",
+                                      "code"
+                                    ]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "kind": {
+                                        "const": "invalid_output"
+                                      }
+                                    },
+                                    "required": [
+                                      "kind"
+                                    ]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "kind": {
+                                        "const": "disagreement"
+                                      },
+                                      "candidate": {
+                                        "enum": [
+                                          "Pending",
+                                          "Committed",
+                                          "DefinitiveNoncommit",
+                                          "Denied",
+                                          "Invalid"
+                                        ]
+                                      },
+                                      "expected": {
+                                        "enum": [
+                                          "Pending",
+                                          "Committed",
+                                          "DefinitiveNoncommit",
+                                          "Denied",
+                                          "Invalid"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "kind",
+                                      "candidate",
+                                      "expected"
+                                    ]
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "status",
+                              "error"
+                            ]
+                          }
+                        }
+                      },
+                      {
+                        "properties": {
+                          "stage": {
+                            "const": "decide"
+                          },
+                          "projected_input_hex": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f]{672}$"
+                          },
+                          "projection_error": {
+                            "type": "null"
+                          }
+                        }
+                      },
+                      {
+                        "properties": {
+                          "stage": {
+                            "const": "decide"
+                          },
+                          "projected_input_hex": {
+                            "type": "null"
+                          },
+                          "projection_error": {
+                            "oneOf": [
+                              {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "properties": {
+                                  "kind": {
+                                    "const": "artifact_identity"
+                                  }
+                                },
+                                "required": [
+                                  "kind"
+                                ]
+                              },
+                              {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "properties": {
+                                  "kind": {
+                                    "const": "module_shape"
+                                  }
+                                },
+                                "required": [
+                                  "kind"
+                                ]
+                              },
+                              {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "properties": {
+                                  "kind": {
+                                    "const": "engine"
+                                  },
+                                  "detail": {
+                                    "type": "string",
+                                    "maxLength": 512
+                                  }
+                                },
+                                "required": [
+                                  "kind",
+                                  "detail"
+                                ]
+                              },
+                              {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "properties": {
+                                  "kind": {
+                                    "const": "invalid_original"
+                                  }
+                                },
+                                "required": [
+                                  "kind"
+                                ]
+                              },
+                              {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "properties": {
+                                  "kind": {
+                                    "const": "fuel"
+                                  }
+                                },
+                                "required": [
+                                  "kind"
+                                ]
+                              },
+                              {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "properties": {
+                                  "kind": {
+                                    "const": "stack"
+                                  }
+                                },
+                                "required": [
+                                  "kind"
+                                ]
+                              },
+                              {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "properties": {
+                                  "kind": {
+                                    "const": "trap"
+                                  },
+                                  "detail": {
+                                    "type": "string",
+                                    "maxLength": 512
+                                  }
+                                },
+                                "required": [
+                                  "kind",
+                                  "detail"
+                                ]
+                              },
+                              {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "properties": {
+                                  "kind": {
+                                    "const": "guest_return"
+                                  },
+                                  "code": {
+                                    "type": "integer",
+                                    "minimum": -2147483648,
+                                    "maximum": 2147483647
+                                  }
+                                },
+                                "required": [
+                                  "kind",
+                                  "code"
+                                ]
+                              },
+                              {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "properties": {
+                                  "kind": {
+                                    "const": "invalid_output"
+                                  }
+                                },
+                                "required": [
+                                  "kind"
+                                ]
+                              },
+                              {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "properties": {
+                                  "kind": {
+                                    "const": "disagreement"
+                                  },
+                                  "candidate": {
+                                    "enum": [
+                                      "Pending",
+                                      "Committed",
+                                      "DefinitiveNoncommit",
+                                      "Denied",
+                                      "Invalid"
+                                    ]
+                                  },
+                                  "expected": {
+                                    "enum": [
+                                      "Pending",
+                                      "Committed",
+                                      "DefinitiveNoncommit",
+                                      "Denied",
+                                      "Invalid"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "kind",
+                                  "candidate",
+                                  "expected"
+                                ]
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          "required": [
+            "id",
+            "phases"
+          ]
+        }
+      }
+    },
+    "required": [
+      "schema_version",
+      "kind",
+      "plan_sha256",
+      "manifest_sha256",
+      "fixture_inventory_sha256",
+      "expected_cases_sha256",
+      "claims",
+      "records"
+    ]
+  },
+  "layout_decision": "One layout only: ordered32 {id,phases:[...]} records with exact107 total phases. Root confirmed nested layout supersedes earlier flat preference. No internal/external conversion: static emitter uses actual_module/wat/c1_ref and exact inventory keys above.",
+  "semantic_rules": [
+    "All arrays follow the exact32 frozen fixture IDs in order. All case ID/inputcase/hash/expected metadata exactly match contract. Rejected21 phases=[admission,fresh_raw,fresh_receiving]; admitted11=[fault_raw,fresh_raw,fault_receiving,fresh_receiving]. Exactly107 total phases,86 plannedWasminvocations,43 raw observations86 full pages,43 public receiving calls on complete expected execution. Unexpected admission/setup failures may reduce actual invocation/page count and must fail qualification without invented observations.",
+    "Runtime raw probes obtain336 input bytes ONLY from plan.expected_cases_ref->expected-cases.json case.input_hex, using canonical_case.input_hex for every fresh successor. Verify lengths/hash and all case IDs and independent frozen R0 correspondence before execution. Evaluator independently derives all3 input vectors from the frozen R0 corpus/contract; neither candidate output nor Rust project may replace them. Public receiving uses exact structural original above,epoch1010 and Receipt(input[160..336]); actual separate project output/result is retained and compared independently against bound expected-case input.",
+    "Stage=input preparation: exact newmanifest/source/native executable/platform/tool/engine pins gate before output. Plan BlobRefs bind exact actual inventory and expected-cases bytes, not a caller boolean. Raw report hashes bind those same bytes and exact plan/manifest. Manifest retains both input files and transitive R0/candidate/ABI/registration/closeout/obligation/source/tool closure. No reused T1manifest/nativeexecutable authorization.",
+    "Static inventory declares c1_ref exactly c1.wasm,length1349,sha6458a173cd09e73fe0be59b1a2d339c2070c33ac05628b3d2dd5fb264cb2e079. A03/A04 actual_module equals that exact reference; declared ABI first49\u219248 or declaredmodule64\u219265 respectively. Every other declaredidentity matches actual module+ABI. All30 qualified_new_binary_sha256 remain null for this A1 static artifact; exact newmodule pins must later be independently reviewed in newmanifest before runtime release.",
+    "Admission result truthfully serializes actual new as accepted or actual ErrorRecord. Unexpected admission accepted never invokes fault Wasm; record it and continue planned fresh C1 phases before evaluator rejects it. No fake disposition, raw page or trap on admission.",
+    "Raw-phase constructor failure records actual error with null observation and observation_error. Accepted constructor records exactly one of unchanged T1 observe Observation or actual anyhow observation_error.detail truncated with .chars().take(512). This error may occur before/after guest call or while reading memory: never label it RecoveryError/Engine or claim known call completion. No fabricated/partial full-page snapshots. Next designated fresh call remains separate.",
+    "Receiving stage new means constructor actually errored: result is that error and both projection fields null; no decide occurred. Stage decide means constructor accepted; retain separate actual project Result (input or direct ErrorRecord), then invoke actual decide regardless of projection result and directly serialize actual Result. Unexpected result families remain actual failures; never infer return/error/disposition from raw output. Public receiving has no page fields.",
+    "Each invoked raw or public call uses a separately fresh Store/Instance; no raw-call instance reused for decide. All trap/anyhow details use unchanged T1 at most512Unicode scalar characters; no ASCII restriction. Guest return i32 signed, exact Return7 payload and Disagreement candidate/expected variants are preserved.",
+    "Every completed phase is flushed before next phase, including successor after unexpected fault/setup result; output is create_new and bounded16MiB, partial prefix never repaired/retried/overwritten. Outer exception/process/watchdog failures preserve actual partial output, not invented phase records or receiving results. All18 obligations/I1/benefit/activation remain open.",
+    "Strict scalar decoding rejects JSON booleans where integers are required, duplicate keys and unpaired surrogate escapes; details contain at most512 Unicode scalar values consistent with Rust String/.chars, with no ASCII sanitizing or byte truncation. Schema strings alone do not establish scalar/duplicate-key enforcement; receiving/verifier handlers must enforce these rules explicitly."
+  ],
+  "bounds": {
+    "inventory_bytes": 65536,
+    "expected_cases_bytes": 65536,
+    "plan_bytes": 32768,
+    "raw_report_bytes": 16777216,
+    "max_fixture_bytes": 65537,
+    "only_one_over_module": "A02-module-one-over",
+    "rows": 32,
+    "planned_phases": 107,
+    "planned_calls": 86,
+    "planned_raw_pages": 86,
+    "wasm_fuel_per_call": 100000,
+    "configured_wasm_stack_bytes": 32768
+  },
+  "held": "This proposal plus A1 static code supplies no runtime handler/evaluator/ignored-entry/campaign release. Root+independent reviewer+evaluator must accept exact schema, then authorize next bounded source work."
+}

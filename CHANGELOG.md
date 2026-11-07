@@ -1,5 +1,36 @@
 # CHANGELOG
 
+## 2026-11-07 — Native task timeout evidence
+
+- Retain failure-only same-iteration editor/chrome/producer observations and
+  existing Store snapshots at the original bounded asynchronous assertion.
+- Preserve1500ms, the original panic, all eighteen cases and success-path IO;
+  isolate secondary diagnostic failures and verify fresh genuine Saves on host.
+- Keep the actual Save47 cause and Linux qualification open. See the
+  [source and control record](docs/plans/native-task-until-diagnostics-2026-11-07.md).
+
+## 2026-11-07 — Linux technical recovery prerequisites complete
+
+- Accept non-author original compiler-build correspondence, fresh Linux 627-row
+  corpus/T1 confirmation and a distinct non-author 32-recipe T2 reproduction.
+- Preserve original artifacts, exact source/executable/engine identities, fresh
+  actual process and full source/input postchecks; no retry or row exclusion.
+- Advance I1 observation/owner contract preparation under a separate reviewed
+  workflow/source/execution plan. Full Q1/all-18 live receiving, benefit and
+  activation remain open. See the
+  [closeout record](docs/plans/recovery-linux-technical-closeout-2026-11-07.md).
+
+## 2026-11-07 — Linux recovery technical fault result
+
+- Independently accept 32 frozen T2 recipes and 107 phases: 21 actual admission
+  rejections, 11 admitted faults and 32 separate fresh canonical successes.
+- Check all 86 full memory pages, actual public errors and projections, unchanged
+  sealed source/input identities and owned cleanup. Preserve 20 recovery gate
+  controls and add 24 substantive controls without selecting the canonical run.
+- Keep earlier-case Linux confirmation, compiler-build review, I1/live owners,
+  full Q1/all-18 acceptance, measured benefit and activation separate. See the
+  [result record](docs/plans/recovery-q1-t2-result-2026-11-07.md).
+
 ## 2026-11-07 — recovery ABI technical refusal result
 
 - Independently accept one exact six-case malformed-call run and six separate

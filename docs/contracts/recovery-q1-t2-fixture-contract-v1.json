@@ -1,0 +1,971 @@
+{
+  "schema_version": 1,
+  "kind": "recovery_q1_t2_contract_proposal",
+  "status": "DRAFT_NOT_FROZEN_NOT_REGISTERED",
+  "execution_released": false,
+  "new_binaries_built": false,
+  "campaigns_run": 0,
+  "existing_pins": {
+    "abi": "49daf52dd669411376770b3bc2a007d7c6a8b346843bcd123a45da8139b0da60",
+    "candidate_module": {
+      "bytes": 1349,
+      "sha256": "6458a173cd09e73fe0be59b1a2d339c2070c33ac05628b3d2dd5fb264cb2e079"
+    },
+    "corpus": "84eece3246d9b4521a5b8ac48fa6324cb4be4e98889277ab46837f6764aeda49",
+    "obligations": "f820a7c3264186b68158078fc79a09405cd2780e9aef061fb21689669c24c914",
+    "registration": "185957fc5f45900995de9c4705c7936ac834cffea3006c67b6596e7e33e656e2",
+    "closeout": "1f9841fb82ae5d49c9758e011f815f297e24ca53165f500efaaa1b7a565d618d",
+    "accepted_t1_manifest": "0f486a30510462344d21c80cbab60c9904e286727e28e31a6f38dec58b62313c"
+  },
+  "engine": {
+    "name": "Wasmtime",
+    "version": "27.0.0",
+    "strategy": "Cranelift",
+    "fuel_per_fresh_call": 100000,
+    "configured_wasm_stack_bytes": 32768,
+    "memory_pages_min_max": [
+      1,
+      1
+    ],
+    "wasm_threads": false,
+    "imports": 0,
+    "calls_per_store_instance": 1,
+    "limits_relaxation_permitted": false,
+    "scope": "Configured engine limits and actual observed categories, not physical time/RAM/stack guarantees."
+  },
+  "common_call": {
+    "tuple": [
+      4096,
+      336,
+      4448,
+      16
+    ],
+    "canonical_case": "outcome-0",
+    "input_sha256": "e635728a7387ed65ae7e9ea5253193660ec311fbbdf61ca6214af1245442634c",
+    "fresh_expected_raw_output_hex": "00000000100000000100000000000000",
+    "fresh_expected_receiving_result": {
+      "Ok": "Committed"
+    },
+    "raw_probe_initialization": "Reuse T1 initial_memory semantics: one65536-byte page filleda5; initialize exact336 bytes only at legal4096; zero all16 legal output bytes at4448 before every snapshot.",
+    "raw_probe_memory": "Full actual before/after page for every executed raw probe. No invented pages for admission rejections or public-decide calls.",
+    "raw_probe_writes": "For chosen fixtures, exact changes are confined to declared output16. Fuel/stack pages remain unchanged; exact post-output vectors above determine all other expected page bytes.",
+    "receiver": "Use actual RecoveryDecisionAdapter::new and decide on independently bound original/epoch/observation. Record pure project bytes and require equality with frozen R0 input. Do not treat a mirrored raw-observer classifier as the actual receiving Result.",
+    "receiving_original_fixture": {
+      "status": "PROPOSED_STATIC_STRUCTURAL_FIXTURE_NOT_LIVE_AUTHORITY",
+      "actor": {
+        "owner_id": 101,
+        "session_id": 202,
+        "session_generation": 303,
+        "instance_id": 404,
+        "instance_generation": 505
+      },
+      "allocation": {
+        "selected_object_id": 606,
+        "selected_generation": 707,
+        "operation_id": 808,
+        "expected_revision": 909,
+        "expected_content_hash_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f"
+      },
+      "source": {
+        "source_object_id": 1101,
+        "source_generation": 1102,
+        "byte_len": 1103,
+        "content_hash_hex": "e0e1e2e3e4e5e6e7e8e9eaebecedeeeff0f1f2f3f4f5f6f7f8f9fafbfcfdfeff"
+      },
+      "original_store_epoch": 1010,
+      "observation": "Receipt bytes160..336 from the named independently frozen R0 row. Keep original allocation unchanged for the foreign receipt rows.",
+      "projection_requirement": "Actual Rust project(original,1010,Receipt(row_receipt)) must equal all336 frozen input bytes. Nonprojected synthetic source fields must be validated by the existing constructor and never described as real SHM/owner authority."
+    }
+  },
+  "phase_rules": {
+    "rejected-three-phase": [
+      "actual adapter admission rejection; record guest_return/trap/pages as null, no instantiation or execution",
+      "immediate fresh C1 raw probe: return0,no trap,exact expected16,unchanged outside-output guards",
+      "fresh C1 actual receiving decide: Ok(Committed)"
+    ],
+    "admitted-four-phase": [
+      "fresh fault raw probe through the actual admitted engine/module; retain actual return/trap and pages; flush",
+      "immediate separate fresh C1 raw success with expected16 and guards; flush",
+      "separate fresh fault invocation via actual public decide; require exact receiving error; flush",
+      "immediate fresh C1 actual receiving success Ok(Committed); flush"
+    ],
+    "counts": {
+      "fixed_fault_rows": 32,
+      "rejected_admission_rows": 21,
+      "admitted_fault_rows": 11,
+      "raw_fault_probes": 11,
+      "fresh_c1_raw_probes": 32,
+      "public_fault_invocations": 11,
+      "fresh_c1_receiving_invocations": 32,
+      "total_wasm_invocations_if_complete": 86,
+      "full_before_after_raw_pages": 86
+    },
+    "no_reuse": "A raw probe and receiving call are different invocations. Never copy a probe output/page into the receiving observation. Public decide exposes a Result, not raw memory.",
+    "stopping": "One frozen ordered inventory. Preserve every attempt/mismatch/partial output. Admission cases are never executed even if unexpectedly accepted; record failure and run fresh C1. No silent retries, exclusions, reordered phases or post-observation limit/fixture tuning. Safety timeout/crash leaves incomplete rows and cannot PASS.",
+    "result_publication": "Exclusive private stage and result paths; reject duplicate/missing/unordered rows, wrong pins and unknown fields. Flush each fault before its successor; completion marker only after all required phases. Proposed raw-result cap16MiB; overflow retains partial evidence and refuses PASS."
+  },
+  "fixtures": [
+    {
+      "id": "A01-malformed-magic",
+      "family": "admission",
+      "recipe": "Exact eight ASCII bytes not wasm",
+      "input_case": "outcome-0",
+      "input_sha256": "e635728a7387ed65ae7e9ea5253193660ec311fbbdf61ca6214af1245442634c",
+      "expected_receiving_error": "module_shape",
+      "expected_fault_admitted": false,
+      "binary_identity": {
+        "status": "UNBUILT_NOT_REVIEWED",
+        "sha256": null,
+        "bytes": null
+      },
+      "phase_sequence": "rejected-three-phase"
+    },
+    {
+      "id": "A02-module-one-over",
+      "family": "admission",
+      "recipe": "Exactly65537 zero bytes; only this fixture stager may read MAX_MODULE_BYTES+1; production MAX_MODULE_BYTES stays65536",
+      "input_case": "outcome-0",
+      "input_sha256": "e635728a7387ed65ae7e9ea5253193660ec311fbbdf61ca6214af1245442634c",
+      "expected_receiving_error": "module_shape",
+      "expected_fault_admitted": false,
+      "binary_identity": {
+        "status": "UNBUILT_NOT_REVIEWED",
+        "sha256": null,
+        "bytes": null
+      },
+      "phase_sequence": "rejected-three-phase",
+      "required_fixture_bytes": 65537
+    },
+    {
+      "id": "A03-contract-identity",
+      "family": "admission",
+      "recipe": "Unchanged C1 bytes; declared ABI digest first byte49 xor01 ->48; actual file pin remains C1",
+      "input_case": "outcome-0",
+      "input_sha256": "e635728a7387ed65ae7e9ea5253193660ec311fbbdf61ca6214af1245442634c",
+      "expected_receiving_error": "artifact_identity",
+      "expected_fault_admitted": false,
+      "binary_identity": {
+        "status": "EXISTING_C1",
+        "sha256": "6458a173cd09e73fe0be59b1a2d339c2070c33ac05628b3d2dd5fb264cb2e079",
+        "bytes": 1349
+      },
+      "phase_sequence": "rejected-three-phase",
+      "declared_abi_sha256": "48daf52dd669411376770b3bc2a007d7c6a8b346843bcd123a45da8139b0da60"
+    },
+    {
+      "id": "A04-artifact-identity",
+      "family": "admission",
+      "recipe": "Unchanged C1 bytes; declared module digest first byte64 xor01 ->65; actual file pin remains C1",
+      "input_case": "outcome-0",
+      "input_sha256": "e635728a7387ed65ae7e9ea5253193660ec311fbbdf61ca6214af1245442634c",
+      "expected_receiving_error": "artifact_identity",
+      "expected_fault_admitted": false,
+      "binary_identity": {
+        "status": "EXISTING_C1",
+        "sha256": "6458a173cd09e73fe0be59b1a2d339c2070c33ac05628b3d2dd5fb264cb2e079",
+        "bytes": 1349
+      },
+      "phase_sequence": "rejected-three-phase",
+      "declared_module_sha256": "6558a173cd09e73fe0be59b1a2d339c2070c33ac05628b3d2dd5fb264cb2e079"
+    },
+    {
+      "id": "A05-host-callback-import",
+      "family": "admission",
+      "recipe": "Valid core module with host.callback function import; otherwise bounded one-page memory and recover export",
+      "input_case": "outcome-0",
+      "input_sha256": "e635728a7387ed65ae7e9ea5253193660ec311fbbdf61ca6214af1245442634c",
+      "expected_receiving_error": "module_shape",
+      "expected_fault_admitted": false,
+      "binary_identity": {
+        "status": "UNBUILT_NOT_REVIEWED",
+        "sha256": null,
+        "bytes": null
+      },
+      "phase_sequence": "rejected-three-phase"
+    },
+    {
+      "id": "A06-wasi-import",
+      "family": "admission",
+      "recipe": "Valid core module with wasi_snapshot_preview1 function import; no linker callback is supplied",
+      "input_case": "outcome-0",
+      "input_sha256": "e635728a7387ed65ae7e9ea5253193660ec311fbbdf61ca6214af1245442634c",
+      "expected_receiving_error": "module_shape",
+      "expected_fault_admitted": false,
+      "binary_identity": {
+        "status": "UNBUILT_NOT_REVIEWED",
+        "sha256": null,
+        "bytes": null
+      },
+      "phase_sequence": "rejected-three-phase"
+    },
+    {
+      "id": "A07-imported-memory",
+      "family": "admission",
+      "recipe": "Import one min=max1 unshared memory and export it as memory; retain recover signature",
+      "input_case": "outcome-0",
+      "input_sha256": "e635728a7387ed65ae7e9ea5253193660ec311fbbdf61ca6214af1245442634c",
+      "expected_receiving_error": "module_shape",
+      "expected_fault_admitted": false,
+      "binary_identity": {
+        "status": "UNBUILT_NOT_REVIEWED",
+        "sha256": null,
+        "bytes": null
+      },
+      "phase_sequence": "rejected-three-phase"
+    },
+    {
+      "id": "A08-start-function",
+      "family": "admission",
+      "recipe": "Valid core module containing a valid parameterless start helper in addition to recover; no instantiation is permitted",
+      "input_case": "outcome-0",
+      "input_sha256": "e635728a7387ed65ae7e9ea5253193660ec311fbbdf61ca6214af1245442634c",
+      "expected_receiving_error": "module_shape",
+      "expected_fault_admitted": false,
+      "binary_identity": {
+        "status": "UNBUILT_NOT_REVIEWED",
+        "sha256": null,
+        "bytes": null
+      },
+      "phase_sequence": "rejected-three-phase"
+    },
+    {
+      "id": "A09-shared-memory",
+      "family": "admission",
+      "recipe": "Declare exactly one min=max1 shared memory; retain required exports",
+      "input_case": "outcome-0",
+      "input_sha256": "e635728a7387ed65ae7e9ea5253193660ec311fbbdf61ca6214af1245442634c",
+      "expected_receiving_error": "module_shape",
+      "expected_fault_admitted": false,
+      "binary_identity": {
+        "status": "UNBUILT_NOT_REVIEWED",
+        "sha256": null,
+        "bytes": null
+      },
+      "phase_sequence": "rejected-three-phase"
+    },
+    {
+      "id": "A10-threads-opcode",
+      "family": "admission",
+      "recipe": "Keep exact admitted outer sections and unshared1/1 memory; recover body uses i32.atomic.load/drop then returns0; wasm_threads remainsfalse",
+      "input_case": "outcome-0",
+      "input_sha256": "e635728a7387ed65ae7e9ea5253193660ec311fbbdf61ca6214af1245442634c",
+      "expected_receiving_error": "engine",
+      "expected_fault_admitted": false,
+      "binary_identity": {
+        "status": "UNBUILT_NOT_REVIEWED",
+        "sha256": null,
+        "bytes": null
+      },
+      "phase_sequence": "rejected-three-phase",
+      "preexecution_phase_check": "Independent inspection must confirm validate_shape accepts the outer envelope; expected rejection is locked-engine compilation, not an executed trap."
+    },
+    {
+      "id": "A11-absent-memory",
+      "family": "admission",
+      "recipe": "Omit the memory declaration/export; retain recover function",
+      "input_case": "outcome-0",
+      "input_sha256": "e635728a7387ed65ae7e9ea5253193660ec311fbbdf61ca6214af1245442634c",
+      "expected_receiving_error": "module_shape",
+      "expected_fault_admitted": false,
+      "binary_identity": {
+        "status": "UNBUILT_NOT_REVIEWED",
+        "sha256": null,
+        "bytes": null
+      },
+      "phase_sequence": "rejected-three-phase"
+    },
+    {
+      "id": "A12-extra-memory",
+      "family": "admission",
+      "recipe": "Declare two memories; retain one named memory export and recover export",
+      "input_case": "outcome-0",
+      "input_sha256": "e635728a7387ed65ae7e9ea5253193660ec311fbbdf61ca6214af1245442634c",
+      "expected_receiving_error": "module_shape",
+      "expected_fault_admitted": false,
+      "binary_identity": {
+        "status": "UNBUILT_NOT_REVIEWED",
+        "sha256": null,
+        "bytes": null
+      },
+      "phase_sequence": "rejected-three-phase"
+    },
+    {
+      "id": "A13-memory-min0-max1",
+      "family": "admission",
+      "recipe": "Change only memory limits to minimum0 maximum1",
+      "input_case": "outcome-0",
+      "input_sha256": "e635728a7387ed65ae7e9ea5253193660ec311fbbdf61ca6214af1245442634c",
+      "expected_receiving_error": "module_shape",
+      "expected_fault_admitted": false,
+      "binary_identity": {
+        "status": "UNBUILT_NOT_REVIEWED",
+        "sha256": null,
+        "bytes": null
+      },
+      "phase_sequence": "rejected-three-phase"
+    },
+    {
+      "id": "A14-memory-min2-max2",
+      "family": "admission",
+      "recipe": "Change only memory limits to minimum2 maximum2",
+      "input_case": "outcome-0",
+      "input_sha256": "e635728a7387ed65ae7e9ea5253193660ec311fbbdf61ca6214af1245442634c",
+      "expected_receiving_error": "module_shape",
+      "expected_fault_admitted": false,
+      "binary_identity": {
+        "status": "UNBUILT_NOT_REVIEWED",
+        "sha256": null,
+        "bytes": null
+      },
+      "phase_sequence": "rejected-three-phase"
+    },
+    {
+      "id": "A15-memory-min1-max2",
+      "family": "admission",
+      "recipe": "Change only maximum from1 to2",
+      "input_case": "outcome-0",
+      "input_sha256": "e635728a7387ed65ae7e9ea5253193660ec311fbbdf61ca6214af1245442634c",
+      "expected_receiving_error": "module_shape",
+      "expected_fault_admitted": false,
+      "binary_identity": {
+        "status": "UNBUILT_NOT_REVIEWED",
+        "sha256": null,
+        "bytes": null
+      },
+      "phase_sequence": "rejected-three-phase"
+    },
+    {
+      "id": "A16-memory-no-maximum",
+      "family": "admission",
+      "recipe": "Declare minimum1 with no maximum",
+      "input_case": "outcome-0",
+      "input_sha256": "e635728a7387ed65ae7e9ea5253193660ec311fbbdf61ca6214af1245442634c",
+      "expected_receiving_error": "module_shape",
+      "expected_fault_admitted": false,
+      "binary_identity": {
+        "status": "UNBUILT_NOT_REVIEWED",
+        "sha256": null,
+        "bytes": null
+      },
+      "phase_sequence": "rejected-three-phase"
+    },
+    {
+      "id": "A17-missing-recover-export",
+      "family": "admission",
+      "recipe": "Keep the function and memory but omit recover_v0 export",
+      "input_case": "outcome-0",
+      "input_sha256": "e635728a7387ed65ae7e9ea5253193660ec311fbbdf61ca6214af1245442634c",
+      "expected_receiving_error": "module_shape",
+      "expected_fault_admitted": false,
+      "binary_identity": {
+        "status": "UNBUILT_NOT_REVIEWED",
+        "sha256": null,
+        "bytes": null
+      },
+      "phase_sequence": "rejected-three-phase"
+    },
+    {
+      "id": "A18-wrong-recover-signature",
+      "family": "admission",
+      "recipe": "Use three i32 parameters and one i32 result instead of four parameters",
+      "input_case": "outcome-0",
+      "input_sha256": "e635728a7387ed65ae7e9ea5253193660ec311fbbdf61ca6214af1245442634c",
+      "expected_receiving_error": "module_shape",
+      "expected_fault_admitted": false,
+      "binary_identity": {
+        "status": "UNBUILT_NOT_REVIEWED",
+        "sha256": null,
+        "bytes": null
+      },
+      "phase_sequence": "rejected-three-phase"
+    },
+    {
+      "id": "A19-missing-memory-export",
+      "family": "admission",
+      "recipe": "Keep declared1/1 memory but omit its memory export",
+      "input_case": "outcome-0",
+      "input_sha256": "e635728a7387ed65ae7e9ea5253193660ec311fbbdf61ca6214af1245442634c",
+      "expected_receiving_error": "module_shape",
+      "expected_fault_admitted": false,
+      "binary_identity": {
+        "status": "UNBUILT_NOT_REVIEWED",
+        "sha256": null,
+        "bytes": null
+      },
+      "phase_sequence": "rejected-three-phase"
+    },
+    {
+      "id": "A20-extra-export",
+      "family": "admission",
+      "recipe": "Add an alias export to an otherwise conforming module",
+      "input_case": "outcome-0",
+      "input_sha256": "e635728a7387ed65ae7e9ea5253193660ec311fbbdf61ca6214af1245442634c",
+      "expected_receiving_error": "module_shape",
+      "expected_fault_admitted": false,
+      "binary_identity": {
+        "status": "UNBUILT_NOT_REVIEWED",
+        "sha256": null,
+        "bytes": null
+      },
+      "phase_sequence": "rejected-three-phase"
+    },
+    {
+      "id": "A21-invalid-code",
+      "family": "admission",
+      "recipe": "Keep the exact outer lengths/shape of a one-function return0 module; replace its final function-end opcode withff so locked engine validation fails",
+      "input_case": "outcome-0",
+      "input_sha256": "e635728a7387ed65ae7e9ea5253193660ec311fbbdf61ca6214af1245442634c",
+      "expected_receiving_error": "engine",
+      "expected_fault_admitted": false,
+      "binary_identity": {
+        "status": "UNBUILT_NOT_REVIEWED",
+        "sha256": null,
+        "bytes": null
+      },
+      "phase_sequence": "rejected-three-phase",
+      "preexecution_phase_check": "Independent inspection must confirm validate_shape accepts the outer envelope; expected rejection is locked-engine compilation, not an executed trap."
+    },
+    {
+      "id": "R01-fuel",
+      "family": "resource",
+      "recipe": "Admitted four-parameter function: loop br0 end, followed by unreachable-in-practice return0; no stores. Fixed100000 fuel.",
+      "input_case": "outcome-0",
+      "input_sha256": "e635728a7387ed65ae7e9ea5253193660ec311fbbdf61ca6214af1245442634c",
+      "expected_receiving_error": "fuel",
+      "expected_fault_admitted": true,
+      "binary_identity": {
+        "status": "UNBUILT_NOT_REVIEWED",
+        "sha256": null,
+        "bytes": null
+      },
+      "phase_sequence": "admitted-four-phase",
+      "expected_raw_output_hex": "00000000000000000000000000000000",
+      "expected_raw_guest_return": null,
+      "expected_raw_trap_kind": "fuel",
+      "expected_raw_memory": "whole-page-unchanged"
+    },
+    {
+      "id": "R02-stack",
+      "family": "resource",
+      "recipe": "Admitted four-parameter function recursively calls function0 with all four parameters, then drop and ordinary return0. No return_call/tail-call instruction, imports or stores. Fixed32768 configured Wasm stack.",
+      "input_case": "outcome-0",
+      "input_sha256": "e635728a7387ed65ae7e9ea5253193660ec311fbbdf61ca6214af1245442634c",
+      "expected_receiving_error": "stack",
+      "expected_fault_admitted": true,
+      "binary_identity": {
+        "status": "UNBUILT_NOT_REVIEWED",
+        "sha256": null,
+        "bytes": null
+      },
+      "phase_sequence": "admitted-four-phase",
+      "expected_raw_output_hex": "00000000000000000000000000000000",
+      "expected_raw_guest_return": null,
+      "expected_raw_trap_kind": "stack",
+      "expected_raw_memory": "whole-page-unchanged",
+      "wrong_failure_family": "Fuel/engine/general trap is not an accepted Stack result; do not increase limits or retune after observation."
+    },
+    {
+      "id": "E01-trap-after-plausible-output",
+      "family": "runtime-error",
+      "recipe": "Store canonical committed output words[0,16,1,0] at output offsets0/4/8/12, then unreachable.",
+      "input_case": "outcome-0",
+      "input_sha256": "e635728a7387ed65ae7e9ea5253193660ec311fbbdf61ca6214af1245442634c",
+      "expected_receiving_error": "trap",
+      "expected_fault_admitted": true,
+      "binary_identity": {
+        "status": "UNBUILT_NOT_REVIEWED",
+        "sha256": null,
+        "bytes": null
+      },
+      "phase_sequence": "admitted-four-phase",
+      "expected_raw_output_hex": "00000000100000000100000000000000",
+      "expected_raw_guest_return": null,
+      "expected_raw_trap_kind": "trap"
+    },
+    {
+      "id": "E02-return7-after-plausible-output",
+      "family": "runtime-error",
+      "recipe": "Store canonical committed output words[0,16,1,0], then return exact i32 value7.",
+      "input_case": "outcome-0",
+      "input_sha256": "e635728a7387ed65ae7e9ea5253193660ec311fbbdf61ca6214af1245442634c",
+      "expected_receiving_error": "guest_return",
+      "expected_fault_admitted": true,
+      "binary_identity": {
+        "status": "UNBUILT_NOT_REVIEWED",
+        "sha256": null,
+        "bytes": null
+      },
+      "phase_sequence": "admitted-four-phase",
+      "expected_raw_output_hex": "00000000100000000100000000000000",
+      "expected_raw_guest_return": 7,
+      "expected_raw_trap_kind": null,
+      "expected_receiving_return_code": 7
+    },
+    {
+      "id": "O01-version1",
+      "family": "output",
+      "recipe": "Write exact little-endian output words[1, 16, 1, 0] and return0.",
+      "input_case": "outcome-0",
+      "input_sha256": "e635728a7387ed65ae7e9ea5253193660ec311fbbdf61ca6214af1245442634c",
+      "expected_receiving_error": "invalid_output",
+      "expected_fault_admitted": true,
+      "binary_identity": {
+        "status": "UNBUILT_NOT_REVIEWED",
+        "sha256": null,
+        "bytes": null
+      },
+      "phase_sequence": "admitted-four-phase",
+      "expected_raw_output_hex": "01000000100000000100000000000000",
+      "expected_raw_guest_return": 0,
+      "expected_raw_trap_kind": null
+    },
+    {
+      "id": "O02-length15",
+      "family": "output",
+      "recipe": "Write exact little-endian output words[0, 15, 1, 0] and return0.",
+      "input_case": "outcome-0",
+      "input_sha256": "e635728a7387ed65ae7e9ea5253193660ec311fbbdf61ca6214af1245442634c",
+      "expected_receiving_error": "invalid_output",
+      "expected_fault_admitted": true,
+      "binary_identity": {
+        "status": "UNBUILT_NOT_REVIEWED",
+        "sha256": null,
+        "bytes": null
+      },
+      "phase_sequence": "admitted-four-phase",
+      "expected_raw_output_hex": "000000000f0000000100000000000000",
+      "expected_raw_guest_return": 0,
+      "expected_raw_trap_kind": null
+    },
+    {
+      "id": "O03-disposition5",
+      "family": "output",
+      "recipe": "Write exact little-endian output words[0, 16, 5, 0] and return0.",
+      "input_case": "outcome-0",
+      "input_sha256": "e635728a7387ed65ae7e9ea5253193660ec311fbbdf61ca6214af1245442634c",
+      "expected_receiving_error": "invalid_output",
+      "expected_fault_admitted": true,
+      "binary_identity": {
+        "status": "UNBUILT_NOT_REVIEWED",
+        "sha256": null,
+        "bytes": null
+      },
+      "phase_sequence": "admitted-four-phase",
+      "expected_raw_output_hex": "00000000100000000500000000000000",
+      "expected_raw_guest_return": 0,
+      "expected_raw_trap_kind": null
+    },
+    {
+      "id": "O04-reserved1",
+      "family": "output",
+      "recipe": "Write exact little-endian output words[0, 16, 1, 1] and return0.",
+      "input_case": "outcome-0",
+      "input_sha256": "e635728a7387ed65ae7e9ea5253193660ec311fbbdf61ca6214af1245442634c",
+      "expected_receiving_error": "invalid_output",
+      "expected_fault_admitted": true,
+      "binary_identity": {
+        "status": "UNBUILT_NOT_REVIEWED",
+        "sha256": null,
+        "bytes": null
+      },
+      "phase_sequence": "admitted-four-phase",
+      "expected_raw_output_hex": "00000000100000000100000001000000",
+      "expected_raw_guest_return": 0,
+      "expected_raw_trap_kind": null
+    },
+    {
+      "id": "O05-incomplete-header",
+      "family": "output",
+      "recipe": "After whole-output zeroing write only disposition word1 at offset8; leave length/header unwritten, then return0.",
+      "input_case": "outcome-0",
+      "input_sha256": "e635728a7387ed65ae7e9ea5253193660ec311fbbdf61ca6214af1245442634c",
+      "expected_receiving_error": "invalid_output",
+      "expected_fault_admitted": true,
+      "binary_identity": {
+        "status": "UNBUILT_NOT_REVIEWED",
+        "sha256": null,
+        "bytes": null
+      },
+      "phase_sequence": "admitted-four-phase",
+      "expected_raw_output_hex": "00000000000000000100000000000000",
+      "expected_raw_guest_return": 0,
+      "expected_raw_trap_kind": null
+    },
+    {
+      "id": "S01-foreign-operation-plausible-commit",
+      "family": "semantic",
+      "recipe": "Ignore the foreign receipt and write exact canonical terminal words[0,16,1,0], then return0.",
+      "input_case": "outcome-0-receipt-foreign-operation_id",
+      "input_sha256": "c65d257e8391056469243740049f68e34d5024761a23afa3e45e25704092b7c6",
+      "expected_receiving_error": "disagreement",
+      "expected_fault_admitted": true,
+      "binary_identity": {
+        "status": "UNBUILT_NOT_REVIEWED",
+        "sha256": null,
+        "bytes": null
+      },
+      "phase_sequence": "admitted-four-phase",
+      "expected_raw_output_hex": "00000000100000000100000000000000",
+      "expected_raw_guest_return": 0,
+      "expected_raw_trap_kind": null,
+      "expected_disagreement": {
+        "candidate": "Committed",
+        "expected": "Invalid"
+      },
+      "live_parent_validation_exercised": false
+    },
+    {
+      "id": "S02-foreign-generation-plausible-noncommit",
+      "family": "semantic",
+      "recipe": "Ignore the foreign receipt and write exact canonical terminal words[0,16,2,0], then return0.",
+      "input_case": "outcome-1-receipt-foreign-original_instance_generation",
+      "input_sha256": "0b2dac9acc72b24c9ff41424a0247bcad022100ff61a3078f53c1f8c4291bc88",
+      "expected_receiving_error": "disagreement",
+      "expected_fault_admitted": true,
+      "binary_identity": {
+        "status": "UNBUILT_NOT_REVIEWED",
+        "sha256": null,
+        "bytes": null
+      },
+      "phase_sequence": "admitted-four-phase",
+      "expected_raw_output_hex": "00000000100000000200000000000000",
+      "expected_raw_guest_return": 0,
+      "expected_raw_trap_kind": null,
+      "expected_disagreement": {
+        "candidate": "DefinitiveNoncommit",
+        "expected": "Invalid"
+      },
+      "live_parent_validation_exercised": false
+    }
+  ],
+  "all_18_obligation_map": [
+    {
+      "obligation_id": "bad-call-input-short",
+      "existing_scope": "Accepted T1 technical malformed-call/refusal and fresh-instance portion on Darwin arm64 only.",
+      "planned_t2_rows": [],
+      "remaining_after_any_scoped_t2_pass": "Receiving-platform Linux confirmation/independent reproduction and any linked original-owner/lease/deadline portion remain open.",
+      "full_receiving_obligation_closed": false
+    },
+    {
+      "obligation_id": "bad-call-input-long",
+      "existing_scope": "Accepted T1 technical malformed-call/refusal and fresh-instance portion on Darwin arm64 only.",
+      "planned_t2_rows": [],
+      "remaining_after_any_scoped_t2_pass": "Receiving-platform Linux confirmation/independent reproduction and any linked original-owner/lease/deadline portion remain open.",
+      "full_receiving_obligation_closed": false
+    },
+    {
+      "obligation_id": "bad-call-input-end",
+      "existing_scope": "Accepted T1 technical malformed-call/refusal and fresh-instance portion on Darwin arm64 only.",
+      "planned_t2_rows": [],
+      "remaining_after_any_scoped_t2_pass": "Receiving-platform Linux confirmation/independent reproduction and any linked original-owner/lease/deadline portion remain open.",
+      "full_receiving_obligation_closed": false
+    },
+    {
+      "obligation_id": "bad-call-pointer-wrap",
+      "existing_scope": "Accepted T1 technical malformed-call/refusal and fresh-instance portion on Darwin arm64 only.",
+      "planned_t2_rows": [],
+      "remaining_after_any_scoped_t2_pass": "Receiving-platform Linux confirmation/independent reproduction and any linked original-owner/lease/deadline portion remain open.",
+      "full_receiving_obligation_closed": false
+    },
+    {
+      "obligation_id": "bad-call-output-end",
+      "existing_scope": "Accepted T1 technical malformed-call/refusal and fresh-instance portion on Darwin arm64 only.",
+      "planned_t2_rows": [],
+      "remaining_after_any_scoped_t2_pass": "Receiving-platform Linux confirmation/independent reproduction and any linked original-owner/lease/deadline portion remain open.",
+      "full_receiving_obligation_closed": false
+    },
+    {
+      "obligation_id": "bad-call-output-capacity",
+      "existing_scope": "Accepted T1 technical malformed-call/refusal and fresh-instance portion on Darwin arm64 only.",
+      "planned_t2_rows": [],
+      "remaining_after_any_scoped_t2_pass": "Receiving-platform Linux confirmation/independent reproduction and any linked original-owner/lease/deadline portion remain open.",
+      "full_receiving_obligation_closed": false
+    },
+    {
+      "obligation_id": "module-admission",
+      "existing_scope": "Existing synthetic controls are preparation only; exact T2 binary/result qualification is open.",
+      "planned_t2_rows": [
+        "A01-malformed-magic",
+        "A02-module-one-over",
+        "A05-host-callback-import",
+        "A06-wasi-import",
+        "A07-imported-memory",
+        "A08-start-function",
+        "A09-shared-memory",
+        "A10-threads-opcode",
+        "A11-absent-memory",
+        "A12-extra-memory",
+        "A13-memory-min0-max1",
+        "A14-memory-min2-max2",
+        "A15-memory-min1-max2",
+        "A16-memory-no-maximum",
+        "A17-missing-recover-export",
+        "A18-wrong-recover-signature",
+        "A19-missing-memory-export",
+        "A20-extra-export",
+        "A21-invalid-code"
+      ],
+      "remaining_after_any_scoped_t2_pass": "Planned T2 technical rows, independent reproduction and receiving-platform acceptance; retained uncertainty/owners are not proven by these standalone fixtures.",
+      "full_receiving_obligation_closed": false
+    },
+    {
+      "obligation_id": "fuel",
+      "existing_scope": "Existing synthetic controls are preparation only; exact T2 binary/result qualification is open.",
+      "planned_t2_rows": [
+        "R01-fuel"
+      ],
+      "remaining_after_any_scoped_t2_pass": "Planned T2 technical rows, independent reproduction and receiving-platform acceptance; retained uncertainty/owners are not proven by these standalone fixtures.",
+      "full_receiving_obligation_closed": false
+    },
+    {
+      "obligation_id": "stack",
+      "existing_scope": "Existing synthetic controls are preparation only; exact T2 binary/result qualification is open.",
+      "planned_t2_rows": [
+        "R02-stack"
+      ],
+      "remaining_after_any_scoped_t2_pass": "Planned T2 technical rows, independent reproduction and receiving-platform acceptance; retained uncertainty/owners are not proven by these standalone fixtures.",
+      "full_receiving_obligation_closed": false
+    },
+    {
+      "obligation_id": "trap-or-return-error",
+      "existing_scope": "Existing synthetic controls are preparation only; exact T2 binary/result qualification is open.",
+      "planned_t2_rows": [
+        "E01-trap-after-plausible-output",
+        "E02-return7-after-plausible-output"
+      ],
+      "remaining_after_any_scoped_t2_pass": "Planned T2 technical rows, independent reproduction and receiving-platform acceptance; retained uncertainty/owners are not proven by these standalone fixtures.",
+      "full_receiving_obligation_closed": false
+    },
+    {
+      "obligation_id": "output-admission",
+      "existing_scope": "Existing synthetic controls are preparation only; exact T2 binary/result qualification is open.",
+      "planned_t2_rows": [
+        "O01-version1",
+        "O02-length15",
+        "O03-disposition5",
+        "O04-reserved1",
+        "O05-incomplete-header",
+        "A03-contract-identity",
+        "A04-artifact-identity"
+      ],
+      "remaining_after_any_scoped_t2_pass": "Planned T2 technical rows, independent reproduction and receiving-platform acceptance; retained uncertainty/owners are not proven by these standalone fixtures.",
+      "full_receiving_obligation_closed": false
+    },
+    {
+      "obligation_id": "foreign-receipt-plausible-terminal",
+      "existing_scope": "Static Rust comparison is covered by routine controls; exact frozen T2 public-decide result remains open.",
+      "planned_t2_rows": [
+        "S01-foreign-operation-plausible-commit",
+        "S02-foreign-generation-plausible-noncommit"
+      ],
+      "remaining_after_any_scoped_t2_pass": "T2 may close static codec/binding/disagreement refusal only; original reply lease and live parent authority remain I1 work.",
+      "full_receiving_obligation_closed": false
+    },
+    {
+      "obligation_id": "repeated-original-lookup",
+      "existing_scope": "No live receiving portion is closed by the corpus or T1.",
+      "planned_t2_rows": [],
+      "remaining_after_any_scoped_t2_pass": "I1/live source-bound evidence with actual original owners, identities, epochs, deadlines, authority/effect counts and applicable update/rollback/reopen/fresh-Save behavior.",
+      "full_receiving_obligation_closed": false
+    },
+    {
+      "obligation_id": "instance-reuse",
+      "existing_scope": "Canonical corpus includes old-instance/generation byte cases; routine source controls create fresh Store/Instance.",
+      "planned_t2_rows": [],
+      "remaining_after_any_scoped_t2_pass": "T2 records fresh construction and before-state for its own calls only; live generation reuse, cross-call owner/state isolation and one-call-per-instance receiving evidence remain open.",
+      "full_receiving_obligation_closed": false
+    },
+    {
+      "obligation_id": "original-epoch-after-reopen",
+      "existing_scope": "No live receiving portion is closed by the corpus or T1.",
+      "planned_t2_rows": [],
+      "remaining_after_any_scoped_t2_pass": "I1/live source-bound evidence with actual original owners, identities, epochs, deadlines, authority/effect counts and applicable update/rollback/reopen/fresh-Save behavior.",
+      "full_receiving_obligation_closed": false
+    },
+    {
+      "obligation_id": "fresh-after-failure",
+      "existing_scope": "T1 closes six fresh computational successors on Darwin only.",
+      "planned_t2_rows": [
+        "A01-malformed-magic",
+        "A02-module-one-over",
+        "A03-contract-identity",
+        "A04-artifact-identity",
+        "A05-host-callback-import",
+        "A06-wasi-import",
+        "A07-imported-memory",
+        "A08-start-function",
+        "A09-shared-memory",
+        "A10-threads-opcode",
+        "A11-absent-memory",
+        "A12-extra-memory",
+        "A13-memory-min0-max1",
+        "A14-memory-min2-max2",
+        "A15-memory-min1-max2",
+        "A16-memory-no-maximum",
+        "A17-missing-recover-export",
+        "A18-wrong-recover-signature",
+        "A19-missing-memory-export",
+        "A20-extra-export",
+        "A21-invalid-code",
+        "R01-fuel",
+        "R02-stack",
+        "E01-trap-after-plausible-output",
+        "E02-return7-after-plausible-output",
+        "O01-version1",
+        "O02-length15",
+        "O03-disposition5",
+        "O04-reserved1",
+        "O05-incomplete-header",
+        "S01-foreign-operation-plausible-commit",
+        "S02-foreign-generation-plausible-noncommit"
+      ],
+      "remaining_after_any_scoped_t2_pass": "T2 must close every new technical failure/fresh successor; separately owned retained operation, owner/deadline/lease nontransfer and unrelated-session progress remain I1 work.",
+      "full_receiving_obligation_closed": false
+    },
+    {
+      "obligation_id": "live-parent-authority",
+      "existing_scope": "No live receiving portion is closed by the corpus or T1.",
+      "planned_t2_rows": [],
+      "remaining_after_any_scoped_t2_pass": "I1/live source-bound evidence with actual original owners, identities, epochs, deadlines, authority/effect counts and applicable update/rollback/reopen/fresh-Save behavior.",
+      "full_receiving_obligation_closed": false
+    },
+    {
+      "obligation_id": "host-join-and-rollback",
+      "existing_scope": "No live receiving portion is closed by the corpus or T1.",
+      "planned_t2_rows": [],
+      "remaining_after_any_scoped_t2_pass": "I1/live source-bound evidence with actual original owners, identities, epochs, deadlines, authority/effect counts and applicable update/rollback/reopen/fresh-Save behavior.",
+      "full_receiving_obligation_closed": false
+    }
+  ],
+  "required_new_pins_before_release": {
+    "fault_binaries": {
+      "status": "UNBUILT",
+      "required": "All30 new unique fault binary source/build recipes, actual lengths/SHA256, complete fixture inventory and independent binary inspection; identical bytes from fresh build copies. A03/A04 reuse exact C1 bytes but deliberately wrong declared identity fields."
+    },
+    "native_test_executable": {
+      "path": null,
+      "bytes": null,
+      "sha256": null,
+      "rule": "Record actual new T2 executable. Historical T1 executable d769... is evidence only, not a new T2 pin."
+    },
+    "sources_and_tools": "Final both-repository revisions, complete tracked/generated source inventory, Cargo/uv locks, Rust toolchain/features/target/build flags, actual compiler/interpreter/wat1.245.1 binary/tool identities, engine config/platform and private inputs before execution; postcheck all identities and owned process cleanup.",
+    "manifest": "New separately reviewed T2 manifest on both sides, not a rewrite/reuse of T1 manifest or accepted historical registration. Keep T2 execution guard unset until its exact bytes and source release are independently accepted.",
+    "execution_plan": "One explicit ignored entry and planned verifier in fresh reserved locations, exact command/executable/source/stage hashes and outer process deadline. Ordinary CI selects synthetic controls only. Capture actual exit/group cleanup/reap for all writers; do not infer them from a marker."
+  },
+  "false_claims": {
+    "owner_lifecycle_exercised": false,
+    "live_parent_authority_exercised": false,
+    "measured_benefit": false,
+    "activation_accepted": false,
+    "full_q1_qualified": false,
+    "full_18_receiving_acceptance": false
+  },
+  "source_basis": [
+    {
+      "path": "/tmp/wmw-newcomputer-q1-abi/AGENTS.md",
+      "bytes": 2650,
+      "sha256": "b8854520cdfd67b3ea11d9b728db11af3aaf6e6a1ee19131205868eae2c0921f"
+    },
+    {
+      "path": "/tmp/wmw-newcomputer-q1-abi/CURRENT.md",
+      "bytes": 10683,
+      "sha256": "14e98543a898daa23908906524fe66c44d72ebe25455c8f0613a2946f26dd350"
+    },
+    {
+      "path": "/tmp/wmw-newcomputer-q1-abi/ROADMAP.md",
+      "bytes": 5117,
+      "sha256": "c8ba2c3f361bbf1cb072d85a4b4db118b83316d4ba0fd8bc361ecd3e900e7b3a"
+    },
+    {
+      "path": "/tmp/wmw-newcomputer-q1-abi/recovery/q1-runtime-v1/closeout-v1.json",
+      "bytes": 3120,
+      "sha256": "1f9841fb82ae5d49c9758e011f815f297e24ca53165f500efaaa1b7a565d618d"
+    },
+    {
+      "path": "/tmp/wmw-newcomputer-q1-abi/recovery/q1-runtime-v1/manifest-v1.json",
+      "bytes": 3538,
+      "sha256": "0f486a30510462344d21c80cbab60c9904e286727e28e31a6f38dec58b62313c"
+    },
+    {
+      "path": "/tmp/wmw-newcomputer-q1-abi/recovery/q1-runtime-v1/technical-result-2026-11-07.json",
+      "bytes": 11235,
+      "sha256": "8dd9ffd184b9ce88e36a6afcfbc960a7c9acb5e71deff2f9ba262aff198db0c4"
+    },
+    {
+      "path": "/tmp/wmw-newcomputer-q1-abi/recovery/q1-runtime-v1/fixtures.json",
+      "bytes": 7056,
+      "sha256": "0a1ebe3fb0023270b44fe7d1e23f1545f34d980e075dd9b1e8e9cbd756bbc2f2"
+    },
+    {
+      "path": "/tmp/wmw-newcomputer-q1-abi/recovery/r0-v1/adapter-obligations.json",
+      "bytes": 8187,
+      "sha256": "f820a7c3264186b68158078fc79a09405cd2780e9aef061fb21689669c24c914"
+    },
+    {
+      "path": "/tmp/wmw-newcomputer-q1-abi/recovery/r0-v1/cases.json",
+      "bytes": 611903,
+      "sha256": "84eece3246d9b4521a5b8ac48fa6324cb4be4e98889277ab46837f6764aeda49"
+    },
+    {
+      "path": "/tmp/wmw-newcomputer-q1-abi/recovery/l1-v1/manifest.json",
+      "bytes": 3877,
+      "sha256": "b5fd500b576ed5716cc20472d8f6bf8da71c19262a37274a828f8b2e604a2ff1"
+    },
+    {
+      "path": "/tmp/wmw-newcomputer-q1-abi/recovery/q1-v1/registration.json",
+      "bytes": 8811,
+      "sha256": "185957fc5f45900995de9c4705c7936ac834cffea3006c67b6596e7e33e656e2"
+    },
+    {
+      "path": "/tmp/wmw-ramenos-q1-abi/docs/contracts/recovery-q1-t1-manifest-v1.json",
+      "bytes": 3538,
+      "sha256": "0f486a30510462344d21c80cbab60c9904e286727e28e31a6f38dec58b62313c"
+    },
+    {
+      "path": "/tmp/wmw-ramenos-q1-abi/docs/contracts/recovery-comparison-v1.json",
+      "bytes": 8811,
+      "sha256": "185957fc5f45900995de9c4705c7936ac834cffea3006c67b6596e7e33e656e2"
+    },
+    {
+      "path": "/tmp/wmw-ramenos-q1-abi/services/native_runner/src/recovery_decision.rs",
+      "bytes": 10907,
+      "sha256": "66f15b9f7d9f47c45af0d25662cc77d0b5f26746f3fb5a7442700a5c7b642734"
+    },
+    {
+      "path": "/tmp/wmw-ramenos-q1-abi/services/native_runner/src/recovery_decision_tests.rs",
+      "bytes": 10835,
+      "sha256": "ea7ad72caaff7e960c798a359ff34e8860f60d65562d09492426b3b1a9dd3de3"
+    },
+    {
+      "path": "/tmp/wmw-ramenos-q1-abi/services/native_runner/src/recovery_q1_runtime_tests.rs",
+      "bytes": 23056,
+      "sha256": "1ea39368d3b484082e6b3807ca231b348e7fe6a9d445fcbd42dd88e6fcd3c1da"
+    },
+    {
+      "path": "/tmp/wmw-ramenos-q1-abi/Cargo.lock",
+      "bytes": 64759,
+      "sha256": "8495485fb5d3b0aa5c02a60634d0c05e212650cdc4412af1ff55cea3a7112ad0"
+    },
+    {
+      "path": "/tmp/wmw-ramenos-q1-abi/rust-toolchain.toml",
+      "bytes": 384,
+      "sha256": "3b4ef30282d5bb4ec7461cd8419238e9ee206aec15cbe9e99bb95064b4338764"
+    },
+    {
+      "path": "/Users/maxwell/projects/whole-machine-works/coordination/contracts/recovery-decision-v0.md",
+      "bytes": 8737,
+      "sha256": "49daf52dd669411376770b3bc2a007d7c6a8b346843bcd123a45da8139b0da60"
+    },
+    {
+      "path": "/tmp/wmw-ramenos-q1-abi/artifact_store_schema/src/editor_save.rs",
+      "bytes": 32367,
+      "sha256": "2691ded3b4c7be79f7e25c380c63367e1a5d9151811c931e49c1203745564f85"
+    }
+  ],
+  "freeze_decisions": [
+    "Confirm32-row inventory and86-invocation two-spine observation accounting before implementation.",
+    "Require independent phase inspection for A10/A21 and exact receiving enum tags; unexpected behavior refuses the proposal rather than broadening expected outcomes.",
+    "Confirm one test-only child-module linkage can reuse T1 observe/initial_memory without changing their bodies or production adapter; root owns that tiny shared edit.",
+    "Assign independent evaluator/final reviewer and exact source/evidence outputs. No experiment is released by this draft."
+  ]
+}

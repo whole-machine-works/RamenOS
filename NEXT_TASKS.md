@@ -46,15 +46,20 @@ physical setup does not block ready host/QEMU preparation.
 The parallel recovery experiment has an independently accepted 627-case
 Darwin arm64 correspondence result, recorded in the
 [technical result](docs/plans/recovery-q1-technical-result-2026-11-06.md).
-Advance the remaining frozen technical fault/resource/semantic obligations and
-independent Linux reproduction before scoped technical Q1 acceptance. Then test
-the remaining live owner obligations and registered independent update/rollback
-benefit with the real host workflow; final receiving acceptance closes all 18.
-The [T1 preparation](docs/plans/recovery-q1-runtime-preparation-2026-11-06.md)
-now has an [accepted six-call technical result](docs/plans/recovery-q1-abi-result-2026-11-07.md)
-on Darwin arm64. Freeze and evaluate the remaining module-admission and runtime
-fault fixtures next, preserving separate live-owner requirements. Preserve one Rust
-effect owner and the original operation, epoch and deadline throughout.
+The [six-call T1 result](docs/plans/recovery-q1-abi-result-2026-11-07.md)
+is accepted on Darwin arm64, and the
+[T2 module/resource/semantic fault result](docs/plans/recovery-q1-t2-result-2026-11-07.md)
+is independently accepted on Linux: 32 recipes, 107 phases and 32 separate fresh
+canonical successes. Do not redispatch its source, fixtures or completed run.
+The [Linux technical closeout](docs/plans/recovery-linux-technical-closeout-2026-11-07.md)
+now accepts the independent original compiler build, fresh Linux corpus/T1 and
+distinct T2 reproduction. Do not redispatch those completed technical packets.
+Freeze the I1 authorized observation/owner handoff and separately review its
+source, real-host scenarios, executable and execution plan before running the
+shadow join. Then close remaining live obligations and the registered independent
+update/rollback benefit and complete cost comparison. Final receiving acceptance
+closes all 18. Preserve one Rust effect owner and the original operation, epoch
+and deadline throughout.
 The practical cost budgets are adoption criteria; exceeding them retains Rust
 and does not block correctness work or the target editing task. No activation
 or full Q1 result follows from the corpus replay alone.
@@ -99,7 +104,11 @@ Linux host scope and the source-bound
 [qualification record](docs/plans/editor-process-delivery-qualification-2026-11-05.md).
 
 Keep a separate reliability packet for the retained capacity, D19 and D09
-failures, whose historical causes remain unknown. Save receipt-failure diagnostics
+failures, whose historical causes remain unknown. The
+[original-task timeout hook](docs/plans/native-task-until-diagnostics-2026-11-07.md)
+retains state at a distinct failure point. Use it for PR75's source-bound next
+Linux observation; the retained Save47 timeout remains unresolved. Existing
+deadlines and assertions stay fixed. Save receipt-failure diagnostics
 and D09 parent-phase timings are implemented; use them before adding another
 instrumentation layer. Joint reservation/census for both complete frame exports
 is now implemented with eight separate denial/lifecycle controls; preserve its
