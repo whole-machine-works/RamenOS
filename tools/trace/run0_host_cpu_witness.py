@@ -285,7 +285,7 @@ class OwnedWait:
             "result": result, "returncode": returncode, "errno": errno,
         })
 
-    def wait(self, deadline=None):
+    def wait(self, deadline=None, *, pump=None):
         if self.reaped:
             return self.returncode
         incomplete(not self.ownership_lost and self.child is not None, "owned_wait_unavailable")
@@ -293,6 +293,8 @@ class OwnedWait:
         started = time.monotonic_ns()
         try:
             while True:
+                if pump is not None:
+                    pump()
                 pid, status = os.waitpid(self.child.pid, os.WNOHANG)
                 if pid == self.child.pid:
                     code = os.waitstatus_to_exitcode(status)
@@ -676,8 +678,185 @@ def pidfd_check(fd):
     return receipt
 
 
+class _ResetObservationPort:
+    """Closed reset semantics over the existing exact ResetQMP owner."""
+
+    def __init__(self, qmp, budget):
+        self.qmp = qmp
+        self.deadline = min(time.monotonic() + 5, budget.deadline - 5)
+        self.deadline_ns = int(self.deadline * 1_000_000_000)
+        qmp.witness_deadline = self.deadline
+
+    def peer(self):
+        raw = self.qmp.wire.sources["qmp"].getsockopt(socket.SOL_SOCKET,
+                                                  NATIVE_LAYOUT["so_peercred"], 12)
+        return raw, time.monotonic_ns()
+
+    def bracket(self, phase):
+        return self.qmp.bracket()
+
+    def pump(self):
+        self.qmp.wire.step(min(self.deadline, time.monotonic() + 0.005))
+        self.qmp.require_quiet()
+
+    @staticmethod
+    def field_mode(state):
+        incomplete(state["cpl"] == 0 and not state["cs64"] and not state["lma"],
+                   "reset_field_mode")
+
+    @staticmethod
+    def changed():
+        return "reset_bracket_changed"
+
+
+C0_SOURCE_PERSISTENCE_SHA256 = "d2b1bcd4e5f7318b587a02c15576fb54097fe379a00fed6be53cff61c3962ad9"
+WITNESS_PLAN_FIELDS = ("schema_version", "kind", "inputs", "run", "argv", "uid", "gid",
+                       "launch_identity", "profile_sha256", "abi_sha256",
+                       "source_dossier_sha256", "observer_ref", "esp_validation")
+C0_PLAN_INPUT_FIELDS = ("prior_admission_ref", "profile_mapping_ref", "capability_ref",
+                        "source_persistence_ref")
+
+
+def validate_c0_plan_inputs(plan, profile_ref, abi_index, blobs, *, abi_ref):
+    """Recompute a closed input manifest; input arrays never grant output authority."""
+    import run0_c0_decode as decoder
+    import run0_c0_capture as capture
+
+    deny(plan.get("context") == "c0", "c0_plan_context")
+    references = {}
+    for name in C0_PLAN_INPUT_FIELDS:
+        value = plan.get(name)
+        deny(type(value) is list and len(value) == 3, "c0_plan_input_array")
+        reference = decoder._ref(dict(zip(("path", "sha256", "length"), value)), REPORT_LIMIT)
+        deny(not capture._output_name(reference["path"]), "c0_plan_input_output_collision")
+        references[name] = reference
+    persistence = references["source_persistence_ref"]
+    deny(persistence["sha256"] == C0_SOURCE_PERSISTENCE_SHA256, "c0_source_persistence_pin")
+    store = decoder._Blobs(blobs)
+    # Preparation verifies this exact ABI root through the same store. Include
+    # it explicitly in the reconstructed manifest; do not infer its path or
+    # drop a verified producer input to make a digest match.
+    abi_ref = decoder._ref(abi_ref, REPORT_LIMIT)
+    abi_raw = store.get(abi_ref, REPORT_LIMIT)
+    deny(type(abi_index) is dict and strict_json(abi_raw, REPORT_LIMIT) == abi_index
+         and plan.get("abi_sha256") == abi_ref["sha256"], "c0_plan_abi_root_identity")
+    profile, _, _ = decoder._profile_binding({"profile_ref": profile_ref, **references}, store)
+    deny(profile["invocation_profile"] == base.VAPIC_OFF_INVOCATION_PROFILE,
+         "c0_runtime_profile")
+    decoder._capability_binding({**references,
+        "source_dossier_ref": abi_index["source_dossier_ref"]}, store, profile)
+    store.get(persistence, REPORT_LIMIT)
+    deny(all(not capture._output_name(name) for name in store.verified),
+         "c0_plan_input_output_collision")
+    manifest = [CaptureEvidence.ref(name, raw) for name, raw in sorted(store.verified.items())]
+    deny(type(plan.get("prior_inputs_sha256")) is str and
+         plan["prior_inputs_sha256"] == hashlib.sha256(canonical(manifest)).hexdigest(),
+         "c0_prior_inputs_digest")
+    return profile
+
+
+def require_c0_runtime_registration(prepared, plan):
+    """Release only the exact immutable prepared C0 source, profile and input join.
+
+    The owned collector calls this before Popen and current-binding issuance.
+    Python observer internals are trusted; neither a dictionary nor a fixture
+    origin string is a registration. The later owned-wire issuer remains required.
+    """
+    import run0_c0_capture as capture
+    import run0_c0_entry as prior_entry
+    import run0_host_cpu_reader as reader
+
+    deny(type(prepared) is capture.PreparedC0Inputs, "c0_runtime_prepared_type")
+    try:
+        for name in capture.PreparedC0Inputs.__dataclass_fields__:
+            getattr(prepared, name)
+    except AttributeError as error:
+        raise base.ProbeError("DENY", "c0_runtime_prepared_fields") from error
+    for name in ("inputs", "run", "source_dossier", "host_abi"):
+        value = getattr(prepared, name)
+        deny(type(value) is str and 1 <= len(value) <= 4096, "c0_runtime_path_type")
+        base.safe_path(Path(value))
+        deny(Path(value).is_absolute(), "c0_runtime_path_absolute")
+    for name, limit in (("plan_bytes", REPORT_LIMIT), ("profile_bytes", 65536),
+                        ("observer_source_bytes", 65536), ("pinned_efi", base.INPUT_LIMITS["efi"])):
+        value = getattr(prepared, name)
+        deny(type(value) is bytes and 1 <= len(value) <= limit, "c0_runtime_bytes_type")
+    for name in ("abi_blobs", "prior_blobs"):
+        inventory = getattr(prepared, name)
+        deny(type(inventory) is tuple and len(inventory) <= 4096 and all(
+            type(row) is tuple and len(row) == 2 and type(row[0]) is str
+            and type(row[1]) is bytes for row in inventory), "c0_runtime_blob_inventory")
+        deny(len({row[0] for row in inventory}) == len(inventory)
+             and sum(len(row[1]) for row in inventory) <= 256 << 20,
+             "c0_runtime_blob_bound")
+    layout = prepared.native_layout
+    deny(type(layout) is tuple and len(layout) == len(NATIVE_LAYOUT) and all(
+        type(row) is tuple and len(row) == 2 and type(row[0]) is str and type(row[1]) is int
+        for row in layout) and len({row[0] for row in layout}) == len(layout),
+        "c0_runtime_layout_inventory")
+    object_fields(plan, (*WITNESS_PLAN_FIELDS, "context", *C0_PLAN_INPUT_FIELDS,
+                         "prior_inputs_sha256"), "c0_runtime_plan_fields")
+    try:
+        plan_bytes = canonical(plan)
+    except (TypeError, ValueError, RecursionError) as error:
+        raise base.ProbeError("DENY", "c0_runtime_plan_native") from error
+    deny(plan_bytes == prepared.plan_bytes and exact_int(plan["schema_version"], 1, 1),
+         "c0_runtime_plan_identity")
+    deny(exact_int(plan["uid"], 0, 0xffffffff) and plan["uid"] == os.getuid()
+         and exact_int(plan["gid"], 0, 0xffffffff) and plan["gid"] == os.getgid()
+         and plan["argv"] == base.build_argv(Path(prepared.inputs), Path(prepared.run),
+                                           base.VAPIC_OFF_INVOCATION_PROFILE),
+         "c0_runtime_launch_identity")
+    deny(plan.get("kind") == "run0_c0_owned_capture_plan_v0" and plan.get("context") == "c0"
+         and plan.get("inputs") == prepared.inputs and plan.get("run") == prepared.run,
+         "c0_runtime_prepared_plan")
+    deny(type(prepared.field_abi) is reader.HostABI
+         and type(prepared.prior) is prior_entry.ValidatedPriorEntry,
+         "c0_runtime_prepared_proofs")
+    profile = decode_pinned_profile(prepared.profile_bytes)
+    deny(profile["invocation_profile"] == base.VAPIC_OFF_INVOCATION_PROFILE
+         and plan["profile_sha256"] == profile_pin(profile)
+         and read_exact(Path(prepared.inputs)/"profile.json", plan["profile_sha256"], 65536)
+             == prepared.profile_bytes, "c0_runtime_profile_identity")
+    deny(c0_observer_source_bytes() == prepared.observer_source_bytes
+         and plan["observer_ref"] == CaptureEvidence.ref("observer.json", prepared.observer_source_bytes),
+         "c0_runtime_source_changed")
+    deny(type(prepared.abi_ref) is tuple and len(prepared.abi_ref) == 3
+         and prepared.abi_ref[1] == REVIEWED_LAUNCH_ABI_SHA256
+         and plan["abi_sha256"] == REVIEWED_LAUNCH_ABI_SHA256
+         and plan["source_dossier_sha256"] == SOURCE_DOSSIER_SHA256,
+         "c0_runtime_abi_identity")
+    for key in C0_PLAN_INPUT_FIELDS:
+        deny(type(getattr(prepared, key)) is tuple and plan[key] == list(getattr(prepared, key)),
+             "c0_runtime_input_identity")
+    abi_blobs, prior_blobs = dict(prepared.abi_blobs), dict(prepared.prior_blobs)
+    deny(all(name not in abi_blobs or abi_blobs[name] == raw for name, raw in prior_blobs.items()),
+         "c0_runtime_input_collision")
+    manifest = [CaptureEvidence.ref(name, raw) for name, raw in sorted(prepared.prior_blobs)]
+    deny(len(prior_blobs) == len(prepared.prior_blobs)
+         and plan["prior_inputs_sha256"] == hashlib.sha256(canonical(manifest)).hexdigest(),
+         "c0_runtime_prior_snapshot")
+    blobs = {**abi_blobs, **prior_blobs}
+    reference = dict(zip(("path", "sha256", "length"), prepared.abi_ref))
+    index, pinned_abi = resolve_abi(reference, blobs, True)
+    deny(prepared.field_abi == pinned_abi, "c0_runtime_host_abi_identity")
+    deny(read_exact(Path(prepared.host_abi), reference["sha256"], REPORT_LIMIT)
+         == blobs[reference["path"]]
+         and read_exact(Path(prepared.source_dossier), SOURCE_DOSSIER_SHA256, 65536)
+         == retained_blob(index["source_dossier_ref"], blobs, 65536), "c0_runtime_input_changed")
+    validate_native_layout(dict(prepared.native_layout))
+    profile_ref = CaptureEvidence.ref("profile.json", prepared.profile_bytes)
+    validate_c0_plan_inputs(plan, profile_ref, index, blobs, abi_ref=reference)
+    prior = prior_entry.validate_prior_entry(profile_ref,
+        dict(zip(("path", "sha256", "length"), prepared.prior_admission_ref)),
+        dict(zip(("path", "sha256", "length"), prepared.profile_mapping_ref)), blobs)
+    deny(prior == prepared.prior and prepared.pinned_efi == retained_blob(
+        profile["inputs"]["efi"], blobs, base.INPUT_LIMITS["efi"]), "c0_runtime_prior_identity")
+    return None
+
+
 class OwnedCPUObservation:
-    """Reset-only parent operation. The caller owns spawning and reaping QEMU."""
+    """Shared owned helper flow; the public observe entry remains reset-only."""
 
     def __init__(self, child, qmp, budget, native, abi, launch_path, launch_identity):
         self.child, self.qmp, self.budget = child, qmp, budget
@@ -691,11 +870,15 @@ class OwnedCPUObservation:
         self.before_bracket = self.after_bracket = None
         self.peer_at_ns = self.sigchld_at_ns = None
         self.process = {}
+        self._observation_port = None
 
     def _time(self):
         incomplete(time.monotonic_ns() < self.deadline_ns, "witness_deadline")
 
     def _pump(self):
+        if self._observation_port is not None:
+            self._observation_port.pump()
+            return
         self.qmp.wire.step(min(self.deadline, time.monotonic() + 0.005))
         self.qmp.require_quiet()
 
@@ -723,7 +906,7 @@ class OwnedCPUObservation:
         helper = self.helpers[role] = OwnedHelper(role, result, self.deadline, pump=self._pump,
                                                  budget=self.budget)
         mode = "--field-reader" if role == "fields" else "--metadata-reader"
-        argv = [sys.executable, "-E", "-s", str(Path(reader.__file__).resolve()), mode]
+        argv = [sys.executable, "-E", "-s", "-B", str(Path(reader.__file__).resolve()), mode]
         inherited = dict(descriptors, result=output)
         for name, fd in inherited.items():
             argv.extend((f"--{name}-fd", str(fd)))
@@ -747,7 +930,7 @@ class OwnedCPUObservation:
 
     def _completed(self, helper):
         helper.drain()
-        code = helper.wait()
+        code = helper.wait(pump=self._pump)
         deny(code != 2, "reader_denied")
         incomplete(code == 0 and not helper.io_errors, "reader_incomplete")
         self._time()
@@ -848,22 +1031,29 @@ class OwnedCPUObservation:
         return state, [*maps.global_maps, admit["map"]]
 
     def observe(self):
-        import run0_host_cpu_reader as reader
-
         deny(threading.current_thread() is threading.main_thread()
              and threading.active_count() == 1, "main_thread_owner_required")
         deny(type(self.child) is subprocess.Popen and self.child.returncode is None
              and type(self.qmp) is ResetQMP and type(self.qmp.wire) is ResetWire,
              "owned_observation_state")
-        self.deadline = min(time.monotonic() + 5, self.budget.deadline - 5)
-        self.deadline_ns = int(self.deadline * 1_000_000_000)
-        self.qmp.witness_deadline = self.deadline
+        return self._observe_body(_ResetObservationPort(self.qmp, self.budget))
+
+    def _observe_body(self, port):
+        """One descriptor/helper implementation; only the two closed ports enter."""
+        import run0_host_cpu_reader as reader
+        if type(port) is _ResetObservationPort:
+            deny(type(self) is OwnedCPUObservation, "owned_observation_port")
+        else:
+            from run0_c0_host import _C0ObservationPort, _OwnedC0Observation
+            deny(type(port) is _C0ObservationPort and type(self) is _OwnedC0Observation,
+                 "owned_observation_port")
+        deny(self._observation_port is None, "owned_observation_reuse")
+        self._observation_port = port
+        self.deadline, self.deadline_ns = port.deadline, port.deadline_ns
         self._time()
-        qmp_socket = self.qmp.wire.sources["qmp"]
-        self.peer_raw = qmp_socket.getsockopt(socket.SOL_SOCKET, NATIVE_LAYOUT["so_peercred"], 12)
-        self.peer_at_ns = time.monotonic_ns()
+        self.peer_raw, self.peer_at_ns = port.peer()
         decode_peer(self.peer_raw, self.child.pid, os.getuid(), os.getgid())
-        self.before_bracket, cpu_before, registers_before = self.qmp.bracket()
+        self.before_bracket, cpu_before, registers_before = port.bracket("before")
         tid = cpu_before[1]
         self.process.update(observer_pid=os.getpid(), qemu_pid=self.child.pid)
         self._time()
@@ -918,13 +1108,12 @@ class OwnedCPUObservation:
                 deny(parse_proc_stat(self.after["stat"]) == (pid, ppid, starttime),
                      "owned_proc_changed")
                 reader.metadata_consistent(self.before, self.after, grants)
-                self.after_bracket, cpu_after, registers_after = self.qmp.bracket()
+                self.after_bracket, cpu_after, registers_after = port.bracket("after")
                 incomplete(cpu_after == cpu_before and registers_after == registers_before,
-                           "reset_bracket_changed")
+                           port.changed())
                 self._time()
                 self.process["pidfd_after"] = pidfd_check(pidfd)
-                incomplete(state["cpl"] == 0 and not state["cs64"] and not state["lma"],
-                           "reset_field_mode")
+                port.field_mode(state)
                 self._time()
             incomplete(not self.secondary_failures, "observation_descriptor_cleanup")
             self.state = state
@@ -1444,24 +1633,28 @@ def validate_complete_report(report_ref, report, blobs):
          "profile_binding")
     invocation = profile.get("invocation_profile", base.INVOCATION_PROFILE)
     if runtime:
-        incomplete(reset and REVIEWED_LAUNCH_ABI_SHA256 is not None,
-                   "runtime_provenance_pending")
+        incomplete(REVIEWED_LAUNCH_ABI_SHA256 is not None, "runtime_provenance_pending")
+        deny(reset or invocation == base.VAPIC_OFF_INVOCATION_PROFILE, "c0_runtime_profile")
         deny(report["abi_ref"]["sha256"] == REVIEWED_LAUNCH_ABI_SHA256, "runtime_abi_pin")
     index, abi = resolve_abi(report["abi_ref"], blobs, runtime)
     deny(report["source_ref"] == index["source_dossier_ref"], "source_binding")
-    plan = json_index(report["plan_ref"], blobs, (
-        "schema_version", "kind", "inputs", "run", "argv", "uid", "gid", "launch_identity",
-        "profile_sha256", "abi_sha256", "source_dossier_sha256", "observer_ref", "esp_validation",
-    ), "plan_index")
+    c0_runtime = runtime and not reset
+    plan_fields = WITNESS_PLAN_FIELDS
+    if c0_runtime:
+        plan_fields += ("context", *C0_PLAN_INPUT_FIELDS, "prior_inputs_sha256")
+    plan = json_index(report["plan_ref"], blobs, plan_fields, "plan_index")
     for name in ("inputs", "run"):
         deny(type(plan[name]) is str, "plan_path")
         base.safe_path(Path(plan[name]))
-    deny(plan["kind"] == "run0_host_cpu_witness_plan_v0"
+    deny(plan["kind"] == ("run0_c0_owned_capture_plan_v0" if c0_runtime
+                               else "run0_host_cpu_witness_plan_v0")
          and Path(plan["run"]).name == report["run_id"]
          and plan["argv"] == base.build_argv(Path(plan["inputs"]), Path(plan["run"]), invocation)
          and plan["profile_sha256"] == report["profile_ref"]["sha256"]
          and plan["abi_sha256"] == report["abi_ref"]["sha256"]
          and plan["source_dossier_sha256"] == report["source_ref"]["sha256"], "plan_binding")
+    if c0_runtime:
+        validate_c0_plan_inputs(plan, report["profile_ref"], index, blobs, abi_ref=report["abi_ref"])
     if runtime:
         verify_runtime_observer(report, blobs, profile, plan, index)
     else:
@@ -2383,17 +2576,20 @@ def verify_runtime_observer(report, blobs, profile, plan, abi):
         "schema_version", "kind", "run_id", "source_manifest_ref", "abi_sha256",
         "launch_env", "postcheck", "vars_initial_sha256", "vars_final_ref",
     ), "runtime_observer")
-    deny(observer["kind"] == "run0_host_cpu_runtime_observer_v0"
+    c0 = plan["kind"] == "run0_c0_owned_capture_plan_v0"
+    names = C0_OBSERVER_SOURCE_NAMES if c0 else OBSERVER_SOURCE_NAMES
+    deny(observer["kind"] == ("run0_c0_runtime_observer_v0" if c0
+                              else "run0_host_cpu_runtime_observer_v0")
          and observer["run_id"] == report["run_id"]
          and observer["source_manifest_ref"] == plan["observer_ref"]
          and observer["abi_sha256"] == report["abi_ref"]["sha256"]
          and observer["launch_env"] == clean_launch_env(Path(plan["run"])), "runtime_observer_binding")
     source = json_index(plan["observer_ref"], blobs,
                         ("schema_version", "kind", "python", "sources"), "observer_sources", 65536)
-    deny(source["kind"] == "run0_host_cpu_observer_v0"
+    deny(source["kind"] == ("run0_c0_observer_v0" if c0 else "run0_host_cpu_observer_v0")
          and type(source["sources"]) is list
-         and len(source["sources"]) == len(OBSERVER_SOURCE_NAMES), "observer_source_inventory")
-    for name, row in zip(OBSERVER_SOURCE_NAMES, source["sources"], strict=True):
+         and len(source["sources"]) == len(names), "observer_source_inventory")
+    for name, row in zip(names, source["sources"], strict=True):
         object_fields(row, ("path", "length", "sha256"), "observer_source_fields")
         deny(row["path"] == name and exact_int(row["length"], 1, 1024 * 1024)
              and type(row["sha256"]) is str and HASH.fullmatch(row["sha256"]),
@@ -2874,6 +3070,28 @@ def observer_source_bytes():
     return canonical({'schema_version':1,'kind':'run0_host_cpu_observer_v0',
                       'python':{'path':str(python),'length':len(data),'sha256':hashlib.sha256(data).hexdigest()},
                       'sources':sources})
+
+
+C0_OBSERVER_SOURCE_NAMES = OBSERVER_SOURCE_NAMES + (
+    'build_trace_artifact.py', 'replay_protocol_trace.py', 'run0_c0_paging.py',
+    'run0_c0_decode.py', 'run0_c0_wire.py', 'run0_c0_rsp.py', 'run0_c0_entry.py',
+    'run0_c0_acquire.py', 'run0_c0_host.py', 'run0_c0_budget.py', 'run0_c0_capture.py',
+)
+
+
+def c0_observer_source_bytes():
+    """Closed C0 source inventory; static identity alone releases no launch."""
+    value = strict_json(observer_source_bytes(), 65536)
+    directory = Path(base.__file__).resolve().parent
+    for name in C0_OBSERVER_SOURCE_NAMES[len(OBSERVER_SOURCE_NAMES):]:
+        data, _ = _read_regular(directory / name, 1024 * 1024, private=False)
+        value['sources'].append({'path': name, 'length': len(data),
+                                'sha256': hashlib.sha256(data).hexdigest()})
+    deny(tuple(row['path'] for row in value['sources']) == C0_OBSERVER_SOURCE_NAMES
+         and all(exact_int(row['length'], 1, 1024 * 1024) for row in value['sources']),
+         'c0_observer_source_inventory')
+    value['kind'] = 'run0_c0_observer_v0'
+    return canonical(value)
 
 
 def prepare_launch(inputs,run,dossier,host_abi):

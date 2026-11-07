@@ -752,6 +752,21 @@ class DecoderControls(unittest.TestCase):
                     Path(directory), invocation, current_layouts=(layout, layout))
                 self.assertEqual(d.decode_c0("synthetic_fixture", ref, blobs, host)["status"], "PASS")
 
+    def test_actual_entry_shadow_layout_replays_and_remains_byte_bound(self):
+        from test_run0_rsp_capability import ACTUAL_ENTRY_LAYOUT
+        self.assertEqual(d._layout(ACTUAL_ENTRY_LAYOUT.encode('ascii')),
+                         ((0, 0xA0000), (0x100000, 0x20000000)))
+        for changed in (False, True):
+            after = ACTUAL_ENTRY_LAYOUT.replace('vga', 'other-vga') if changed else ACTUAL_ENTRY_LAYOUT
+            with self.subTest(changed=changed), tempfile.TemporaryDirectory() as directory:
+                _, ref, blobs, host, _ = full_fixture(
+                    Path(directory), capture.VAPIC_OFF_INVOCATION_PROFILE,
+                    current_layouts=(ACTUAL_ENTRY_LAYOUT, after))
+                result = d.decode_c0('synthetic_fixture', ref, blobs, host)
+                self.assertEqual(result['status'], 'INCOMPLETE' if changed else 'PASS')
+                if changed:
+                    self.assertEqual(result['reason'], 'snapshot_bracket_changed')
+
     def test_prior_capability_namespace_has_no_current_fallback(self):
         with tempfile.TemporaryDirectory() as directory:
             report, ref, blobs, host, put = full_fixture(Path(directory))

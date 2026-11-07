@@ -1,5 +1,36 @@
 # CHANGELOG
 
+## 2026-11-07 — actual RUN0 stopped-entry inspection
+
+- Accept one owned stopped-entry inspection after independent host and unchanged
+  retained-runtime decoder replay: 28 physical reads, 26,752 returned bytes,
+  three distinct table frames, eight selected objects and matching rereads.
+- Retain all 129 paired operations, twelve EOFs, four actual zero-exit waits and
+  unchanged source/input closure. No forced action was needed. Full capture and
+  same-call C1/C2 remain open; advance a fresh versioned parent capture. See the
+  [result record](docs/plans/run0-c0-result-2026-11-07.md).
+
+## 2026-11-07 — owned C0 collector source qualification
+
+- Join immutable prepared inputs, current/after issuers, one physical-read
+  accounting envelope and actual owned cleanup without changing the reader,
+  acquisition schedule, walker or decoder.
+- Pass independent source review, all 360 sealed Linux trace controls and three
+  historical reset replays. Add four gate commands while preserving all earlier
+  checks. Actual C0 remains pending the exact reviewed live execution and
+  independent retained replay. See the
+  [collector record](docs/plans/run0-c0-owned-collector-2026-11-07.md).
+
+## 2026-11-07 — C0 host-observation receiving preparation
+
+- Reuse the owned observation body through a closed C0 port and typed wire
+  receipts, preserving the reset wrapper, 14-read/104-byte reader, one lease,
+  actual helper lifecycle and shared budget.
+- Pass 25 new controls, all 296 Linux trace controls and three historical reset
+  replays. Real collector/issuer, accounting/send and retained-runtime source
+  joins remain pending. See the
+  [adapter record](docs/plans/run0-c0-host-observation-2026-11-07.md).
+
 ## 2026-11-06 — typed C0 RAM-acquisition preparation
 
 - Add the bounded suspended paging/object driver, frozen rereads and one-use

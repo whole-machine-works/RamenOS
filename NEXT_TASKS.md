@@ -70,18 +70,25 @@ reset witness; preserve both older exact profiles and their evidence. The
 bounded wire, paused QMP handshake, typed debugger reset setup and
 [checked entry-stop prefix](docs/plans/run0-c0-entry-prefix-2026-11-06.md) are ready.
 The exact-profile RTC policy is implemented and replayed: `device[1]/rtc` for
-VAPIC-off, `device[2]/rtc` for older profiles. Advance the join between the
-acquisition driver and owned collector. The
-[pure/typed driver](docs/plans/run0-c0-acquisition-driver-2026-11-06.md) is now
-implemented and independently reviewed. Join its actual current/after issuers,
-shared-wire final-send/revocation hook and accounting to the owned collector.
-The live collector needs a fresh
-host witness within the same stop before any guest-memory read. The
+VAPIC-off, `device[2]/rtc` for older profiles. The
+[pure/typed driver](docs/plans/run0-c0-acquisition-driver-2026-11-06.md),
+[receiving host adapter](docs/plans/run0-c0-host-observation-2026-11-07.md) and
+[owned collector/shared dispatch](docs/plans/run0-c0-owned-collector-2026-11-07.md)
+are implemented and independently source-reviewed. All 360 sealed Linux trace
+controls and three historical reset replays pass. The
+[actual stopped-entry inspection](docs/plans/run0-c0-result-2026-11-07.md) is
+independently accepted: 28 guarded physical reads, matching rereads, three table
+frames, eight selected objects and clean owned shutdown. Do not redispatch this
+completed standalone run. Freeze and review the successor parent contract for a
+fresh C0/C1/C2 history in one VM, then implement the firmware-call and return
+capture. Derive sites from the fresh loaded image and authenticated caller
+bytes; revoke read authority at each resume and obtain a fresh same-stop witness
+and ordinary-RAM proof at each stop. Preserve complete parent command/child
+history, all existing budgets, checks and failed attempts. The
 [source persistence condition](docs/plans/run0-c0-source-persistence-2026-11-06.md)
-is now conditionally accepted for this exact profile: remaining queued CPU
-callbacks do not change the global ordinary-RAM view or architectural page-walk
-inputs. The collector must still prove every listed fresh stop/state/view and
-command condition. Qualify C0, then the same-call C1/C2 capture.
+remains conditional on the listed actual stop/state/view and closed command
+history. Full capture, retained ranges, exit map, allocator and application
+execution remain separate qualifications.
 The prior address is only a candidate:
 a missed stop or missing new profile-bound hint remains `INCOMPLETE`; present
 mismatched or malformed inputs are `DENY`. No scan, guessed address or automatic
