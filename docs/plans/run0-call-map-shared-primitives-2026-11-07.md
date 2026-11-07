@@ -57,9 +57,15 @@ commands remain unchanged. Gate SHA256 is
 `f3020112086714b4ec25715c60de36a4d65f9d92d948d88f7c8c3503fc388a18`.
 That gate hash identifies the initial source packet. All57 new controls passed
 in Linux hosted run42367071792, but complete qualification failed during editor
-frame recording. The changed candidate adds one storage-tooling test command;
-all prior commands remain intact. Full integration is held on the
-[runner qualification](editor-runner-storage-2026-11-07.md).
+frame recording. The later candidate adds storage and agent-observation tooling
+controls while preserving all prior commands. Complete hosted qualification is
+now independently accepted at `dbbb8e0b3ebe9df58d80ce539b1af96cefe844fe` in
+[run 42372873439](https://github.com/whole-machine-works/RamenOS/actions/runs/42372873439),
+including all57 shared-primitives controls. The
+[runner qualification](editor-runner-storage-2026-11-07.md) records the exact
+audit and retained failures. These are source/private-fixture controls, not a
+new same-VM capture. PR76 remains open and ready for separate review; this prose
+successor does not claim a new execution of changed code.
 
 The branch also reuses PR75's exact reviewed original-task timeout hook and
 four source registrations, applied to byte-identical predecessors. This retains
