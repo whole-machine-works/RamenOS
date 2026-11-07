@@ -325,6 +325,14 @@ are being qualified without reducing any checks or recordings. Actual wire
 issuance, current-stop authority and collector/history integration remain open;
 these fixtures do not establish another VM capture.
 
+Changed-candidate run42370785508 subsequently failed the existing agent-backend
+success test when Docker creation was not confirmed before its deadline. The
+backend correctly returned IO/reconciliation-required. Its environmental cause
+is unknown; a cold-daemon explanation is unsupported because real Linux
+container controls had just passed. Bounded CI-only failure observations are
+being added while preserving all original deadlines, success assertions,
+freshness checks and cleanup. Complete qualification remains held.
+
 The IPC diagnostic reproduced two zero-byte timeouts before a later valid
 reply on the same VM. The separate single-client run succeeded immediately.
 The retained CPU snapshots follow successful replies, so the cause of the

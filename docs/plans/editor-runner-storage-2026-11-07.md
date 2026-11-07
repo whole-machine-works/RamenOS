@@ -62,3 +62,33 @@ are required before readiness. No unchanged retry, deadline increase, skipped
 assertion, reduced recording or duplicate full local campaign is part of this
 packet. Earlier failures remain retained even if the fresh run passes. A fresh
 pass alone will not establish the original IO cause.
+
+## Separate agent-runner failure
+
+[Changed-candidate run42370785508](https://github.com/whole-machine-works/RamenOS/actions/runs/42370785508)
+failed the existing agent-backend request7 success assertion after Docker create
+timed out without a confirmed container ID. The backend's IO/poisoning and
+reconciliation requirement are correct. Earlier Linux controls had already run
+real validators in that same job, so daemon cold start is not established.
+Disk pressure, scheduling and daemon storage/locking are also unproved. This
+failure is separate from the editor-runner storage observation. Native worker,
+backend, sandbox, test semantics and original 2,500ms budget remain unchanged.
+
+The narrow follow-up adds `agent_runner_diagnostics.py` before the unchanged
+canonical agent lane: it records the actual UTC/monotonic interval and fixed
+bounded OS resource observations, with no Docker warm-up or subprocess.
+Only after a failed lane does it collect two finite read-only queries: recent
+Docker/containerd journal entries and container events within the recorded UTC
+interval. The unchanged owned-command runner supervises five seconds of work
+per query; fixed `prlimit` bounds each stdout/stderr file to262144 bytes. Missing
+tools, permissions, clock reversal, truncation and timeouts are observations,
+never acceptance or evidence that no late event occurred. Diagnostics cannot
+replace the original failed lane status. Raw Linux-control records are uploaded
+alongside the new observations and existing timing artifacts.
+
+These stage-wide observations can reveal a named daemon error or retained event;
+they do not locate an event inside the request's actual create interval.
+No source fix for the underlying stall, extra budget, reused container, weakened
+success assertion or stale-image accommodation is claimed. The original failed
+run remains retained; the changed observation packet needs independent review
+and a separately released bounded diagnostic qualification run.

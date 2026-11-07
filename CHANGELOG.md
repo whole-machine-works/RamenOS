@@ -2,6 +2,9 @@
 
 ## 2026-11-07 — Editor runner capacity and IO observations
 
+- Retain the separate agent-backend Docker-create timeout and add bounded
+  CI-only resource/daemon/event observations. Preserve required success,
+  the original budget, fresh isolation and reconciliation behavior.
 - Retain and audit the failed complete run: all57 new trace controls and eight
   preservation stages passed; editor runtime failed during frame recording.
 - Prepare unused SDK space only on disposable hosted Linux editor runners and
