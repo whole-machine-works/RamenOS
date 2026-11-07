@@ -23,6 +23,12 @@ on macOS/Linux. That landed result is a trusted in-process host consumer. Models
 are unnecessary for the task. Target execution and target persistence remain
 unfinished.
 
+The recovery comparison has a default-off host adapter behind
+`recovery_decision_v0_dev`. It checks a pinned module and ABI, starts a fresh
+bounded Wasmtime instance for each observation, and checks the result against
+Rust's receipt and epoch rules. The actual Newcomputer candidate passed a
+development smoke run. Full recovery evaluation and activation remain pending.
+
 The default-off Linux process implementation merged through
 [PR52](https://github.com/whole-machine-works/RamenOS/pull/52) on November 5 as
 `c9ed54a5b69a1a279d7014929bf932288aa86ec6`, after separate A3 approval of reviewed

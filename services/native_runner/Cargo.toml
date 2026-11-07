@@ -9,6 +9,8 @@ edition = "2021"
 test_kernel_ipc = []
 # WARNING: private SW0 host-proof worker ABI; no production task routing.
 agent_task_v1_dev = []
+# Host-only recovery decision comparison. No production editor routing.
+recovery_decision_v0_dev = []
 
 [lib]
 name = "native_runner"
