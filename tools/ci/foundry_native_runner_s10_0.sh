@@ -48,6 +48,18 @@ else
     fail "integration tests"
 fi
 
+# Exercise the default-off recovery adapter with the locked host engine.
+echo
+echo "Running bounded recovery adapter controls..."
+if python3 "$ROOT_DIR/tools/ci/selected_test_runner.py" \
+    --package native_runner --features recovery_decision_v0_dev \
+    --filter 'recovery_decision::tests::' --require-filter 'recovery_decision::tests::' \
+    --output "$SELECTED_RUN_ROOT/recovery"; then
+    pass "recovery adapter controls pass"
+else
+    fail "recovery adapter controls"
+fi
+
 # Summary
 echo
 echo "=== S10.0 Summary ==="

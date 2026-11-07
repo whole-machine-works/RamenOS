@@ -230,15 +230,15 @@ the target-memory handoff is resolved; no model study gates these packets.
 | REC0 | S13 selection/publication contract and versioned failure schema | Inactive-slot publication/readback, revisioned selection and interrupted phases in host/QEMU. Physical new-slot and rollback boots remain H3. |
 | SW-A / SW-E | Remaining authority or provider-supervision controls in separate assigned files | Run named Linux/Docker gates; preserve unknown authority, failed/pending attempts, original cleanup and private bank/funded-work-order controls. Avoid repeating landed canary/accounting controls. Full A2 precedes paid model collection; no agent-study barrier on desktop work. |
 
-The first proposed component replacement is the Newcomputer decision for the
-outcome of an uncertain Save. Newcomputer's R0/L0 preparation is ready in
-[PR3](https://github.com/whole-machine-works/newcomputer/pull/3), still awaiting
-its own review and merge; no compiled candidate is qualified. Prepare the next
-language/compiler and bounded Rust adapter handoffs against the shared frozen
-contract alongside target work, after their own acceptance dependencies clear.
-The Rust parent retains every effectful handle and validates
-terminal receipts; a denied or uncertain observation must never trigger another
-Commit. RamenOS integration joins the accepted genuine P0–P3 process task.
+The first proposed component replacement is Newcomputer's decision for the
+outcome of an uncertain Save. [Newcomputer PR3](https://github.com/whole-machine-works/newcomputer/pull/3)
+records the reviewed source and cases. [Newcomputer PR4](https://github.com/whole-machine-works/newcomputer/pull/4)
+has a reproducible Wasm candidate. The opt-in host adapter admits the exact
+module, bounds its execution and checks its result with the Rust receipt codec
+and original Store epoch. Development smoke used the actual candidate. Register
+and run the independent evaluator against the complete R0 corpus and actual
+adapter before shadow comparison. The Rust parent retains every effectful
+handle. RamenOS integration joins the accepted genuine P0–P3 process task.
 
 After callable-module and adapter qualification, compare on identical authorized observations in shadow
 mode, with independent review and registered benefit/overhead criteria. Activation

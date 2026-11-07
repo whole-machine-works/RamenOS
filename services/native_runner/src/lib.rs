@@ -13,6 +13,8 @@ pub mod generated;
 mod guest_memory;
 pub mod harness;
 pub mod kernel_bridge;
+#[cfg(feature = "recovery_decision_v0_dev")]
+pub mod recovery_decision;
 pub mod runner;
 mod socket_deadline;
 
