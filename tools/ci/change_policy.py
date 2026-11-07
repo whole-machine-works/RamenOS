@@ -44,7 +44,14 @@ EXECUTABLE_DOCUMENTS = frozenset({
 
 def requires_foundry(paths):
     def documentation(path):
+        # Only canonical repository-relative paths can receive a prose
+        # exemption. Contract provenance may name external pinned documents;
+        # those must fail closed rather than masquerading as local Markdown.
+        if type(path) is not str or not path or "\\" in path or "\0" in path:
+            return False
         p = PurePosixPath(path)
+        if p.is_absolute() or ".." in p.parts or p.as_posix() != path:
+            return False
         if (path in EXECUTABLE_DOCUMENTS
                 or path.startswith('docs/contracts/') or 'fixtures' in p.parts):
             return False

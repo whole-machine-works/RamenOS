@@ -46,6 +46,17 @@ class FirmwareTests(unittest.TestCase):
 
 
 class CiTests(unittest.TestCase):
+    def test_non_repository_paths_do_not_receive_prose_exemption(self):
+        spec = importlib.util.spec_from_file_location("ci_policy", ROOT / "tools/ci/change_policy.py")
+        policy = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(policy)
+        for path in ("/tmp/external/AGENTS.md", "../external/CURRENT.md",
+                     "docs/../README.md", "./README.md", "docs//note.md",
+                     "docs\\note.md", "", "docs/org/../packet.json"):
+            with self.subTest(path=path):
+                self.assertTrue(policy.requires_foundry([path]), path)
+        self.assertFalse(policy.requires_foundry(["README.md", "docs/note.md"]))
+
     def test_executable_docs_require_foundry_before_prose_exemption(self):
         spec = importlib.util.spec_from_file_location("ci_policy", ROOT / "tools/ci/change_policy.py")
         policy = importlib.util.module_from_spec(spec)
