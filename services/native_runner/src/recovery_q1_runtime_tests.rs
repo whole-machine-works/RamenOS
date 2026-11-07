@@ -14,7 +14,8 @@ const FIXTURES_SHA256: &str = "0a1ebe3fb0023270b44fe7d1e23f1545f34d980e075dd9b1e
 const MODULE_SHA256: &str = "6458a173cd09e73fe0be59b1a2d339c2070c33ac05628b3d2dd5fb264cb2e079";
 const REGISTRATION_SHA256: &str =
     "185957fc5f45900995de9c4705c7936ac834cffea3006c67b6596e7e33e656e2";
-const REVIEWED_MANIFEST_SHA256: Option<&str> = None;
+const REVIEWED_MANIFEST_SHA256: Option<&str> =
+    Some("0f486a30510462344d21c80cbab60c9904e286727e28e31a6f38dec58b62313c");
 const FALSE_FLAGS: [&str; 4] = [
     "owner_lifecycle_exercised",
     "live_parent_authority_exercised",
@@ -487,6 +488,31 @@ impl SyntheticStage {
 #[cfg(test)]
 mod controls {
     use super::*;
+
+    #[test]
+    fn t1_released_manifest_matches_exact_bytes_and_refuses_change() {
+        let fixture = SyntheticStage::new(&synthetic("i32.const 7 return"));
+        let path = fixture.root.path().join("reviewed-manifest.json");
+        let raw = include_bytes!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../docs/contracts/recovery-q1-t1-manifest-v1.json"
+        ));
+        let mut file = OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .mode(0o600)
+            .open(&path)
+            .unwrap();
+        file.write_all(raw).unwrap();
+        drop(file);
+        assert_eq!(
+            reviewed_digest(REVIEWED_MANIFEST_SHA256, &path).unwrap(),
+            "0f486a30510462344d21c80cbab60c9904e286727e28e31a6f38dec58b62313c"
+        );
+        fs::write(&path, [raw.as_slice(), b" "].concat()).unwrap();
+        assert!(reviewed_digest(REVIEWED_MANIFEST_SHA256, &path).is_err());
+        assert!(reviewed_digest(None, Path::new("never-opened")).is_err());
+    }
 
     fn synthetic(reject: &str) -> Vec<u8> {
         wat::parse_str(format!(

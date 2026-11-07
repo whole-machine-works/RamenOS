@@ -39,11 +39,13 @@ integration and activation remain pending.
 
 The separate T1 runtime preparation adds six frozen malformed ABI tuples,
 actual return/trap and full-page memory capture, plus a fresh canonical call
-after each fault. Ten Python and four Rust synthetic controls pass after
-independent source review. The native Foundry gate preserves its previous
-fifteen recovery controls and selects the four new controls; its three native
+after each fault. Preparation passed ten Python and four Rust synthetic controls
+after independent source review. The release adds an exact-manifest identity
+control in each bridge. The native Foundry gate preserves its previous
+fifteen recovery controls and selects all T1 controls; its three native
 integration tests and all four gate assertions pass. The actual candidate run
-remains held by an unset new manifest pin. The
+requires exact manifest, final source/executable and execution-plan acceptance
+before explicit selection. The release controls bind the new manifest bytes. The
 [preparation record](docs/plans/recovery-q1-runtime-preparation-2026-11-06.md)
 keeps technical and live receiving acceptance separate.
 

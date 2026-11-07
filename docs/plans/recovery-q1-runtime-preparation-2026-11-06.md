@@ -14,7 +14,8 @@ returns failure for mismatches and preserves raw evidence. Ten Python and four
 Rust synthetic controls pass after independent source review. The complete
 native gate passes nineteen recovery controls, three native integration tests
 and its four existing assertions. Ordinary CI never selects the ignored actual
-candidate replay. Its new reviewed manifest digest remains unset.
+candidate replay. Preparation left its new manifest digest unset; the separate
+release pins its exact bytes and adds one identity control in each bridge.
 
 The author, early failing controls, CLI correction, exact source inventory,
 independent review and native gate log are retained in the Whole Machine Works
