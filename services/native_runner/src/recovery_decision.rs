@@ -303,3 +303,7 @@ mod tests;
 #[cfg(test)]
 #[path = "recovery_q1_tests.rs"]
 mod q1_tests;
+
+#[cfg(test)]
+#[path = "recovery_q1_runtime_tests.rs"]
+mod q1_runtime_tests;

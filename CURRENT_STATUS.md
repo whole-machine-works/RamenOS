@@ -37,6 +37,16 @@ the source, executable, registration and raw evidence. Full fault/owner
 qualification, Linux reproduction, measured update/rollback benefit, live
 integration and activation remain pending.
 
+The separate T1 runtime preparation adds six frozen malformed ABI tuples,
+actual return/trap and full-page memory capture, plus a fresh canonical call
+after each fault. Ten Python and four Rust synthetic controls pass after
+independent source review. The native Foundry gate preserves its previous
+fifteen recovery controls and selects the four new controls; its three native
+integration tests and all four gate assertions pass. The actual candidate run
+remains held by an unset new manifest pin. The
+[preparation record](docs/plans/recovery-q1-runtime-preparation-2026-11-06.md)
+keeps technical and live receiving acceptance separate.
+
 The default-off Linux process implementation merged through
 [PR52](https://github.com/whole-machine-works/RamenOS/pull/52) on November 5 as
 `c9ed54a5b69a1a279d7014929bf932288aa86ec6`, after separate A3 approval of reviewed
