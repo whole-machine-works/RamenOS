@@ -1,0 +1,20 @@
+{
+  "expected_cases_sha256": "71721374b9188dca3dfea9ce04a843eb1f4c36877941bb81d104eda98e811b02",
+  "fixture_inventory_sha256": "0fa543b720475f40a250b7eac3fe8a03095f26684c234138a70fd15f867aaaf3",
+  "kind": "recovery_q1_t2_manifest_v1",
+  "parent_pins": {
+    "abi": "49daf52dd669411376770b3bc2a007d7c6a8b346843bcd123a45da8139b0da60",
+    "accepted_t1_manifest": "0f486a30510462344d21c80cbab60c9904e286727e28e31a6f38dec58b62313c",
+    "candidate_module": {
+      "bytes": 1349,
+      "sha256": "6458a173cd09e73fe0be59b1a2d339c2070c33ac05628b3d2dd5fb264cb2e079"
+    },
+    "closeout": "1f9841fb82ae5d49c9758e011f815f297e24ca53165f500efaaa1b7a565d618d",
+    "corpus": "84eece3246d9b4521a5b8ac48fa6324cb4be4e98889277ab46837f6764aeda49",
+    "obligations": "f820a7c3264186b68158078fc79a09405cd2780e9aef061fb21689669c24c914",
+    "registration": "185957fc5f45900995de9c4705c7936ac834cffea3006c67b6596e7e33e656e2"
+  },
+  "recipe_contract_sha256": "6f96425bf55222eea630b15926284400a57488c8885ab5fb6c3372a35c62d1dd",
+  "schema_sha256": "4ebdd90672f221cf53bbdd1326b81f734a363dbda0d30bc702a8b2fbca62f2a4",
+  "schema_version": 1
+}
