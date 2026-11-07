@@ -11,6 +11,7 @@ import json
 import os
 from pathlib import Path
 import signal
+import socket
 import subprocess
 import sys
 import tempfile
@@ -629,6 +630,52 @@ class CollectorControls(unittest.TestCase):
         self.assertEqual(order.count('quit-local-denial'),1)
         self.assertEqual(runtime._wire._failure.reason,'qmp_quit_ambiguous')
         self.assertTrue(runtime._closed)
+
+    def test_col12_real_argv_socket_endpoints_match_actual_collector_connections(self):
+        short=tempfile.TemporaryDirectory(prefix='c0-sock-',dir='/tmp')
+        self.addCleanup(short.cleanup)
+        run=Path(short.name).resolve()/'run'
+        run.mkdir(mode=0o700)
+        argv=base.build_argv(self.root,run,base.VAPIC_OFF_INVOCATION_PROFILE)
+        # Derive server paths from the real frozen launch argv, independently of
+        # the collector's role map. No VM or public registration override occurs.
+        qmp=Path(argv[argv.index('-qmp')+1].split(',',1)[0].removeprefix('unix:'))
+        char_devices={}
+        for index,value in enumerate(argv):
+            if value=='-chardev':
+                fields=dict(part.split('=',1) for part in argv[index+1].split(',')[1:])
+                char_devices[fields['id']]=Path(fields['path'])
+        gdb=argv[argv.index('-gdb')+1].removeprefix('chardev:')
+        serial=argv[argv.index('-serial')+1].removeprefix('chardev:')
+        debug=next(arg for arg in argv if arg.startswith('isa-debugcon,'))
+        debug_id=next(part.split('=',1)[1] for part in debug.split(',') if part.startswith('chardev='))
+        expected={'qmp':qmp,'rsp':char_devices[gdb],'serial':char_devices[serial],'debug':char_devices[debug_id]}
+        self.assertEqual(expected['rsp'],run/'gdb.sock')
+        listeners=[];connections=[];attempts=[]
+        actual_connect=witness.connect_owned
+        def connect(path,deadline):
+            attempts.append(path)
+            # All correct servers are already listening. A wrong path fails
+            # promptly through the actual owned-socket connector, not a stub.
+            return actual_connect(path,min(deadline,time.monotonic()+0.05))
+        try:
+            for path in expected.values():
+                server=socket.socket(socket.AF_UNIX,socket.SOCK_STREAM)
+                server.bind(str(path));server.listen(1);listeners.append(server)
+            with patch.object(witness,'connect_owned',side_effect=connect):
+                try:
+                    streams=capture._connect_vm_sockets(run,time.monotonic_ns(),connections)
+                except base.ProbeError as error:
+                    self.fail(f'actual collector connect failed: {error.reason}; attempts={attempts}; argv endpoints={expected}')
+            self.assertEqual(attempts,list(expected.values()))
+            self.assertEqual(set(streams),set(expected))
+            self.assertEqual(len(connections),4)
+            for role,endpoint in streams.items():
+                self.assertEqual(endpoint.getpeername(),str(expected[role]))
+                self.assertFalse(endpoint.getblocking())
+        finally:
+            for endpoint in connections+listeners:
+                endpoint.close()
 
     def test_col09_decoder_cause_is_retained_without_generic_io_relabel(self):
         self.assertEqual(capture._cause(decoder.C0DecodeError('DENY','frame_level')),('DENY','frame_level'))

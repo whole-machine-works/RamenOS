@@ -2,7 +2,7 @@
 
 The collector now joins the accepted entry stop, host observation and typed RAM
 acquisition through one owned VM and one wire. Independent source review and
-352 sealed Linux trace controls pass. Three earlier actual reset captures still
+353 sealed Linux trace controls pass. Three earlier actual reset captures still
 validate. Actual C0 execution and retained-runtime acceptance remain pending.
 
 ## Implemented boundary
@@ -58,19 +58,25 @@ Evidence root: `evidence/run0-c0-owned-collector-20261107/`.
   103 focused controls and operation/terminal-boundary counterexamples.
 - `collector-root-review-002.json` and `collector-root-review-003.json`:
   non-author collector review, 24 controls and the final teardown correction.
-- `linux-integrated-002.log`: all 352 controls pass under Linux Python 3.14.6;
+- `linux-integrated-004.log`: all 353 controls pass under Linux Python 3.14.6;
   all 35 source/test hashes match before and after. The sealed manifest is
-  `080f2d8abbadcbc29adf8623dbc81d8b144f2d9da160705aee5833192125f865`.
+  `a847007d2d598e06f77458c42efe0949677ca9fec1ab6539e1276986ace12fac`.
+- `endpoint-review-004/disposition.json`: independent acceptance of the fixed
+  debugger socket mapping and actual UNIX connections derived from `build_argv`.
 - `historical-reset-replay-002.json`: three unchanged retained reset captures pass.
 - `gate-review-001/disposition.json`: four additive test commands preserve every
   earlier gate command byte-for-byte.
 
-Review corrected three preparation/cleanup gaps before live execution: reserved
+Review corrected preparation/cleanup gaps before live execution: reserved
 output names missing from input collision checks, a quit dispatch after a poll
 newly observed QMP EOF, and failure-only draining before the collector latched a
 local quit refusal. Original candidates, failing controls and corrected evidence
 are retained separately. The earlier default-denying readiness hook also had an
-unbound exception name; its typed-refusal control now passes.
+unbound exception name; its typed-refusal control now passes. Exact launch-plan
+review rejected preparation003 before execution because its collector opened
+`rsp.sock` while the unchanged QEMU argv created `gdb.sock`. The corrected closed
+mapping is covered by actual UNIX listeners and connectors derived from the real
+argv builder. The rejected prepared packet remains unexecuted and preserved.
 
 ## Next outcome
 

@@ -5,7 +5,7 @@
 - Join immutable prepared inputs, current/after issuers, one physical-read
   accounting envelope and actual owned cleanup without changing the reader,
   acquisition schedule, walker or decoder.
-- Pass independent source review, all 352 sealed Linux trace controls and three
+- Pass independent source review, all 353 sealed Linux trace controls and three
   historical reset replays. Add four gate commands while preserving all earlier
   checks. Actual C0 remains pending the exact reviewed live execution and
   independent retained replay. See the

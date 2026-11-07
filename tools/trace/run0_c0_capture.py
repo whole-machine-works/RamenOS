@@ -913,6 +913,18 @@ def _cleanup_unbound(owner, connections, accounting):
     return records
 
 
+def _connect_vm_sockets(run, started_ns, connections):
+    """Connect the fixed VM roles; the collector retains endpoint ownership."""
+    streams={}
+    for name,socket_name in (('qmp','qmp.sock'),('rsp','gdb.sock'),
+                             ('serial','serial.sock'),('debug','debug.sock')):
+        connection=witness.connect_owned(run/socket_name,min(time.monotonic()+base.RESPONSE_SECONDS,
+            (started_ns+transport.OWNER_NS-transport.TEARDOWN_NS)/1_000_000_000))
+        connections.append(connection)
+        streams[name]=connection
+    return streams
+
+
 def run_c0_capture(prepared, run):
     """Run one exact registered owned plan; reject unregistered inputs before launch."""
     plan=_prepared(prepared,run)
@@ -962,13 +974,8 @@ def run_c0_capture(prepared, run):
             owner._receipt('spawn',stamp,'ok')
         if interrupted[0]:
             raise KeyboardInterrupt
-        streams={}
         connections.extend((owner.child.stdout,owner.child.stderr))
-        for name in ('qmp','rsp','serial','debug'):
-            connection=witness.connect_owned(run/(name+'.sock'),min(time.monotonic()+base.RESPONSE_SECONDS,
-                (started_ns+transport.OWNER_NS-transport.TEARDOWN_NS)/1_000_000_000))
-            connections.append(connection)
-            streams[name]=connection
+        streams=_connect_vm_sockets(run,started_ns,connections)
         for name,stream in (('qemu_stdout',owner.child.stdout),('qemu_stderr',owner.child.stderr)):
             os.set_blocking(stream.fileno(),False)
             streams[name]=stream
