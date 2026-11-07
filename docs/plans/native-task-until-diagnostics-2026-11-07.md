@@ -30,11 +30,13 @@ original timeout. Existing Store snapshot limits apply, and compact diagnostic
 output is capped at64KiB. No failed native operation number is inferred from
 the source-planned iteration.
 
-The single source change is
+The instrumentation changes one Rust file,
 `apps/artifact_editor/tests/native_task_support/mod.rs`, SHA256
 `f25607edb5a5f8f4ee31868ad5a3778f865bb8929648fd7a8ea9e69a14dace91`.
-The other273 manifest files are unchanged. Canonical eighteen test names,
-recording scenarios and admission profiles are unchanged.
+Four coordinator registration files separately bind its reviewed length/hash
+and direct containing-file hashes. Their independent review preserves every
+other field and guard. Canonical eighteen test names, recording scenarios,
+admission profiles, deadlines and assertions are unchanged.
 
 ## Evidence and next execution
 
@@ -52,6 +54,8 @@ Workspace evidence is under
 `b770d8ace829dc6ab2009ed2de7fc5182aae4e16304247f5611ac5f98e0e71ef`;
 distinct source review `pr75-until-diagnostics-review-019/disposition.json` is
 `0e761f81072f14fd831564e4bafd4e0c4fee24f95e785682f8503daddba1f4ea`.
+Registration review `pr75-assertion-registration-review-022/disposition.json` is
+`80e99b30962e4a3d487ff8ccdb02857af6f9150385b80aabb7618c8c10a9c6f5`.
 The source-bound failure diagnosis is
 `cfca36f918dc1d7bdba28002b613acf189e99cb5bd4d6a3a4bb89b206bda301c`.
 
