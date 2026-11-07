@@ -51,7 +51,9 @@ independent Linux reproduction before scoped technical Q1 acceptance. Then test
 the remaining live owner obligations and registered independent update/rollback
 benefit with the real host workflow; final receiving acceptance closes all 18.
 The [T1 preparation](docs/plans/recovery-q1-runtime-preparation-2026-11-06.md)
-supplies the next six exact malformed-call checks. Preserve one Rust
+now has an [accepted six-call technical result](docs/plans/recovery-q1-abi-result-2026-11-07.md)
+on Darwin arm64. Freeze and evaluate the remaining module-admission and runtime
+fault fixtures next, preserving separate live-owner requirements. Preserve one Rust
 effect owner and the original operation, epoch and deadline throughout.
 The practical cost budgets are adoption criteria; exceeding them retains Rust
 and does not block correctness work or the target editing task. No activation

@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## 2026-11-07 — recovery ABI technical refusal result
+
+- Independently accept one exact six-case malformed-call run and six separate
+  fresh canonical successors on Darwin arm64. Faults return nonzero without
+  traps or memory changes; fresh calls return the expected output and guards.
+- Preserve complete raw pages, source/executable/manifest identities and actual
+  process evidence. Full fault/resource/owner qualification, independent Linux
+  reproduction, measured benefit and activation remain pending. See the
+  [result record](docs/plans/recovery-q1-abi-result-2026-11-07.md).
+
 ## 2026-11-06 — scoped recovery correspondence result
 
 - Freeze the independently reviewed comparison registration before execution,
