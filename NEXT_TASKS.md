@@ -46,9 +46,14 @@ physical setup does not block ready host/QEMU preparation.
 The parallel recovery experiment has an independently accepted 627-case
 Darwin arm64 correspondence result, recorded in the
 [technical result](docs/plans/recovery-q1-technical-result-2026-11-06.md).
-Advance the remaining frozen fault/resource/owner obligations and Linux
-reproduction before full Q1 acceptance. Then test the registered independent
-update and rollback benefit with the real host workflow. Preserve one Rust
+Advance the remaining frozen technical fault/resource/semantic obligations and
+independent Linux reproduction before scoped technical Q1 acceptance. Then test
+the remaining live owner obligations and registered independent update/rollback
+benefit with the real host workflow; final receiving acceptance closes all 18.
+The [T1 preparation](docs/plans/recovery-q1-runtime-preparation-2026-11-06.md)
+now has an [accepted six-call technical result](docs/plans/recovery-q1-abi-result-2026-11-07.md)
+on Darwin arm64. Freeze and evaluate the remaining module-admission and runtime
+fault fixtures next, preserving separate live-owner requirements. Preserve one Rust
 effect owner and the original operation, epoch and deadline throughout.
 The practical cost budgets are adoption criteria; exceeding them retains Rust
 and does not block correctness work or the target editing task. No activation

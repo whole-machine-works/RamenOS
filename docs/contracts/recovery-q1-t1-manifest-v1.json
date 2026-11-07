@@ -1,0 +1,95 @@
+{
+  "calls": [
+    [
+      4096,
+      335,
+      4448,
+      16
+    ],
+    [
+      4096,
+      337,
+      4448,
+      16
+    ],
+    [
+      65535,
+      336,
+      4448,
+      16
+    ],
+    [
+      4294967295,
+      336,
+      4448,
+      16
+    ],
+    [
+      4096,
+      336,
+      65528,
+      16
+    ],
+    [
+      4096,
+      336,
+      4448,
+      15
+    ]
+  ],
+  "date": "2026-11-06",
+  "engine": {
+    "configured_wasm_stack_bytes": 32768,
+    "fuel_per_fresh_call": 100000,
+    "memory_pages_min_max": [
+      1,
+      1
+    ],
+    "strategy": "Cranelift",
+    "wasmtime": "27.0.0"
+  },
+  "execution_release": "Independent acceptance of this manifest and final release-source diff, followed by exact actual source/lock/tool/engine/executable identity, private staged bytes and execution-plan acceptance before one explicit ignored-test invocation. Preparation commits above are not substitutes for final executed source identities.",
+  "kind": "recovery_q1_t1_manifest_v1",
+  "observations": "For every fault and its fresh canonical successor retain actual return or trap and complete before/after memory. Require nonzero-not-trap, unchanged outside declared output-capacity intersection and exact fresh expected16 output bytes. Report stronger whole-page unchanged memory separately.",
+  "pins": {
+    "closeout_sha256": "1f9841fb82ae5d49c9758e011f815f297e24ca53165f500efaaa1b7a565d618d",
+    "corpus_sha256": "84eece3246d9b4521a5b8ac48fa6324cb4be4e98889277ab46837f6764aeda49",
+    "fixtures_sha256": "0a1ebe3fb0023270b44fe7d1e23f1545f34d980e075dd9b1e8e9cbd756bbc2f2",
+    "independent_preparation_review_sha256": "c22d58a151cc9dba104e97c0585443b0ebe3166bff820852a3c72c2c726a831b",
+    "module_sha256": "6458a173cd09e73fe0be59b1a2d339c2070c33ac05628b3d2dd5fb264cb2e079",
+    "obligations_sha256": "f820a7c3264186b68158078fc79a09405cd2780e9aef061fb21689669c24c914",
+    "registration_sha256": "185957fc5f45900995de9c4705c7936ac834cffea3006c67b6596e7e33e656e2"
+  },
+  "preparation_sources": {
+    "newcomputer": "77a32b80e8e39d4a4115bd5292bde87490442566",
+    "ramenos": "81348cd4b40f2d4aedac7cf49c8b1c0d2b5823f0"
+  },
+  "remaining_scope": {
+    "activation_accepted": false,
+    "live_parent_authority_exercised": false,
+    "measured_benefit": false,
+    "owner_lifecycle_exercised": false,
+    "rule": "A fresh engine instance is not an original Store owner. Full technical qualification, independent receiving-platform reproduction and all live obligations remain separately accepted."
+  },
+  "roles": {
+    "final_reviewer": "q1_protocol_review",
+    "fixture_and_runtime_source_author": "cache_retention_author",
+    "independent_evaluator": "q1_t1_evaluator",
+    "manifest_and_integration_author": "root"
+  },
+  "schema_version": 1,
+  "scope": "Six frozen invalid ABI calls on the exact candidate; technical host observation only.",
+  "setup": {
+    "fresh_canonical_call": [
+      4096,
+      336,
+      4448,
+      16
+    ],
+    "initial_fill_byte": 165,
+    "input_initialization_offset": 4096,
+    "memory_bytes": 65536,
+    "output_zeroing": "Zero the legal intersection of the fixed 16-byte ABI output span with the one-page memory before the snapshot. The capacity15 case still zeroes16 bytes; its sixteenth byte remains an outside-capacity guard checked relative to that before snapshot."
+  },
+  "stopping": "Execute all six named faults once in frozen order, each followed by a fresh canonical instance. Retain all rows, refusals, partial output, failed processes and raw bytes. No silent retry or exclusion."
+}
