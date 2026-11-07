@@ -709,6 +709,16 @@ class _ResetObservationPort:
         return "reset_bracket_changed"
 
 
+def require_c0_runtime_registration(prepared, plan):
+    """Coordinator-owned release hook; no C0 production issuer is released yet.
+
+    The receiving collector must call this before spawning its VM and again
+    before issuing current RAM authority. Readiness fixtures cannot turn the
+    intentionally missing runtime plan/source join into a live registration.
+    """
+    raise ProbeError("INCOMPLETE", "c0_runtime_registration_pending")
+
+
 class OwnedCPUObservation:
     """Shared owned helper flow; the public observe entry remains reset-only."""
 
