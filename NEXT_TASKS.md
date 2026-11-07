@@ -51,12 +51,15 @@ is accepted on Darwin arm64, and the
 [T2 module/resource/semantic fault result](docs/plans/recovery-q1-t2-result-2026-11-07.md)
 is independently accepted on Linux: 32 recipes, 107 phases and 32 separate fresh
 canonical successes. Do not redispatch its source, fixtures or completed run.
-Finish the independently reproduced frozen compiler build and fresh Linux
-confirmation of the earlier 627 corpus rows and six T1 faults under separate
-reviewed plans. Then advance the I1 live shadow join and remaining owner
-obligations, followed by registered independent update/rollback benefit and
-complete cost comparison. Final receiving acceptance closes all 18. Preserve
-one Rust effect owner and the original operation, epoch and deadline throughout.
+The [Linux technical closeout](docs/plans/recovery-linux-technical-closeout-2026-11-07.md)
+now accepts the independent original compiler build, fresh Linux corpus/T1 and
+distinct T2 reproduction. Do not redispatch those completed technical packets.
+Freeze the I1 authorized observation/owner handoff and separately review its
+source, real-host scenarios, executable and execution plan before running the
+shadow join. Then close remaining live obligations and the registered independent
+update/rollback benefit and complete cost comparison. Final receiving acceptance
+closes all 18. Preserve one Rust effect owner and the original operation, epoch
+and deadline throughout.
 The practical cost budgets are adoption criteria; exceeding them retains Rust
 and does not block correctness work or the target editing task. No activation
 or full Q1 result follows from the corpus replay alone.

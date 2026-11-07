@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## 2026-11-07 — Linux technical recovery prerequisites complete
+
+- Accept non-author original compiler-build correspondence, fresh Linux 627-row
+  corpus/T1 confirmation and a distinct non-author 32-recipe T2 reproduction.
+- Preserve original artifacts, exact source/executable/engine identities, fresh
+  actual process and full source/input postchecks; no retry or row exclusion.
+- Advance I1 observation/owner contract preparation under a separate reviewed
+  workflow/source/execution plan. Full Q1/all-18 live receiving, benefit and
+  activation remain open. See the
+  [closeout record](docs/plans/recovery-linux-technical-closeout-2026-11-07.md).
+
 ## 2026-11-07 — Linux recovery technical fault result
 
 - Independently accept 32 frozen T2 recipes and 107 phases: 21 actual admission

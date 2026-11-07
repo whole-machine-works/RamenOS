@@ -60,10 +60,13 @@ now records 32 fault recipes and 107 phases: 21 actual admission rejections,
 successes and `Committed` decisions. Independent review checked all 86 complete
 memory pages and exact projection/error payloads; all 12,584 sealed files and
 owned process cleanup match. Ordinary CI preserves its 20 recovery controls and
-adds 24 substantive T2 controls. Fresh Linux confirmation of earlier corpus/T1
-cases and independent compiler-build review remain separate, as do I1, every
-remaining live owner obligation, update/rollback benefit and activation. The
-accepted T2 run does not release full Q1 or all-18 receiving acceptance.
+adds 24 substantive T2 controls. At first acceptance, earlier-case Linux
+confirmation and independent compiler-build review remained separate. The
+[later Linux technical closeout](docs/plans/recovery-linux-technical-closeout-2026-11-07.md)
+now accepts the independent original build, fresh Linux 627-row/T1 runs and a
+distinct non-author T2 reproduction. This completes only the named technical Q1
+prerequisites. I1, every remaining live owner obligation, update/rollback benefit,
+full Q1/all-18 receiving acceptance and activation remain open.
 
 The default-off Linux process implementation merged through
 [PR52](https://github.com/whole-machine-works/RamenOS/pull/52) on November 5 as
