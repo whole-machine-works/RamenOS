@@ -125,6 +125,10 @@ impl RecoveryDecisionAdapter {
     }
 
     fn call(&self, input: &[u8; INPUT_LEN]) -> Result<RecoveryDispositionV0, RecoveryError> {
+        decode_output(self.invoke(input)?)
+    }
+
+    fn invoke(&self, input: &[u8; INPUT_LEN]) -> Result<[u8; OUTPUT_LEN], RecoveryError> {
         let mut store = Store::new(&self.engine, ());
         store.set_fuel(MAX_FUEL).map_err(RecoveryError::Engine)?;
         let instance =
@@ -163,7 +167,7 @@ impl RecoveryDecisionAdapter {
         memory
             .read(&store, OUTPUT, &mut output)
             .map_err(|error| RecoveryError::Engine(error.into()))?;
-        decode_output(output)
+        Ok(output)
     }
 }
 
@@ -295,3 +299,7 @@ fn uleb32(bytes: &[u8]) -> Option<(u32, &[u8])> {
 #[cfg(test)]
 #[path = "recovery_decision_tests.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "recovery_q1_tests.rs"]
+mod q1_tests;

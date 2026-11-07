@@ -54,6 +54,8 @@ echo "Running bounded recovery adapter controls..."
 if python3 "$ROOT_DIR/tools/ci/selected_test_runner.py" \
     --package native_runner --features recovery_decision_v0_dev \
     --filter 'recovery_decision::tests::' --require-filter 'recovery_decision::tests::' \
+    --filter 'recovery_decision::q1_tests::controls::' \
+    --require-filter 'recovery_decision::q1_tests::controls::' \
     --output "$SELECTED_RUN_ROOT/recovery"; then
     pass "recovery adapter controls pass"
 else
