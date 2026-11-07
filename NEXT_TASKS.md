@@ -64,13 +64,17 @@ reviewed with complete synthetic replay. The prior CAP1 resolver keeps its
 artifacts separate from current outputs. The retained decoder uses the pure
 paging step planned for acquisition. Shared C0 replay checks the QMP boot
 transitions and handles the pinned RTC notifications.
-Use the [requalified SATA-disabled profile](docs/plans/run0-sata-off-requalification-2026-11-06.md)
-with its fresh prior hint, entry admission, CAP1 and host reset witness. The
+Use the [requalified SATA/VAPIC-disabled profile](docs/plans/run0-vapic-off-requalification-2026-11-06.md)
+with its fresh prior hint, independently reproduced admission, CAP1 and host
+reset witness; preserve both older exact profiles and their evidence. The
 bounded wire, paused QMP handshake and typed debugger reset setup are ready.
 Freeze the admitted-entry breakpoint and asynchronous stop interface, then
-staff that transport and RAM-admitted acquisition in parallel. The live collector needs a fresh host
-witness within the same stop and a reviewed ordinary-RAM persistence condition
-before any guest-memory read. Qualify C0, then the same-call C1/C2 capture.
+staff that transport and RAM-admitted acquisition in parallel. Derive the third
+profile's closed RTC policy from pinned source and actual `device[1]/rtc` events;
+preserve `device[2]/rtc` for the older profiles. The live collector needs a fresh
+host witness within the same stop and reviewed source closure for ordinary-RAM
+persistence, including remaining asynchronous/global work, before any
+guest-memory read. Qualify C0, then the same-call C1/C2 capture.
 The prior address is only a candidate:
 a missed stop or missing new profile-bound hint remains `INCOMPLETE`; present
 mismatched or malformed inputs are `DENY`. No scan, guessed address or automatic

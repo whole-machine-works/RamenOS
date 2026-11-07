@@ -31,6 +31,8 @@ class ParentAdmissionControls(unittest.TestCase):
                          modules["checked_absences"])
         self.assertEqual(witness.runtime_module_absences(modules, fresh,
                          base.SATA_OFF_INVOCATION_PROFILE), [*fixed, str(fresh / "qemu-bundle")])
+        self.assertEqual(witness.runtime_module_absences(modules, fresh,
+                         base.VAPIC_OFF_INVOCATION_PROFILE), [*fixed, str(fresh / "qemu-bundle")])
         with self.assertRaises(base.ProbeError):
             witness.runtime_module_absences(modules, fresh, base.INVOCATION_PROFILE)
 
@@ -443,7 +445,7 @@ def synthetic_qmp(tid, first, last):
 
 
 def synthetic_shared_control(put, rsp_index, blobs, profile_sha, first, last, sequence_map,
-                             *, qmp_events=None, qmp_tail=()):
+                             *, qmp_events=None, qmp_tail=(), qmp_layouts=None):
     from run0_c0_decode import validate_c0_rsp
     from test_run0_c0_decode import synthetic_c0_hmp
 
@@ -452,6 +454,7 @@ def synthetic_shared_control(put, rsp_index, blobs, profile_sha, first, last, se
     layout = ('FlatView #0\n AS "memory", root: system\n'
               ' AS "cpu-memory-0", root: system\n Root memory region: system\n'
               '  0000000000000000-000000001fffffff (prio 0, ram): pc.ram\n')
+    layouts = (layout, layout) if qmp_layouts is None else qmp_layouts
     path = "/machine/unattached/device[0]"
     cpu = [{"cpu-index": 0, "thread-id": 123, "target": "x86_64", "qom-path": path, "props": {}}]
     paused = {"running": False, "status": "debug"}
@@ -515,7 +518,7 @@ def synthetic_shared_control(put, rsp_index, blobs, profile_sha, first, last, se
 
     before = bracket(first - 9500, True)
     after = bracket(last + 1000, False)
-    qop(last + 1100, "hmp_flatview", "human-monitor-command", layout,
+    qop(last + 1100, "hmp_flatview", "human-monitor-command", layouts[0],
         {"command-line": "info mtree -f"})
     first_mem = min(row["seq"] for row in rsp_index["operations"]
                     if row["operation"] == "physical_read")
@@ -530,7 +533,7 @@ def synthetic_shared_control(put, rsp_index, blobs, profile_sha, first, last, se
     final_at = max(row["finished_ns"] for row in rsp_ops.values()) + 100
     qop(final_at, "hmp_registers", "human-monitor-command", text,
         {"command-line": "info registers"})
-    qop(final_at+20, "hmp_flatview", "human-monitor-command", layout,
+    qop(final_at+20, "hmp_flatview", "human-monitor-command", layouts[1],
         {"command-line": "info mtree -f"})
     qop(final_at+40, "quit", "quit", {})
     for raw, received_ns in qmp_tail:
@@ -702,7 +705,7 @@ class SharedQMPEventControls(unittest.TestCase):
 
 
 def synthetic_host_report(folder, *, rsp_index=None, rsp_blobs=None, profile=None,
-                          sequence_map=None):
+                          sequence_map=None, qmp_layouts=None):
     """Test-only evidence producer. The production validator constructs the witness."""
     reader = reader_controls.reader
     mutate = None
@@ -778,6 +781,7 @@ def synthetic_host_report(folder, *, rsp_index=None, rsp_blobs=None, profile=Non
     else:
         control, binding, after_pidfd, qemu_wait = synthetic_shared_control(
             put, rsp_index, blobs, profile_digest, first, last, sequence_map,
+            qmp_layouts=qmp_layouts,
         )
         in_ref = control["raw_qmp_in_ref"]
     rows = []

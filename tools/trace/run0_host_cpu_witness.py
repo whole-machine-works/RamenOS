@@ -2751,7 +2751,7 @@ def runtime_module_absences(modules, inputs, invocation_profile):
     deny(modules["checked_absences"] == [*fixed, legacy_bundle], "module_absence_profile")
     base.safe_path(inputs)
     bundle = str(inputs / "qemu-bundle")
-    if invocation_profile != base.SATA_OFF_INVOCATION_PROFILE:
+    if invocation_profile not in (base.SATA_OFF_INVOCATION_PROFILE, base.VAPIC_OFF_INVOCATION_PROFILE):
         deny(invocation_profile == base.INVOCATION_PROFILE and bundle == legacy_bundle,
              "module_absence_profile")
     return [*fixed, bundle]

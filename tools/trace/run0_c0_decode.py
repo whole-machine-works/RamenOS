@@ -1039,7 +1039,7 @@ def _witness_binding(origin, report, store, prerequisites):
     return host, binding, state, control, actual["report_ref"]
 
 
-def _snapshot_binding(checkpoint, store, replay, host_state, binding, control):
+def _snapshot_binding(checkpoint, store, replay, host_state, binding, control, invocation_profile):
     _require(checkpoint is not None, "checkpoint_missing", "INCOMPLETE")
     _fields(checkpoint, SNAPSHOT_FIELDS, "snapshot_fields")
     for name in ("resume_seq", "breakpoint_seq"):
@@ -1076,7 +1076,11 @@ def _snapshot_binding(checkpoint, store, replay, host_state, binding, control):
                  hmp == expected_hmp.encode("ascii") and layout == expected_layout.encode("ascii"),
                  "snapshot_text_identity")
         parsed_hmp.append(_hmp(hmp, replay[phase+"_registers"]))
-        parsed_layout.append(_layout(layout)); hmp_raw.append(hmp); layout_raw.append(layout)
+        parsed_layout.append(_layout(layout))
+        if invocation_profile == capture.VAPIC_OFF_INVOCATION_PROFILE:
+            capability.validate_profile_layout(layout.decode("ascii"), invocation_profile)
+        hmp_raw.append(hmp)
+        layout_raw.append(layout)
     _require(parsed_hmp[0] == parsed_hmp[1] and parsed_layout[0] == parsed_layout[1] and
              hmp_raw[0] == hmp_raw[1] and layout_raw[0] == layout_raw[1], "snapshot_bracket_changed", "INCOMPLETE")
     before = parsed_hmp[0]
@@ -1166,6 +1170,10 @@ def _capability_binding(report, store, profile):
         prior_blob(ref, LIMITS["retained_bytes"])
     for key in capability.OBS_REFS:
         prior_blob(previous["observations"][key], 65536)
+    if profile["invocation_profile"] == capture.VAPIC_OFF_INVOCATION_PROFILE:
+        layout = prior_blob(previous["observations"]["layout_ref"], 65536)
+        _require(layout.isascii(), "capability_layout_encoding")
+        capability.validate_profile_layout(layout.decode("ascii"), profile["invocation_profile"])
     for row in previous["operations"]:
         prior_blob(row["request_ref"], 65536)
         if row["response_ref"] is not None:
@@ -1211,7 +1219,8 @@ def decode_c0(origin, report_ref, blobs, prerequisites):
         _capability_binding(report, store, profile)
         _operations_binding(report, control, store)
         replay = validate_c0_rsp(control, store.values.copy())
-        state, ranges = _snapshot_binding(report["checkpoint"], store, replay, host_state, binding, control)
+        state, ranges = _snapshot_binding(report["checkpoint"], store, replay, host_state, binding,
+                                          control, profile["invocation_profile"])
         _termination(report["termination"])
         retained_refs = _retained_accounting(report_ref, report, host_ref, host, store, control, profile)
         loaded, translations = _decode_objects(report["checkpoint"], store, replay, state, ranges, pinned, candidate)

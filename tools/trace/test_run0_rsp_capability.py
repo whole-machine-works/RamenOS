@@ -14,7 +14,7 @@ import tempfile
 import time
 import unittest
 from types import SimpleNamespace
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import boot_profile_capture as previous
 import run0_rsp_capability as cap
@@ -223,6 +223,52 @@ class CapabilityControls(unittest.TestCase):
             machine = old_argv.index("-machine") + 1
             old_argv[machine] = "pc-q35-8.2,accel=tcg,sata=off"
             self.assertEqual(old_argv, new_argv)
+
+    def test_vapic_off_has_exact_distinct_pin_and_closed_argv(self):
+        invocation = previous.VAPIC_OFF_INVOCATION_PROFILE
+        self.assertEqual(cap.profile_pin({"invocation_profile": invocation}),
+                         "ab82f30ae31a03761b39088a4dd96c138203ed7d631909a953bc5224f7403da3")
+        for other in (previous.INVOCATION_PROFILE, previous.SATA_OFF_INVOCATION_PROFILE):
+            self.assertNotEqual(cap.profile_pin({"invocation_profile": other}),
+                                cap.profile_pin({"invocation_profile": invocation}))
+        argv = cap.capability_argv(Path("/inputs"), Path("/private/run"), invocation)
+        cap.validate_invocation_argv(argv, invocation)
+        for changed in (argv[:3] + argv[5:], argv[:4] + ["apic.vapic=on"] + argv[5:]):
+            with self.subTest(argv=changed), self.assertRaises(previous.ProbeError):
+                cap.validate_invocation_argv(changed, invocation)
+        for other in (previous.INVOCATION_PROFILE, previous.SATA_OFF_INVOCATION_PROFILE):
+            with self.subTest(profile=other), self.assertRaises(previous.ProbeError):
+                cap.validate_invocation_argv(argv, other)
+
+    def test_vapic_off_layout_rejects_both_removed_devices(self):
+        invocation = previous.VAPIC_OFF_INVOCATION_PROFILE
+        self.assertEqual(cap.validate_profile_layout(LAYOUT, invocation),
+                         cap.parse_flatview(LAYOUT))
+        for name, reason in (("ich9-ahci", "sata_off_ahci_visible"),
+                             ("kvmvapic", "vapic_off_device_visible")):
+            layout = LAYOUT.replace("vga", name)
+            with self.subTest(name=name), self.assertRaisesRegex(previous.ProbeError, reason):
+                cap.validate_profile_layout(layout, invocation)
+        # A clean new check must still succeed after a refusal.
+        self.assertEqual(cap.validate_profile_layout(LAYOUT, invocation),
+                         cap.parse_flatview(LAYOUT))
+
+    def test_vapic_off_observation_denies_before_any_rsp_dispatch(self):
+        invocation = previous.VAPIC_OFF_INVOCATION_PROFILE
+        for device, reason in (("ich9-ahci", "sata_off_ahci_visible"),
+                               ("kvmvapic", "vapic_off_device_visible")):
+            qmp = SimpleNamespace(
+                cpu=CPU["qom-path"],
+                require_prelaunch=Mock(return_value={"status": "prelaunch"}),
+                request=Mock(side_effect=[
+                    [{"name": name} for name in cap.QMP_COMMANDS], [CPU], True, 40,
+                    "CPU#0", LAYOUT.replace("vga", device),
+                ]),
+            )
+            rsp, evidence = Mock(), Mock()
+            with self.subTest(device=device), self.assertRaisesRegex(previous.ProbeError, reason):
+                cap.observe(qmp, rsp, evidence, cap.empty_observations(), invocation)
+            self.assertEqual(rsp.mock_calls, [])
 
     def test_cap01_unreviewed_plan_denies_before_child(self):
         with tempfile.TemporaryDirectory() as tmp, patch.object(subprocess, "Popen") as spawn:
