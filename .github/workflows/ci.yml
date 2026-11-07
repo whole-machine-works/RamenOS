@@ -214,6 +214,7 @@ jobs:
       LINT_ALLOW_WARNINGS: "0"
       SKIP_E2E_ASSERTIONS: "1"
       RAMEN_FOUNDRY_BUILD_CACHE: "1"
+      RAMEN_CI_CACHE_RETAIN_CURRENT: "1"
     steps:
       - uses: actions/checkout@v4
       - name: Install editor host prerequisites
