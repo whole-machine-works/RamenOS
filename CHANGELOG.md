@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## 2026-11-06 — typed C0 RAM-acquisition preparation
+
+- Add the bounded suspended paging/object driver, frozen rereads and one-use
+  request/receipt lifecycle, with eighteen new controls and independent replay.
+- Preserve the existing decoder and paging semantics. Production issuers,
+  shared-wire/accounting and owned runtime joins remain pending; no live RAM or
+  complete C0 is claimed. See the
+  [driver record](docs/plans/run0-c0-acquisition-driver-2026-11-06.md).
+
 ## 2026-11-06 — checked C0 entry-stop preparation
 
 - Add the pure prior-entry token and bounded breakpoint/continue/stop/ACK prefix,
