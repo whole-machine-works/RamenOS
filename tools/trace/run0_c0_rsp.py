@@ -52,13 +52,14 @@ def _current_physical_mode(wire, deadline_ns):
         wire._rsp_semantic("c0_physical_mode", "DENY")
 
 
-def _selected_registers(wire, deadline_ns):
+def _selected_registers(wire, deadline_ns, *, tail=False):
     from run0_c0_decode import SELECTED_REGISTERS
     from run0_rsp import HEX
 
     result = []
     for number in SELECTED_REGISTERS:
-        value = wire._rsp_exchange("register_read", f"p{number:x}".encode(), limit=deadline_ns)
+        value = wire._rsp_exchange("register_read", f"p{number:x}".encode(), limit=deadline_ns,
+                                   tail=f"p{number:x}" if tail else None)
         size = 4 if 17 <= number <= 23 else 8
         if len(value) != size * 2 or HEX.fullmatch(value) is None:
             wire._rsp_semantic("c0_selected_register_width", "DENY")

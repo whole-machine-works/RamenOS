@@ -256,8 +256,8 @@ The C0 wire now checks the fixed paused QMP handshake with bounded real socket
 fixtures and retains raw slices and operation timing. Its typed debugger
 setup shares that wire and ledger through reset register and physical-mode
 readback. Existing reset capture controls keep their original limits.
-The live C0 collector still needs its own same-stop witness, source closure
-for ordinary-RAM persistence and RAM acquisition evidence.
+At this stage the live collector still needed its same-stop witness, persistence
+source closure and RAM acquisition evidence; the later joins are recorded below.
 
 The [SATA/VAPIC-disabled successor](docs/plans/run0-vapic-off-requalification-2026-11-06.md)
 now qualifies a distinct exact profile with 217 Linux trace controls, a fresh
@@ -266,9 +266,9 @@ Its 8/85/42 run files match the remote originals; both observed reset memory
 views exclude AHCI and `kvmvapic`. The host retains the unchanged 14-read/104-byte
 budget, four actual zero-exit waits and eleven EOFs. Pure prior-profile and CAP1
 joins pass. Original profiles and failures remain preserved. This does not
-establish global work quiescence or live C0: the successor still needs its exact
-RTC event policy, asynchronous entry stop, same-stop host witness and reviewed
-ordinary-RAM persistence condition before guest-memory acquisition.
+establish global work quiescence or live C0. At that stage, exact RTC policy,
+asynchronous entry stop, the same-stop witness and reviewed ordinary-RAM
+persistence condition remained prerequisites for guest-memory acquisition.
 
 The later [source follow-up](docs/plans/run0-c0-source-persistence-2026-11-06.md)
 conditionally accepts that persistence condition for the exact SATA/VAPIC-off
@@ -282,20 +282,27 @@ implements the checked prior token, sole breakpoint/continue, silent asynchronou
 stop, separate acknowledgment and fresh debug-status confirmation. Its
 exact-profile RTC policy joins host and C0 replay. All 253 Linux trace controls
 and three retained reset replays pass. These are source/socket preparation
-results; the owned launch and current-state/witness/RAM joins remain pending.
+results; that packet deferred the owned launch and current-state/witness/RAM joins.
 
 The [acquisition driver](docs/plans/run0-c0-acquisition-driver-2026-11-06.md)
 now implements the fixed paging/object/recheck schedule and one-use typed
 requests. Eighteen new controls and complete synthetic replay pass independent
-review. Production current/after issuers, shared-wire dispatch/accounting and
-the real owned collector remain pending; no live RAM was acquired.
+review. That packet deferred production current/after issuers, shared-wire
+dispatch/accounting and the owned collector; it acquired no live RAM.
 
 The [host-observation receiving adapter](docs/plans/run0-c0-host-observation-2026-11-07.md)
 now reuses the 14-read/104-byte body through closed same-wire receipts and one
 aggregate lease. Twenty-five new controls and all 296 Linux trace controls pass;
 three historical reset replays remain valid. Actual helpers operate only on
-private synthetic fixtures in this packet. Production issuers, owned collector,
-shared dispatch/accounting and retained-runtime C0 acceptance remain pending.
+private synthetic fixtures in that packet. It deferred production issuers, the
+owned collector, shared dispatch/accounting and retained-runtime C0 acceptance.
+
+The [owned C0 collector](docs/plans/run0-c0-owned-collector-2026-11-07.md)
+now joins private current/after issuers, shared physical-send accounting and owned
+cleanup. Independent source review, all 352 sealed Linux trace controls and three
+historical reset replays pass. The runtime policy checks the exact profile, ABI,
+prior/persistence inputs and seventeen observer source files. Actual C0 capture
+and retained-runtime acceptance remain pending; no live RAM result is claimed.
 
 The IPC diagnostic reproduced two zero-byte timeouts before a later valid
 reply on the same VM. The separate single-client run succeeded immediately.

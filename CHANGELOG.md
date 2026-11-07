@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## 2026-11-07 — owned C0 collector source qualification
+
+- Join immutable prepared inputs, current/after issuers, one physical-read
+  accounting envelope and actual owned cleanup without changing the reader,
+  acquisition schedule, walker or decoder.
+- Pass independent source review, all 352 sealed Linux trace controls and three
+  historical reset replays. Add four gate commands while preserving all earlier
+  checks. Actual C0 remains pending the exact reviewed live execution and
+  independent retained replay. See the
+  [collector record](docs/plans/run0-c0-owned-collector-2026-11-07.md).
+
 ## 2026-11-07 — C0 host-observation receiving preparation
 
 - Reuse the owned observation body through a closed C0 port and typed wire
