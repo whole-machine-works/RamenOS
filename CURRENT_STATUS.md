@@ -27,9 +27,15 @@ The recovery comparison has a default-off host adapter behind
 `recovery_decision_v0_dev`. It checks a pinned module and ABI, starts a fresh
 bounded Wasmtime instance for each observation, and checks the result against
 Rust's receipt and epoch rules. The actual Newcomputer candidate passed a
-development smoke run. The test-only Q1 bridge and synthetic controls retain
-actual output and failure rows while the reviewed registration is pending.
-Full recovery evaluation and activation remain pending.
+development smoke run. The independently reviewed registration now releases
+the fixed technical replay. All 627 ordered cases matched on Darwin arm64,
+including the return value and all 16 observed bytes, using the exact compiled
+test executable and a fresh bounded instance per case. Independent review
+accepted this recorded correspondence result. The
+[technical result](docs/plans/recovery-q1-technical-result-2026-11-06.md) binds
+the source, executable, registration and raw evidence. Full fault/owner
+qualification, Linux reproduction, measured update/rollback benefit, live
+integration and activation remain pending.
 
 The default-off Linux process implementation merged through
 [PR52](https://github.com/whole-machine-works/RamenOS/pull/52) on November 5 as
