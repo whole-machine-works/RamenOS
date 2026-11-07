@@ -407,6 +407,11 @@ def packet_copy_bound(target):
 
 def metadata_bound(target):
     deny(type(target) is ReadTarget, 'call_read_charge_target')
+    return metadata_copy_bound()
+
+
+def metadata_copy_bound():
+    """The existing fixed metadata credit, without inventing a future target."""
     # One pending/native capacity plus three canonical serialization copies:
     # json.dumps text, text+newline, ASCII bytes. No encoder copy is used to size.
     # Four pending/completed inventory projections include the target assembly.
@@ -414,6 +419,17 @@ def metadata_bound(target):
                    length=4100, family='decoded physical read data', epoch='C2', state='incomplete_write')
     inventory_capacity = _encoded_size(example)
     return 4*MAX_ROW_BYTES+8*inventory_capacity
+
+
+def packet_copy_upper_bound(length):
+    """Upper bound of the unchanged copy plan for an as-yet unknown U64 GPA.
+
+    Summing that plan gives 17L + 8*address_digits + 8*length_digits + 43.
+    A real request has at most16 address digits and3 length digits. This is
+    logical copy accounting, never a physical target or a Python RSS bound.
+    """
+    _int(length, 1, 2048)
+    return 17*length+195
 
 
 def require_runtime_receipt(receipt):
