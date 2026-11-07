@@ -92,8 +92,11 @@ def encode_packet(payload):
     return b'$'+encoded+b'#'+f'{sum(encoded) & 255:02x}'.encode('ascii')
 
 
-class AckDecoder:
+class _AckCodec:
     """Incremental strict packet codec; invalid input permanently closes it."""
+
+    _wire_limit = MAX_WIRE
+    _ack_limit = MAX_ACKS
     def __init__(self):
         self._buffer = bytearray()
         self._state = 'idle'
@@ -110,13 +113,13 @@ class AckDecoder:
         require(not self._failed, 'rsp_codec_terminal')
         try:
             require(type(chunk) is bytes, 'rsp_chunk_type')
-            require(len(chunk) <= MAX_WIRE-self._wire_bytes, 'rsp_wire_limit', status='INCOMPLETE')
+            require(len(chunk) <= self._wire_limit-self._wire_bytes, 'rsp_wire_limit', status='INCOMPLETE')
             self._wire_bytes += len(chunk)
             frames = []
             for value in chunk:
                 if self._state == 'idle':
                     if value in (43, 45):
-                        require(self._acks < MAX_ACKS, 'rsp_ack_limit', status='INCOMPLETE')
+                        require(self._acks < self._ack_limit, 'rsp_ack_limit', status='INCOMPLETE')
                         self._acks += 1
                         frames.append(Frame('ACK' if value == 43 else 'NACK', raw=bytes([value])))
                         continue
@@ -161,6 +164,16 @@ class AckDecoder:
         except RSPError:
             self._failed = True
             raise
+
+
+
+class AckDecoder(_AckCodec):
+    """The unchanged closed reset profile."""
+
+
+class _C0AckDecoder(_AckCodec):
+    _wire_limit = 32 * 1024 * 1024
+    _ack_limit = 512
 
 
 def _expected_registers():
@@ -223,24 +236,11 @@ def decode_reset_registers(payload, target):
     return RegisterSnapshot(payload, raw, values)
 
 
-class RSPClient:
-    """Closed reset sequence. A local state denial emits no bytes.
+class _ResetSequence:
+    """Fixed reset semantics shared by the separate bounded wire backends."""
 
-    The supplied wire must enforce its passed absolute deadline, preserve raw
-    incoming/outgoing bytes and drain other owned streams. No raw request API is
-    public. Operation rows retain partial-write and semantic-failure evidence.
-    """
-    def __init__(self, wire, budget):
-        self.wire, self.budget = wire, budget
-        self._decoder, self._frames = AckDecoder(), deque()
-        self._state = 'new'
-        self._operations = []
-        self._wire_bytes = self._acks = self._xml_bytes = 0
-        self._target = None
-
-    @property
-    def operations(self):
-        return tuple(self._operations)
+    def __init__(self):
+        self._state, self._xml_bytes, self._target = 'new', 0, None
 
     def _require_state(self, *states):
         require(self._state != 'failed', 'rsp_session_terminal', status='INCOMPLETE')
@@ -268,101 +268,6 @@ class RSPClient:
             return False
         match = re.fullmatch(rb'qXfer:features:read:'+re.escape(annex)+rb':([0-9a-f]{1,4}),400', payload)
         return match is not None and int(match[1], 16) < MAX_XML
-
-    def _remaining(self, deadline):
-        remaining = min(deadline, self.budget.deadline-capture.TEARDOWN_SECONDS)-time.monotonic()
-        require(remaining > 0, 'rsp_deadline', status='INCOMPLETE')
-        return remaining
-
-    def _charge_wire(self, length):
-        require(length <= MAX_WIRE-self._wire_bytes, 'rsp_wire_limit', status='INCOMPLETE')
-        self._wire_bytes += length
-
-    def _write(self, data, deadline):
-        self._remaining(deadline)
-        self._charge_wire(len(data))
-        while True:
-            try:
-                self.wire.write_all(data, deadline)
-                break
-            except InterruptedError:
-                # write_all owns partial-write accounting; retrying it could
-                # duplicate a prefix. A write exception is uncertain, terminal.
-                raise RSPError('INCOMPLETE', 'rsp_write_interrupted')
-        self._remaining(deadline)
-
-    def _next(self, deadline):
-        while not self._frames:
-            self._remaining(deadline)
-            allowance = min(MAX_PACKET, MAX_WIRE-self._wire_bytes)
-            require(allowance > 0, 'rsp_wire_limit', status='INCOMPLETE')
-            try:
-                chunk = self.wire.read_chunk(deadline, allowance)
-            except (BlockingIOError, InterruptedError):
-                continue
-            self._remaining(deadline)
-            require(type(chunk) is bytes, 'rsp_chunk_type')
-            require(bool(chunk), 'rsp_eof', status='INCOMPLETE')
-            self._charge_wire(len(chunk))
-            self._frames.extend(self._decoder.feed(chunk))
-        return self._frames.popleft()
-
-    def _exchange(self, name, payload):
-        self._require_state('new','supported','thread_first','thread_next','thread_current',
-                            'thread_general','thread_continue','target_read','described',
-                            'registers','qemu_supported','physical_zero','physical_set')
-        require(type(payload) is bytes and self._payload_allowed(name, payload),
-                'rsp_forbidden_operation', terminal=False)
-        request = encode_packet(payload)
-        index = None
-        try:
-            self.budget.message()
-            deadline = min(time.monotonic()+capture.RESPONSE_SECONDS,
-                           self.budget.deadline-capture.TEARDOWN_SECONDS)
-            self._remaining(deadline)
-            require(not self._frames and not self._decoder.pending, 'rsp_unsolicited')
-            require(len(request) <= MAX_WIRE-self._wire_bytes, 'rsp_wire_limit', status='INCOMPLETE')
-            index = len(self._operations)
-            self._operations.append(RSPOperation(name, request, None, None,
-                                                 time.monotonic_ns(), None, 'pending'))
-            self._write(request, deadline)
-            ack = self._next(deadline)
-            require(ack.kind == 'ACK', 'rsp_request_ack', status='INCOMPLETE' if ack.kind == 'NACK' else 'DENY')
-            require(self._acks < MAX_ACKS, 'rsp_ack_limit', status='INCOMPLETE')
-            self._acks += 1
-            response = self._next(deadline)
-            require(response.kind == 'PACKET', 'rsp_response_packet')
-            self._operations[index] = replace(self._operations[index], response_packet=response.raw,
-                                               response_payload=response.payload)
-            self.budget.message()
-            require(self._acks < MAX_ACKS, 'rsp_ack_limit', status='INCOMPLETE')
-            self._acks += 1
-            self._write(b'+', deadline)
-            require(not self._frames and not self._decoder.pending, 'rsp_unsolicited')
-            require(response.payload != b'', 'rsp_unsupported', status='INCOMPLETE')
-            require(not re.fullmatch(rb'E[0-9a-fA-F]{2}', response.payload),
-                    'rsp_remote_error', status='INCOMPLETE')
-            self._operations[index] = replace(self._operations[index], result='ok', finished_ns=time.monotonic_ns())
-            return response.payload
-        except (capture.ProbeError, OSError) as error:
-            self._state = 'failed'
-            timeout = isinstance(error, TimeoutError) or getattr(error, 'reason', '') in (
-                'rsp_deadline', 'vm_deadline', 'rsp_request_timeout', 'rsp_response_timeout')
-            if index is not None:
-                self._operations[index] = replace(self._operations[index], result='timeout' if timeout else 'error',
-                                                   finished_ns=time.monotonic_ns())
-            if isinstance(error, RSPError):
-                raise
-            if isinstance(error, capture.ProbeError):
-                raise RSPError(error.status, error.reason) from error
-            raise RSPError('INCOMPLETE', 'rsp_timeout' if timeout else 'rsp_io') from error
-
-    def _semantic(self, condition, reason, *, status='DENY'):
-        if not condition:
-            self._state = 'failed'
-            if self._operations:
-                self._operations[-1] = replace(self._operations[-1], result='error')
-            raise RSPError(status, reason)
 
     def query_supported(self):
         self._require_state('new')
@@ -477,3 +382,117 @@ class RSPClient:
         reply = self._exchange('physical_mode_enable', b'Qqemu.PhyMemMode:1')
         self._semantic(reply == b'OK', 'rsp_physical_set')
         self._state = 'physical_set'
+
+
+class RSPClient(_ResetSequence):
+    """Closed reset sequence. A local state denial emits no bytes.
+
+    The supplied wire must enforce its passed absolute deadline, preserve raw
+    incoming/outgoing bytes and drain other owned streams. No raw request API is
+    public. Operation rows retain partial-write and semantic-failure evidence.
+    """
+    def __init__(self, wire, budget):
+        super().__init__()
+        self.wire, self.budget = wire, budget
+        self._decoder, self._frames = AckDecoder(), deque()
+        self._operations = []
+        self._wire_bytes = self._acks = 0
+
+    @property
+    def operations(self):
+        return tuple(self._operations)
+
+    def _remaining(self, deadline):
+        remaining = min(deadline, self.budget.deadline-capture.TEARDOWN_SECONDS)-time.monotonic()
+        require(remaining > 0, 'rsp_deadline', status='INCOMPLETE')
+        return remaining
+
+    def _charge_wire(self, length):
+        require(length <= MAX_WIRE-self._wire_bytes, 'rsp_wire_limit', status='INCOMPLETE')
+        self._wire_bytes += length
+
+    def _write(self, data, deadline):
+        self._remaining(deadline)
+        self._charge_wire(len(data))
+        while True:
+            try:
+                self.wire.write_all(data, deadline)
+                break
+            except InterruptedError:
+                # write_all owns partial-write accounting; retrying it could
+                # duplicate a prefix. A write exception is uncertain, terminal.
+                raise RSPError('INCOMPLETE', 'rsp_write_interrupted')
+        self._remaining(deadline)
+
+    def _next(self, deadline):
+        while not self._frames:
+            self._remaining(deadline)
+            allowance = min(MAX_PACKET, MAX_WIRE-self._wire_bytes)
+            require(allowance > 0, 'rsp_wire_limit', status='INCOMPLETE')
+            try:
+                chunk = self.wire.read_chunk(deadline, allowance)
+            except (BlockingIOError, InterruptedError):
+                continue
+            self._remaining(deadline)
+            require(type(chunk) is bytes, 'rsp_chunk_type')
+            require(bool(chunk), 'rsp_eof', status='INCOMPLETE')
+            self._charge_wire(len(chunk))
+            self._frames.extend(self._decoder.feed(chunk))
+        return self._frames.popleft()
+
+    def _exchange(self, name, payload):
+        self._require_state('new','supported','thread_first','thread_next','thread_current',
+                            'thread_general','thread_continue','target_read','described',
+                            'registers','qemu_supported','physical_zero','physical_set')
+        require(type(payload) is bytes and self._payload_allowed(name, payload),
+                'rsp_forbidden_operation', terminal=False)
+        request = encode_packet(payload)
+        index = None
+        try:
+            self.budget.message()
+            deadline = min(time.monotonic()+capture.RESPONSE_SECONDS,
+                           self.budget.deadline-capture.TEARDOWN_SECONDS)
+            self._remaining(deadline)
+            require(not self._frames and not self._decoder.pending, 'rsp_unsolicited')
+            require(len(request) <= MAX_WIRE-self._wire_bytes, 'rsp_wire_limit', status='INCOMPLETE')
+            index = len(self._operations)
+            self._operations.append(RSPOperation(name, request, None, None,
+                                                 time.monotonic_ns(), None, 'pending'))
+            self._write(request, deadline)
+            ack = self._next(deadline)
+            require(ack.kind == 'ACK', 'rsp_request_ack', status='INCOMPLETE' if ack.kind == 'NACK' else 'DENY')
+            require(self._acks < MAX_ACKS, 'rsp_ack_limit', status='INCOMPLETE')
+            self._acks += 1
+            response = self._next(deadline)
+            require(response.kind == 'PACKET', 'rsp_response_packet')
+            self._operations[index] = replace(self._operations[index], response_packet=response.raw,
+                                               response_payload=response.payload)
+            self.budget.message()
+            require(self._acks < MAX_ACKS, 'rsp_ack_limit', status='INCOMPLETE')
+            self._acks += 1
+            self._write(b'+', deadline)
+            require(not self._frames and not self._decoder.pending, 'rsp_unsolicited')
+            require(response.payload != b'', 'rsp_unsupported', status='INCOMPLETE')
+            require(not re.fullmatch(rb'E[0-9a-fA-F]{2}', response.payload),
+                    'rsp_remote_error', status='INCOMPLETE')
+            self._operations[index] = replace(self._operations[index], result='ok', finished_ns=time.monotonic_ns())
+            return response.payload
+        except (capture.ProbeError, OSError) as error:
+            self._state = 'failed'
+            timeout = isinstance(error, TimeoutError) or getattr(error, 'reason', '') in (
+                'rsp_deadline', 'vm_deadline', 'rsp_request_timeout', 'rsp_response_timeout')
+            if index is not None:
+                self._operations[index] = replace(self._operations[index], result='timeout' if timeout else 'error',
+                                                   finished_ns=time.monotonic_ns())
+            if isinstance(error, RSPError):
+                raise
+            if isinstance(error, capture.ProbeError):
+                raise RSPError(error.status, error.reason) from error
+            raise RSPError('INCOMPLETE', 'rsp_timeout' if timeout else 'rsp_io') from error
+
+    def _semantic(self, condition, reason, *, status='DENY'):
+        if not condition:
+            self._state = 'failed'
+            if self._operations:
+                self._operations[-1] = replace(self._operations[-1], result='error')
+            raise RSPError(status, reason)

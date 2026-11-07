@@ -10,6 +10,8 @@ import socket
 import stat
 import time
 
+import run0_rsp as rsp
+
 from boot_profile_capture import MAX_FRAME, ProbeError, decode_frame, deny, incomplete
 
 
@@ -18,6 +20,7 @@ REPORT_RESERVE = 1024 * 1024
 FAILURE_RESERVE = 128 * 1024
 MAX_OPERATIONS = 512
 MAX_EVENTS = 128
+MAX_RSP_ACKS = 1024
 MAX_QMP_FRAMES = 128
 MAX_QMP_BYTES = 1024 * 1024
 OWNER_NS = 90_000_000_000
@@ -111,7 +114,12 @@ class C0Wire:
 
         self._deadline = started_ns + OWNER_NS - TEARDOWN_NS
         self._qmp = qmp
-        self._raw = {name: bytearray() for name in (*sources, "qmp-out")}
+        self._rsp_socket = streams.get("rsp")
+        self._rsp_active = self._rsp_eof = self._rsp_used = self._prelaunch_complete = False
+        self._rsp_frames = deque()
+        self._rsp_decoder = None
+        self._rsp_offset = self._rsp_acks = 0
+        self._raw = {name: bytearray() for name in (*sources, "qmp-out", "rsp-out")}
         self._charged = 0
         self._operations = []
         self._events = []
@@ -221,16 +229,28 @@ class C0Wire:
             self._eofs.append(EndOfStream(stream, observed))
             if stream == "qmp-in":
                 self._qmp_eof = True
+            elif stream == "rsp":
+                self._rsp_eof = True
             return
         self.reserve_output(len(data))
         self._raw[stream].extend(data)
         if stream == "qmp-in":
             self._qmp_frames(observed)
+        elif stream == "rsp" and self._rsp_active:
+            for frame in self._rsp_decoder.feed(data):
+                wire = WireSlice("rsp", self._rsp_offset, len(frame.raw))
+                self._rsp_offset += len(frame.raw)
+                if frame.kind in ("ACK", "NACK"):
+                    incomplete(self._rsp_acks < MAX_RSP_ACKS, "rsp_ack_limit")
+                    self._rsp_acks += 1
+                self._rsp_frames.append((frame, wire, observed))
 
     def _poll(self, deadline, reason, *, wait=True, writing=False):
         incomplete(not self._qmp_eof, "qmp_eof")
+        endpoint = self._rsp_socket if writing == "rsp" else self._qmp
+        label = "rsp" if writing == "rsp" else "qmp-in"
         if writing:
-            self._selector.modify(self._qmp, selectors.EVENT_READ | selectors.EVENT_WRITE, "qmp-in")
+            self._selector.modify(endpoint, selectors.EVENT_READ | selectors.EVENT_WRITE, label)
         while True:
             timeout = self._time_left(deadline, reason)
             try:
@@ -241,8 +261,8 @@ class C0Wire:
         for key, mask in ready:
             if mask & selectors.EVENT_READ:
                 self._read(key, deadline, reason)
-        if writing and not self._qmp_eof:
-            self._selector.modify(self._qmp, selectors.EVENT_READ, "qmp-in")
+        if writing and not (self._rsp_eof if writing == "rsp" else self._qmp_eof):
+            self._selector.modify(endpoint, selectors.EVENT_READ, label)
 
     def _decode(self, wire):
         return decode_frame(bytes(self._raw[wire.stream][wire.offset:wire.offset + wire.length]))
@@ -367,7 +387,128 @@ class C0Wire:
             commands, _ = self._exchange()
             _, observed = self._exchange()
             self._require_quiet(self._deadline, "qmp_response_timeout")
+            self._prelaunch_complete = True
             return Prelaunch(commands, observed)
+        except ProbeError as error:
+            self._failure = Failure(error.status, error.reason)
+            raise
+        except OSError as error:
+            self._failure = Failure("INCOMPLETE", "c0_selector_error")
+            raise ProbeError(self._failure.status, self._failure.reason) from error
+        except KeyboardInterrupt:
+            self._failure = Failure("INCOMPLETE", "c0_cancelled")
+            raise
+
+    def _rsp_qmp_quiet(self):
+        if self._frames:
+            wire, observed = self._frames[0]
+            self._refuse_event(self._decode(wire), wire, observed)
+        deny(not self._frames and self._frame_start == len(self._raw["qmp-in"]),
+             "qmp_unsolicited")
+        incomplete(not self._qmp_eof, "qmp_eof")
+
+    def _rsp_quiet(self, deadline):
+        self._poll(deadline, "rsp_request_timeout", wait=False)
+        self._rsp_qmp_quiet()
+        deny(not self._rsp_frames and not self._rsp_decoder.pending, "rsp_unsolicited")
+        incomplete(not self._rsp_eof, "rsp_eof")
+
+    def _rsp_next(self, deadline):
+        while not self._rsp_frames:
+            incomplete(not self._rsp_eof, "rsp_eof")
+            self._poll(deadline, "rsp_response_timeout")
+            self._rsp_qmp_quiet()
+        self._time_left(deadline, "rsp_response_timeout")
+        return self._rsp_frames.popleft()
+
+    def _rsp_send(self, request, deadline):
+        view = memoryview(request)
+        while view:
+            self._time_left(deadline, "rsp_request_timeout")
+            try:
+                sent = self._rsp_socket.send(view)
+            except (BlockingIOError, InterruptedError):
+                self._poll(deadline, "rsp_request_timeout", writing="rsp")
+                self._rsp_quiet(deadline)
+                continue
+            except OSError as error:
+                self._io_errors.append(StreamError("rsp-out", "write", error.errno,
+                                                   time.monotonic_ns()))
+                raise ProbeError("INCOMPLETE", "rsp_write_error") from error
+            incomplete(sent > 0, "rsp_send_eof")
+            self._raw["rsp-out"].extend(view[:sent])
+            view = view[sent:]
+            if view:
+                self._rsp_quiet(deadline)
+
+    def _rsp_semantic(self, reason, status):
+        self._operations[-1] = replace(self._operations[-1], result="error")
+        raise ProbeError(status, reason)
+
+    def _rsp_exchange(self, name, payload):
+        deny(self._rsp_active and self._failure is None and not self._closed,
+             "rsp_session_state")
+        self._rsp_quiet(self._deadline)
+        started = time.monotonic_ns()
+        deadline = min(started + RESPONSE_NS, self._deadline)
+        request = rsp.encode_packet(payload)
+        incomplete(len(self._operations) < MAX_OPERATIONS, "c0_operation_limit")
+        incomplete(self._rsp_acks <= MAX_RSP_ACKS - 2, "rsp_ack_limit")
+        self._time_left(deadline, "rsp_request_timeout")
+        self.reserve_output(len(request))
+        row = Operation(len(self._operations) + 1, "rsp", name, started)
+        self._operations.append(row)
+        offset = len(self._raw["rsp-out"])
+        accepted, result = None, "error"
+        try:
+            self._rsp_send(request, deadline)
+            ack, _, _ = self._rsp_next(deadline)
+            rsp.require(ack.kind == "ACK", "rsp_request_ack",
+                        status="INCOMPLETE" if ack.kind == "NACK" else "DENY")
+            response, wire, _ = self._rsp_next(deadline)
+            rsp.require(response.kind == "PACKET", "rsp_response_packet")
+            accepted = wire
+            self._rsp_quiet(deadline)
+            incomplete(self._rsp_acks < MAX_RSP_ACKS, "rsp_ack_limit")
+            self.reserve_output(1)
+            self._rsp_send(b"+", deadline)
+            self._rsp_acks += 1
+            self._time_left(deadline, "rsp_response_timeout")
+            rsp.require(response.payload != b"", "rsp_unsupported", status="INCOMPLETE")
+            rsp.require(not (len(response.payload) == 3 and response.payload[:1] == b"E"
+                             and rsp.HEX.fullmatch(response.payload[1:])),
+                        "rsp_remote_error", status="INCOMPLETE")
+            result = "ok"
+            return response.payload
+        except ProbeError as error:
+            if "timeout" in error.reason or "deadline" in error.reason:
+                result = "timeout"
+            raise
+        finally:
+            length = len(self._raw["rsp-out"]) - offset
+            # Ordinary response ACKs are separate raw bytes, not request bytes.
+            request_length = min(length, len(request))
+            prefix = WireSlice("rsp-out", offset, request_length) if request_length else None
+            self._operations[-1] = replace(row, request=prefix, response=accepted, result=result,
+                                           finished_ns=time.monotonic_ns())
+
+    def prepare_rsp_reset(self):
+        """Run the fixed typed reset sequence after this wire's paused handshake."""
+        deny(self._prelaunch_complete and not self._closed and self._failure is None
+             and not self._rsp_used, "rsp_session_state")
+        self._rsp_used = True
+        try:
+            deny(type(self._rsp_socket) is socket.socket
+                 and self._rsp_socket.gettimeout() == 0.0, "rsp_endpoint")
+            self._rsp_socket.getpeername()
+            deny(not self._raw["rsp"], "rsp_unsolicited")
+            incomplete(not self._rsp_eof, "rsp_eof")
+            self._rsp_decoder = rsp._C0AckDecoder()
+            self._rsp_active = True
+            self._rsp_quiet(self._deadline)
+            from run0_c0_rsp import _C0Reset
+            self._rsp_reset = _C0Reset(self)
+            return self._rsp_reset.prepare()
         except ProbeError as error:
             self._failure = Failure(error.status, error.reason)
             raise
