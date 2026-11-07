@@ -378,8 +378,26 @@ These observations remain QEMU evidence, not device/HIL/metal qualification.
 entry/context, allocation and owner locks, and a bounded nonsymlink owned compiler
 tree. Active/abandoned entries, changed contexts and unknown ownership deny.
 Only that compiler entry is removed; evidence and retained binaries remain outside
-its scope. Interrupted retirement is quarantined. There is no automatic eviction,
-PID-based kill, abandoned-owner reset or whole-out deletion.
+its scope. Interrupted retirement is quarantined. Ordinary local runs have no
+automatic eviction, PID-based kill, abandoned-owner reset or whole-out deletion.
+
+The editor CI job explicitly sets `RAMEN_CI_CACHE_RETAIN_CURRENT=1`. After
+every canonical editor stage succeeds, the lane passes its exact fresh batch
+to `compiler_cache_snapshot.py`. The helper revalidates the complete batch,
+reads all four source-bound compiler reports and retains all eleven current
+phase targets, including cache hits. It uses the existing inspection and locked
+retirement operations to remove completed targets from older source contexts
+before the outer cache upload. Missing or ambiguous reports, changed contexts,
+active/quarantined entries and unknown ownership refuse cleanup. No evidence,
+retained executable, cache key, test selection or acceptance rule changes.
+
+The fresh sibling `<batch>.cache-snapshot.json` records kept/retired keys and
+logical bytes and is included in the existing stage-artifact upload. A race can
+refuse after earlier safe retirements; the failure report retains that partial
+progress. Disposable-fixture controls cover retention, refusal and fresh
+allocation. A completed historical run restored 4,633,256,932 compressed bytes
+in 87 seconds and saved 6,564,504,277 bytes in 115 seconds. Those measurements
+motivated bounded snapshots; they do not establish the new upload size or speed.
 
 The original five-lane successor completed Linux56 and hosted qualification on
 its recorded source, as documented in [Current Status](../CURRENT_STATUS.md#foundry-development-and-ci-execution).

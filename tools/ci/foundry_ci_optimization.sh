@@ -14,6 +14,7 @@ python3 tools/ci/test_store_test_dependencies.py
 python3 tools/ci/test_acceptance_build.py
 python3 tools/ci/test_test_timing.py
 python3 tools/ci/test_compiler_cache_control.py
+python3 tools/ci/test_compiler_cache_snapshot.py
 python3 tools/ci/test_build_streamlining.py
 python3 tools/ci/test_selected_test_runner.py
 python3 tools/ci/test_editor_process_preparation.py

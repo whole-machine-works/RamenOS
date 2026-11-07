@@ -135,6 +135,13 @@ def preflight_plan():
 
 def run_stages(stages, environment=None):
     inherited = dict(os.environ if environment is None else environment)
+    retain = inherited.get("RAMEN_CI_CACHE_RETAIN_CURRENT", "0")
+    if retain not in ("0", "1"):
+        raise ValueError("RAMEN_CI_CACHE_RETAIN_CURRENT must be 0 or 1")
+    if retain == "1" and (inherited.get("GITHUB_ACTIONS") != "true"
+            or inherited.get("RAMEN_FOUNDRY_BUILD_CACHE") != "1"
+            or tuple(stages) != lane_plan("editor")):
+        raise ValueError("compiler snapshot requires the complete CI editor lane and enabled cache")
     inherited["RUSTUP_TOOLCHAIN"] = read_toolchain(ROOT)["channel"]
     batch = None
     if any(stage.name == "editor-process-runtime" for stage in stages):
@@ -155,6 +162,9 @@ def run_stages(stages, environment=None):
         result = subprocess.run(command, cwd=ROOT, env=env, check=False)
         if result.returncode:
             return result.returncode
+    if retain == "1":
+        import compiler_cache_snapshot
+        compiler_cache_snapshot.snapshot(ROOT, batch)
     return 0
 
 

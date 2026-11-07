@@ -16,7 +16,7 @@ import tempfile
 import shlex
 import tomllib
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -143,6 +143,47 @@ class LaneTests(unittest.TestCase):
         self.assertEqual(calls[0][1]["env"]["SKIP_E2E_ASSERTIONS"], "1")
         self.assertEqual(calls[0][1]["env"]["UNCHANGED"], "yes")
         self.assertEqual(calls[0][1]["env"]["RUSTUP_TOOLCHAIN"], "nightly-2026-02-08")
+
+    def test_editor_cache_snapshot_exact_batch_after_success_only_and_opt_in(self):
+        from types import SimpleNamespace
+        for enabled, stage_code, runtime_code in ((False, 0, 0), (True, 0, 0), (True, 7, 0), (True, 0, 9)):
+            with self.subTest(enabled=enabled, stage_code=stage_code, runtime_code=runtime_code):
+                calls = []
+                batch = ROOT / 'out/foundry/editor-process-stages' / ('a' * 32)
+                receipts = Mock()
+                receipts.SPECS = {'desktop-launch'}
+                receipts.create.return_value = batch
+                receipts.stage.side_effect = lambda *args: calls.append(('stage', args)) or stage_code
+                snapshot = Mock()
+                snapshot.snapshot.side_effect = lambda *args: calls.append(('snapshot', args))
+                def execute(argv, **kwargs):
+                    calls.append(('command', argv))
+                    return SimpleNamespace(returncode=runtime_code if '--stage-batch' in argv else 0)
+                env = {'GITHUB_ACTIONS': 'true', 'RAMEN_FOUNDRY_BUILD_CACHE': '1'}
+                if enabled: env['RAMEN_CI_CACHE_RETAIN_CURRENT'] = '1'
+                with patch.dict(sys.modules, {'editor_process_stage_receipts': receipts, 'compiler_cache_snapshot': snapshot}), \
+                        patch.object(self.lanes.subprocess, 'run', side_effect=execute):
+                    self.assertEqual(self.lanes.run_stages(self.lanes.lane_plan('editor'), env), stage_code or runtime_code)
+                receipts.create.assert_called_once_with(ROOT)
+                if enabled and not (stage_code or runtime_code):
+                    snapshot.snapshot.assert_called_once_with(ROOT, batch)
+                    self.assertEqual(calls[-1], ('snapshot', (ROOT, batch)))
+                    self.assertIn(str(batch), calls[-2][1])
+                else:
+                    snapshot.snapshot.assert_not_called()
+
+    def test_editor_cache_snapshot_rejects_non_ci_wrong_lane_or_disabled_cache(self):
+        cases = (
+            (self.lanes.lane_plan('editor'), {'RAMEN_CI_CACHE_RETAIN_CURRENT': '1'}),
+            (self.lanes.lane_plan('host'), {'RAMEN_CI_CACHE_RETAIN_CURRENT': '1', 'GITHUB_ACTIONS': 'true', 'RAMEN_FOUNDRY_BUILD_CACHE': '1'}),
+            (self.lanes.lane_plan('editor'), {'RAMEN_CI_CACHE_RETAIN_CURRENT': '1', 'GITHUB_ACTIONS': 'true'}),
+            (self.lanes.lane_plan('editor'), {'RAMEN_CI_CACHE_RETAIN_CURRENT': 'yes'}),
+        )
+        with patch.object(self.lanes.subprocess, 'run') as run:
+            for stages, env in cases:
+                with self.subTest(env=env), self.assertRaises(ValueError):
+                    self.lanes.run_stages(stages, env)
+            run.assert_not_called()
 
     def test_lock_and_source_guard_denies_mutation_even_after_failure(self):
         with tempfile.TemporaryDirectory() as directory:
