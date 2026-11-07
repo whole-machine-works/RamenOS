@@ -235,9 +235,11 @@ outcome of an uncertain Save. [Newcomputer PR3](https://github.com/whole-machine
 records the reviewed source and cases. [Newcomputer PR4](https://github.com/whole-machine-works/newcomputer/pull/4)
 has a reproducible Wasm candidate. The opt-in host adapter admits the exact
 module, bounds its execution and checks its result with the Rust receipt codec
-and original Store epoch. Development smoke used the actual candidate. Register
-and run the independent evaluator against the complete R0 corpus and actual
-adapter before shadow comparison. The Rust parent retains every effectful
+and original Store epoch. Development smoke used the actual candidate. The
+test-only evaluator bridge records exact engine output, and its verifier checks
+the complete ordered case inventory. Freeze the comparison registration and
+reviewed execution identities before releasing the full R0 replay. Run that
+evaluation before shadow comparison. The Rust parent retains every effectful
 handle. RamenOS integration joins the accepted genuine P0–P3 process task.
 
 After callable-module and adapter qualification, compare on identical authorized observations in shadow
