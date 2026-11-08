@@ -231,7 +231,12 @@ class ParentAccounting:
             canonical_span(map_virtual, map_length)
         except C0DecodeError as error:
             raise ProbeError(error.status, error.reason) from error
-        frames = tuple(i for i in range(32) if i not in self._frames[2])
+        # One root plus one possible table for every intersected virtual
+        # prefix at each lower level. No physical target is inferred here.
+        last = map_virtual + map_length - 1
+        bound = 1 + sum((last >> shift) - (map_virtual >> shift) + 1
+                        for shift in (39, 30, 21))
+        frames = tuple(i for i in range(32) if i not in self._frames[2])[:bound]
         parts = min(17, map_length)
         reads = 4*len(frames)+2*parts
         # Aggregate length is known; its eventual partition and GPAs are not.

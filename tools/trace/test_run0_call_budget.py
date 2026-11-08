@@ -255,12 +255,67 @@ class DiscoveryCapacityTests(unittest.TestCase):
         self.assertEqual(ledger.view()['physical_reserved'], 0)
         self.assertEqual(ledger.view()['physical_claimed'], 0)
         self.assertEqual(ledger.view()['allocated_operations'], before['allocated_operations'])
-        self.assertEqual(ledger.view()['potential_reads'], 32*4+34)
-        self.assertEqual(ledger.view()['potential_frames'], 32)
+        self.assertEqual(ledger.view()['potential_reads'], 4*4+34)
+        self.assertEqual(ledger.view()['potential_frames'], 4)
         self.assertEqual(ledger.view()['potential_parts'], 17)
         self.assertEqual(ledger.view()['discovery_state'], 'open')
         self.assertEqual(ledger.view()['committed_operations'],
-                         before['committed_operations']+162)
+                         before['committed_operations']+50)
+
+    def test_geometry_prefix_bound_and_canonical_boundaries(self):
+        high=(1<<64)-(1<<47)
+        cases=((0x1000,384,4), ((1<<21)-192,384,5),
+               ((1<<30)-192,384,6), ((1<<39)-192,384,7),
+               (high+(1<<39)-192,384,7), ((1<<64)-1,1,4))
+        for address,length,expected in cases:
+            with self.subTest(address=address,length=length):
+                ledger=memory_ledger('C2');before=ledger.view()['committed_bytes']
+                with patch.object(b.ReadCharge,'for_target',side_effect=AssertionError('fake GPA')):
+                    cap=ledger.reserve_c2_discovery_capacity(map_virtual=address,map_length=length)
+                self.assertEqual(cap.frame_ordinals,tuple(range(expected)))
+                self.assertEqual(ledger.view()['potential_frames'],expected)
+                self.assertEqual(ledger.view()['physical_reserved'],0)
+                k=r.metadata_copy_bound();parts=min(17,length)
+                self.assertEqual(ledger.view()['committed_bytes']-before,
+                    4*expected*(27*2048+2243+k)+54*length+2*parts*(2243+k))
+                before=ledger.view()['committed_bytes'];ledger.reserve_wire_discovery(cap)
+                self.assertEqual(ledger.view()['committed_bytes']-before,
+                    14*(4*expected*2048+2*length)+9216*(4*expected+2*parts))
+        for address,length in (((1<<47)-1,2),((1<<64)-(1<<47)-1,2),
+                               ((1<<64)-1,2),(True,384),(0x1000,True)):
+            ledger=memory_ledger('C2');before=dict(ledger.view())
+            with self.assertRaises(ProbeError):
+                ledger.reserve_c2_discovery_capacity(map_virtual=address,map_length=length)
+            self.assertEqual(dict(ledger.view()),before)
+        self.success()
+
+    def test_geometry_uses_only_remaining_ordinals_in_order(self):
+        ledger=memory_ledger('C2')
+        for ordinal in range(32):
+            if ordinal not in (1,29):
+                ledger.reserve_reads('C2',frame_charges(0x10000+ordinal*4096,ordinal))
+        cap=ledger.reserve_c2_discovery_capacity(map_virtual=(1<<39)-192,map_length=384)
+        self.assertEqual(cap.frame_ordinals,(1,29))
+        ledger.reserve_wire_discovery(cap)
+        ledger.materialize_c2_frame(cap,ordinal=1,physical=0x500000)
+        before=dict(ledger.view())
+        with self.assertRaises(ProbeError):
+            ledger.materialize_c2_frame(cap,ordinal=30,physical=0x501000)
+        self.assertEqual(dict(ledger.view()),before)
+        ledger.materialize_c2_frame(cap,ordinal=29,physical=0x501000)
+        self.success()
+
+    def test_geometry_excess_frame_denied_before_effect_and_credit_stays(self):
+        ledger,cap=self.fresh();ledger.reserve_wire_discovery(cap)
+        committed=ledger.view()['committed_bytes']
+        for ordinal in range(4):
+            ledger.materialize_c2_frame(cap,ordinal=ordinal,physical=0x2000+4096*ordinal)
+        before=dict(ledger.view())
+        with self.assertRaises(ProbeError):
+            ledger.materialize_c2_frame(cap,ordinal=4,physical=0x6000)
+        self.assertEqual(dict(ledger.view()),before)
+        self.assertEqual(ledger.view()['committed_bytes'],committed)
+        self.success()
 
     def test_symbolic_copy_bound_matches_original_plan_without_fake_target(self):
         for length in (1, 15, 16, 255, 256, 2048):
@@ -281,7 +336,7 @@ class DiscoveryCapacityTests(unittest.TestCase):
     def test_prepaid_bytes_materialization_and_claim_never_double_charge(self):
         ledger, cap = self.fresh(2048)
         k = r.metadata_copy_bound()
-        expected = 32*4*(27*2048+2243+k)+54*2048+34*(2243+k)
+        expected = 4*4*(27*2048+2243+k)+54*2048+34*(2243+k)
         self.assertEqual(ledger.view()['committed_bytes'], expected)
         frame = ledger.materialize_c2_frame(cap, ordinal=0, physical=0x2000)
         self.assertEqual(frame.charges, frame_charges())
@@ -289,7 +344,7 @@ class DiscoveryCapacityTests(unittest.TestCase):
         batch = ledger.materialize_c2_map(cap, requests=map_charges((1024, 1024)))
         claim_all(ledger, batch)
         self.assertEqual(ledger.view()['committed_bytes'], expected)
-        self.assertEqual(ledger.view()['potential_reads'], 31*4+30)
+        self.assertEqual(ledger.view()['potential_reads'], 3*4+30)
         self.assertEqual(ledger.view()['physical_claimed'], 8)
         self.assertEqual(ledger.view()['actual_bytes'], 0)
 
@@ -300,8 +355,8 @@ class DiscoveryCapacityTests(unittest.TestCase):
         cap = ledger.reserve_c2_discovery_capacity(map_virtual=0x7f998, map_length=1)
         k = r.metadata_copy_bound()
         self.assertEqual(ledger.view()['committed_bytes']-before,
-                         31*4*(27*2048+2243+k)+54+2*(2243+k))
-        self.assertEqual(ledger.view()['potential_frames'], 31)
+                         4*4*(27*2048+2243+k)+54+2*(2243+k))
+        self.assertEqual(ledger.view()['potential_frames'], 4)
         with self.assertRaises(ProbeError):
             ledger.materialize_c2_frame(cap, ordinal=0, physical=0x2000)
         claim_all(ledger, old)
@@ -394,8 +449,8 @@ class DiscoveryCapacityTests(unittest.TestCase):
             self.success()
 
     def test_all_limits_include_potential_before_any_mutation(self):
-        for field, value in (('_regular', b.REGULAR_BYTES), ('_operations', 900),
-                             ('_phase_ops', [0, 0, 400])):
+        for field, value in (('_regular', b.REGULAR_BYTES), ('_operations', 1000),
+                             ('_phase_ops', [0, 0, 480])):
             ledger = memory_ledger('C2')
             setattr(ledger, field, value)  # explicit synthetic exhausted ledger
             before = dict(ledger.view())
@@ -442,11 +497,11 @@ class DiscoveryCapacityTests(unittest.TestCase):
     def test_one_byte_map_does_not_reserve_seventeen_nonempty_parts(self):
         ledger, cap = self.fresh(1)
         self.assertEqual(ledger.view()['potential_parts'], 1)
-        self.assertEqual(ledger.view()['potential_reads'], 130)
+        self.assertEqual(ledger.view()['potential_reads'], 18)
         batch = ledger.materialize_c2_map(cap, requests=map_charges((1,)))
         claim_all(ledger, batch)
         self.assertEqual(ledger.view()['potential_parts'], 0)
-        self.assertEqual(ledger.view()['potential_reads'], 128)
+        self.assertEqual(ledger.view()['potential_reads'], 16)
         for name in b.AFTER['C2']:
             ledger.reserve_operation('C2', name)
 
@@ -622,7 +677,7 @@ class WireCopyCreditTests(unittest.TestCase):
         cap=ledger.reserve_c2_discovery_capacity(map_virtual=0x7f998,map_length=384)
         before=ledger.view()['committed_bytes']
         ledger.reserve_wire_discovery(cap)
-        amount=14*(4*32*2048+2*384)+9216*(4*32+2*17)
+        amount=14*(4*4*2048+2*384)+9216*(4*4+2*17)
         self.assertEqual(ledger.view()['committed_bytes'],before+amount)
         frame=ledger.materialize_c2_frame(cap,ordinal=0,physical=0x2000)
         mapped=ledger.materialize_c2_map(cap,requests=map_charges((1,)*16+(368,)))
