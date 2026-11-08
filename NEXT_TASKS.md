@@ -91,10 +91,10 @@ requires its own complete hosted Foundry run under the unchanged classification.
 The [same-call source closeout](docs/plans/run0-same-call-source-2026-11-08.md)
 records the reviewed successor source and fixtures; do not redispatch completed
 source packets. Streaming verification and the explicit geometric reservation
-replan now have source review and scoped measurements. Finish runtime admission
-and exact execution-plan review, then run complete Linux CI on the fixed candidate
-before Root releases one fresh capture. The public runtime guard remains
-`INCOMPLETE`. Native provenance,
+replan now have source review and scoped measurements. Runtime admission and the
+sealed one-attempt execution plan are reviewed. Run complete Linux CI on the fixed
+candidate, then recheck the actual source, inputs and full prepared plan against
+that case before Root authorizes one fresh capture. Native provenance,
 full history and one-VM C0/C1/C2 qualification remain separate. Full capture and
 live I1 are not released by the earlier CI result.
 The pending recovery-benefit criterion choice holds further live I1, update and

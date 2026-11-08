@@ -180,6 +180,93 @@ class PreparationControls(unittest.TestCase):
             spawn.assert_not_called()
             self.assertFalse(run.exists())
 
+    def test_cap11_static_readiness_and_public_delegation_before_vm(self):
+        import run0_call_runtime as runtime
+        from run0_call_budget import ParentAccounting
+        with tempfile.TemporaryDirectory() as folder, ExitStack() as stack:
+            root=Path(folder).resolve();values,args,files,caller=self.prepare_fixture(root)
+            values[0]['inputs']=str(root/'inputs');values[0]['run']=str(root/'new-parent')
+            stack.enter_context(patch.object(witness,'prepare_launch',return_value=values))
+            stack.enter_context(patch.object(witness,'read_exact',side_effect=lambda path,*_:files[path.name]))
+            stack.enter_context(patch.object(witness,'C0_SOURCE_PERSISTENCE_SHA256',args['source_persistence_ref']['sha256']))
+            stack.enter_context(patch.object(capture,'parent_observer_source_bytes',return_value=b'closed parent observer'))
+            stack.enter_context(patch.object(capture,'_bind_caller',side_effect=caller))
+            result=capture.prepare_call_inputs(root/'inputs',root/'new-parent',root/'source.json',root/'abi.json',**args)
+            plan=result.plan
+            capture.require_call_runtime_registration(result,plan)
+            held=runtime._freeze_plan(plan,ParentAccounting(time.monotonic_ns()))
+            capture.require_call_runtime_registration(result,held)
+            from collections.abc import Mapping
+            from types import MappingProxyType
+            calls=[]
+            class Foreign(Mapping):
+                def __getitem__(self,key): calls.append(key);raise AssertionError('callback')
+                def __iter__(self): calls.append('iter');raise AssertionError('callback')
+                def __len__(self): calls.append('len');raise AssertionError('callback')
+            with self.assertRaises(base.ProbeError):
+                capture.require_call_runtime_registration(result,MappingProxyType(Foreign()))
+            self.assertEqual(calls,[])
+            class Key:
+                def __hash__(self):return hash('kind')
+                def __eq__(self,other): calls.append('eq');raise AssertionError('callback')
+            with self.assertRaises(base.ProbeError):
+                capture.require_call_runtime_registration(result,{Key():1})
+            self.assertEqual(calls,[])
+            capture.require_call_runtime_registration(result,held)
+            for mutation in ('kind','context','run','inputs','caller_manifest_ref'):
+                bad=dict(plan);bad[mutation]='wrong'
+                with self.assertRaises(base.ProbeError):capture.require_call_runtime_registration(result,bad)
+            bad=dict(plan);bad['argv']=['changed despite matching identity']
+            # The original ledger-backed verifier checks canonical bytes before IO.
+            with patch.object(os,'open',side_effect=AssertionError('unexpected IO')):
+                with self.assertRaises(base.ProbeError):
+                    runtime._validate_call_runtime_inputs(result,bad,ParentAccounting(time.monotonic_ns()),
+                                                          time.monotonic_ns()+10_000_000_000)
+            # Repeated readiness remains cheap; the initial ledger-backed
+            # verifier still rejects malformed prior inventory before outputs.
+            import run0_call_verify as verify
+            old_blobs=result.prior_blobs
+            object.__setattr__(result,'prior_blobs',(('bad',object()),))
+            capture.require_call_runtime_registration(result,held)
+            with patch.object(verify,'_observer',return_value=None), \
+                 patch.object(os,'open',side_effect=AssertionError('unexpected IO')):
+                with self.assertRaises(base.ProbeError):
+                    runtime._validate_call_runtime_inputs(result,plan,ParentAccounting(time.monotonic_ns()),
+                                                          time.monotonic_ns()+10_000_000_000)
+            object.__setattr__(result,'prior_blobs',old_blobs)
+            capture.require_call_runtime_registration(result,held)
+            old=result.caller_manifest_ref
+            object.__setattr__(result,'caller_manifest_ref',('prior-caller/manifest.json',True,1))
+            with self.assertRaises(base.ProbeError) as error:
+                capture.run_call_capture(result,root/'new-parent')
+            self.assertEqual(error.exception.status,'DENY')
+            object.__setattr__(result,'caller_manifest_ref',old)
+            capture.require_call_runtime_registration(result,held)
+            with patch.object(runtime,'_run_call_capture',None):
+                with self.assertRaises(base.ProbeError) as error:
+                    capture.run_call_capture(result,root/'new-parent')
+                self.assertEqual(error.exception.status,'INCOMPLETE')
+            with patch.object(runtime,'_run_call_capture',return_value='static delegate') as delegate, \
+                 patch.object(capture.PreparedCallInputs,'plan',property(lambda _: (_ for _ in ()).throw(AssertionError('early parse')))), \
+                 patch.object(capture.subprocess,'Popen',side_effect=AssertionError('VM')), \
+                 patch.object(Path,'mkdir',side_effect=AssertionError('output mutation')):
+                self.assertEqual(capture.run_call_capture(result,root/'new-parent'),'static delegate')
+                delegate.assert_called_once_with(result,root/'new-parent')
+            self.assertFalse((root/'new-parent').exists())
+
+    def test_cap12_uninitialized_foreign_and_flags_deny_before_effect(self):
+        import run0_call_runtime as runtime
+        from run0_c0_capture import PreparedC0Inputs
+        candidates=(object.__new__(capture.PreparedCallInputs),None,object(),
+                    {'origin':'native','admitted':True},object.__new__(PreparedC0Inputs))
+        for value in candidates:
+            with patch.object(runtime,'_run_call_capture',side_effect=AssertionError('early delegation')), \
+                 patch.object(capture.subprocess,'Popen',side_effect=AssertionError('VM')), \
+                 patch.object(Path,'mkdir',side_effect=AssertionError('output mutation')):
+                with self.assertRaises(base.ProbeError) as error:
+                    capture.run_call_capture(value,Path('/tmp/not-created'))
+                self.assertEqual(error.exception.status,'DENY')
+
     def test_cap10_observer_uses_frozen_parent_identity_and_closed_sources(self):
         base={'schema_version':1,'kind':'old reset source','python':
               {'path':'/fixture/python','sha256':'f'*64,'length':1},'sources':[]}

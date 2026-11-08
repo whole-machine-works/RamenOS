@@ -328,13 +328,13 @@ these fixtures do not establish another VM capture.
 
 The [same-call source closeout](docs/plans/run0-same-call-source-2026-11-08.md)
 records the reviewed successor host source and fixture controls through the fixed
-wrapper gate. The public runtime guard remains `INCOMPLETE`; admission and the
-actual execution plan are under review. The reviewed static verifier recipe
+wrapper gate. Static runtime admission and the exact one-attempt execution plan
+are independently reviewed. The reviewed static verifier recipe
 measures 12,512,296 bytes on real Bigman inputs. Explicit replan 005 reduces the
 synthetic three-epoch reservation to 12,084,358 bytes without changing limits or
 read/wire checks. Their sum omits integrated costs and proves no new VM capture.
-Complete fixed-candidate Linux CI, source-execution and whole-history qualification
-remain open.
+Complete fixed-candidate Linux CI and Root's current case checks remain required
+before any VM; source-execution and whole-history qualification remain open.
 
 Changed-candidate run42370785508 subsequently failed the existing agent-backend
 success test when Docker creation was not confirmed before its deadline. The

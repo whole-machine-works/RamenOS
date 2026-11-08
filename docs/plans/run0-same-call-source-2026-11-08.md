@@ -5,9 +5,11 @@ fixture controls for the pure decoder, capacity and accounting, static input
 preparation, host observations, inventory, wire, retained-read identity,
 storage, session/runtime and fixed wrapper gate. These source packets follow
 base `283d128` through `871b7f5`; they do not establish a native capture. The
-public runtime registration guard remains `INCOMPLETE`. The fixed streaming
-verifier and its measured copy schedule are independently source-reviewed through
-`33dc988`; runtime admission and the actual execution plan remain under review.
+static runtime readiness checks are implemented. The fixed streaming verifier
+and its measured copy schedule are independently source-reviewed through
+`33dc988`. Admission source and the sealed one-attempt execution plan are now
+reviewed; complete fixed-candidate Linux CI and Root's final case checks remain
+required before any VM. Static readiness does not issue native origin or reads.
 
 A private three-epoch fixture used one original ledger and ordered phase control
 reservations with a 384-byte map. Its original recipe committed 25,073,458 bytes.
@@ -26,9 +28,9 @@ leaves 7,778,130 regular bytes before Root, actual wire/host and terminal costs.
 This is an assessment, not a complete-parent fit or native capture proof.
 
 The earlier [stopped-entry result](run0-c0-result-2026-11-07.md) and 360 Linux
-C0 trace controls remain separate prior evidence. Still required are reviewed
-runtime admission, complete fixed-candidate Linux CI and an exact independently
-reviewed execution plan. Actual one-VM three-stop
+C0 trace controls remain separate prior evidence. Still required are complete
+fixed-candidate Linux CI and Root's current source/input/full-plan checks against
+the reviewed case before one attempt. Actual one-VM three-stop
 capture, ten-child/24-EOF closure, full unfiltered history, current-ledger and
 source-execution qualification remain unproved. No new VM run, full CI, push,
 PR or A3 approval is claimed by this closeout.

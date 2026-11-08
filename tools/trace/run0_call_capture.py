@@ -1,14 +1,16 @@
 """Closed parent inputs and owned capture integration.
 
 Static preparation authenticates inputs, not a running process or guest stop.
-Runtime registration deliberately remains INCOMPLETE until the actual parent
-producer, its source closure and execution plan have been independently reviewed.
+Runtime readiness is static; native origin and current-stop authority are checked
+by the separately owned runtime graph and its guards.
 Python observer internals are trusted host tooling, not a security boundary.
 """
 from dataclasses import dataclass
+import gc
 import hashlib
 import os
 from pathlib import Path
+from types import MappingProxyType
 import re
 import stat
 import subprocess
@@ -785,15 +787,64 @@ def prepare_call_inputs(inputs, run, source_dossier, host_abi, *, prior_admissio
         **dict(zip(PLAN_INPUT_FIELDS,refs)))
 
 
-def require_call_runtime_registration(prepared, plan):
-    """No prepared value can release the unfinished actual runtime producer."""
+def _require_prepared_shape(prepared):
+    """Bound the closed static envelope; this does not issue native authority."""
     deny(type(prepared) is PreparedCallInputs, 'call_capture_prepared_type')
     try:
-        for name in PreparedCallInputs.__dataclass_fields__:
-            getattr(prepared, name)
+        deny(all(type(getattr(prepared, name)) is str and
+                 0 < len(getattr(prepared, name)) <= 4096 and getattr(prepared, name).startswith('/')
+                 for name in ('inputs', 'run', 'source_dossier', 'host_abi')),
+             'call_capture_prepared_paths')
+        deny(all(type(getattr(prepared, name)) is bytes and
+                 0 < len(getattr(prepared, name)) <= limit
+                 for name, limit in (('plan_bytes', witness.REPORT_LIMIT),
+                                     ('profile_bytes', 65536),
+                                     ('observer_source_bytes', 65536),
+                                     ('pinned_efi', base.INPUT_LIMITS['efi']))),
+             'call_capture_prepared_bytes')
+        deny(type(prepared.field_abi) is reader.HostABI
+             and type(prepared.prior) is entry.ValidatedPriorEntry
+             and type(prepared.pinned_caller) is pure.PinnedCaller
+             and type(prepared.native_layout) is tuple and 0 < len(prepared.native_layout) <= 256
+             and all(type(getattr(prepared, name)) is tuple and len(getattr(prepared, name)) <= 4096
+                     for name in ('abi_blobs', 'prior_blobs')),
+             'call_capture_prepared_native')
+        for name in ('abi_ref', *PLAN_INPUT_FIELDS):
+            value = getattr(prepared, name)
+            deny(type(value) is tuple and len(value) == 3
+                 and type(value[0]) is str and 0 < len(value[0]) <= 240
+                 and type(value[1]) is str and len(value[1]) == 64
+                 and type(value[2]) is int and 0 <= value[2] <= 32 << 20,
+                 'call_capture_prepared_ref')
     except AttributeError as error:
         raise base.ProbeError('DENY', 'call_capture_prepared_fields') from error
-    raise base.ProbeError('INCOMPLETE', 'call_capture_runtime_producer_unregistered')
+
+
+def require_call_runtime_registration(prepared, plan):
+    """Check static readiness only; Root's native origin guards remain separate."""
+    _require_prepared_shape(prepared)
+    if type(plan) is MappingProxyType:
+        # CPython exposes the proxy's referent without invoking mapping methods.
+        # Accept only the exact dict used by the runtime's immutable freeze.
+        referents = gc.get_referents(plan)
+        deny(len(referents) == 1 and type(referents[0]) is dict,
+             'call_capture_plan_type')
+        plan = referents[0]
+    deny(type(plan) is dict and all(type(key) is str for key in plan),
+         'call_capture_plan_type')
+    deny(all(type(plan.get(name)) is str for name in ('kind', 'context', 'run', 'inputs'))
+         and plan.get('kind') == PLAN_KIND and plan.get('context') == 'call'
+         and plan.get('run') == prepared.run and plan.get('inputs') == prepared.inputs,
+         'call_capture_plan_identity')
+    for name in PLAN_INPUT_FIELDS:
+        value = plan.get(name)
+        expected = getattr(prepared, name)
+        deny(type(value) in (list, tuple) and len(value) == 3
+             and type(value[0]) is str and value[0] == expected[0]
+             and type(value[1]) is str and value[1] == expected[1]
+             and type(value[2]) is int and value[2] == expected[2],
+             'call_capture_plan_ref')
+
 
 
 def _issued_call_registration(registration, wire):
@@ -804,7 +855,13 @@ def _issued_call_registration(registration, wire):
 
 
 def run_call_capture(prepared, run):
-    """Fail before any run mutation or child until the complete producer exists."""
-    require_call_runtime_registration(prepared, {})
-    from run0_call_runtime import _run_call_capture
+    """Delegate fixed runtime work; parsing and verification use its one ledger."""
+    _require_prepared_shape(prepared)
+    deny(type(run) is type(Path()) and str(run) == prepared.run,
+         'call_capture_run_identity')
+    try:
+        from run0_call_runtime import _run_call_capture
+    except ImportError as error:
+        raise base.ProbeError('INCOMPLETE', 'call_capture_runtime_producer_unregistered') from error
+    incomplete(callable(_run_call_capture), 'call_capture_runtime_producer_unregistered')
     return _run_call_capture(prepared, run)

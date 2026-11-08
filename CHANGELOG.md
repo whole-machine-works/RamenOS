@@ -3,8 +3,9 @@
 ## 2026-11-08 — Same-call host source readiness
 
 - Record reviewed successor host source and private fixture controls through
-  the fixed wrapper gate. The public runtime guard remains `INCOMPLETE`;
-  reviewed static copy accounting and explicit geometric replan now have scoped
+  the fixed wrapper gate. Static admission and a sealed one-attempt execution plan
+  are independently reviewed. Linux CI and Root's current case checks remain
+  required. Static copy accounting and the explicit geometric replan have scoped
   measurements; complete-parent execution qualification remains open. No new VM
   capture or full CI is claimed.
   [Source closeout](docs/plans/run0-same-call-source-2026-11-08.md).
