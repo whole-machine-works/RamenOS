@@ -1,7 +1,27 @@
 # DECISIONS (ADR-lite)
 
-**Last Updated:** 2026-10-14
+**Last Updated:** 2026-11-08
 **Status:** Active
+
+## 2026-11-08 — Bound capture work before granting reads
+
+The host-only same-call collector keeps one original deadline policy and one
+32 MiB logical output/copy ledger. Stream static file authentication through
+prepaid reusable buffers, retain one immutable authenticated semantic state,
+and pay actual parser/projection work before the unchanged validators run.
+Hash-only retrievals reuse held immutable bytes. These are logical copy bounds,
+not a Python heap, isolation or hardware guarantee.
+
+Explicit replan 005 replaces the prior full remaining-frame reservation for the
+C2 map walk with `min(remaining_frame_slots, H)`, where
+`H = 1 + sum((last >> s) - (start >> s) + 1 for s in (39, 30, 21))`.
+For a validated canonical extent of at most 32 KiB, the unchanged four-level
+walk and same-epoch immutable frame cache require at most seven table pages,
+including the root. Every possible read, reread and wire copy is still prepaid;
+unused capacity remains charged. All original ceilings, complete translation,
+current RAM checks and original deadlines remain binding. The
+[source readiness record](docs/plans/run0-same-call-source-2026-11-08.md) separates
+the reviewed source, measured components and outstanding native qualification.
 
 ## 2026-10-14 — Explicit codecs, retained outcomes and finite authority epochs
 

@@ -48,5 +48,13 @@ python3 tools/trace/test_run0_c0_runtime.py
 python3 -B tools/trace/test_run0_call_owner.py
 python3 -B tools/trace/test_run0_call_budget.py
 python3 -B tools/trace/test_run0_call_read.py
+python3 -B tools/trace/test_run0_call_decode.py
+python3 -B tools/trace/test_run0_call_host.py
+python3 -B tools/trace/test_run0_call_wire.py
+python3 -B tools/trace/test_run0_call_capture.py
+python3 -B tools/trace/test_run0_call_session.py
+python3 -B tools/trace/test_run0_call_storage.py
+python3 -B tools/trace/test_run0_call_runtime.py
+python3 -B tools/trace/test_run0_call_verify.py
 cargo test --locked -p idl_codegen --test content_stable
 printf '%s\n' 'FOUNDRY_CI_OPTIMIZATION: PASS scope=tooling'

@@ -1,8 +1,9 @@
-"""Parent retained-read subset; no guest reader or production receipt issuer.
+"""Bounded retained reads with a fixed Root bridge.
 
-The disabled native constructors are intentional. A later independently reviewed
-owned CallWire/collector must register actual origins. Byte-verified retention
-alone confers no current-stop or RAM authority. Test fixtures stay test-local.
+Native constructors stay disabled. The owned collector must register actual
+origins before native readiness; missing producers remain INCOMPLETE. Verified
+retention alone confers no current-stop or RAM authority. Test guard patches
+stay test-local. Python observer internals are trusted host tooling.
 """
 from dataclasses import dataclass
 import hashlib
@@ -407,6 +408,11 @@ def packet_copy_bound(target):
 
 def metadata_bound(target):
     deny(type(target) is ReadTarget, 'call_read_charge_target')
+    return metadata_copy_bound()
+
+
+def metadata_copy_bound():
+    """The existing fixed metadata credit, without inventing a future target."""
     # One pending/native capacity plus three canonical serialization copies:
     # json.dumps text, text+newline, ASCII bytes. No encoder copy is used to size.
     # Four pending/completed inventory projections include the target assembly.
@@ -416,9 +422,127 @@ def metadata_bound(target):
     return 4*MAX_ROW_BYTES+8*inventory_capacity
 
 
+def packet_copy_upper_bound(length):
+    """Upper bound of the unchanged copy plan for an as-yet unknown U64 GPA.
+
+    Summing that plan gives 17L + 8*address_digits + 8*length_digits + 43.
+    A real request has at most16 address digits and3 length digits. This is
+    logical copy accounting, never a physical target or a Python RSS bound.
+    """
+    _int(length, 1, 2048)
+    return 17*length+195
+
+
+def _synthetic_retainer(retainer):
+    # This preserves the existing byte-only fixture surface. It never satisfies
+    # require_runtime_receipt or the actual Root wire's native origin checks.
+    return type(getattr(retainer, '_origin', None)) is str and retainer._origin == 'synthetic_fixture'
+
+
+def _runtime_owner(binding):
+    try:
+        import run0_call_capture as root
+        from run0_call_session import CurrentEpochRamBinding
+        deny(type(binding) is CurrentEpochRamBinding, 'call_read_runtime_binding')
+        registration, owner = binding.registration, binding._owner
+        deny(type(registration) is root.ClosedOwnedCallRegistration
+             and type(owner) is root._OwnedCallRuntime
+             and registration._owner is owner and owner._registration is registration
+             and owner._wire is binding.wire is registration.wire,
+             'call_read_runtime_graph')
+        incomplete(root._issued_call_registration(registration, binding.wire),
+                   'call_read_runtime_issuer_unregistered')
+        return root, owner
+    except (ImportError, AttributeError) as error:
+        raise ProbeError('INCOMPLETE', 'call_read_runtime_issuer_unregistered') from error
+
+
+def _retainer_guard(retainer, name):
+    deny(name in ('_require_retainer_current', '_require_retainer_archival'),
+         'call_read_fixed_root_guard')
+    deny(type(retainer) is _ReadRetainer, 'call_read_retainer_type')
+    try:
+        binding = retainer._binding
+    except AttributeError as error:
+        raise ProbeError('DENY', 'call_read_retainer_fields') from error
+    root, owner = _runtime_owner(binding)
+    method = getattr(root._OwnedCallRuntime, name, None)
+    incomplete(callable(method), 'call_read_runtime_issuer_unregistered')
+    return method(owner, retainer)
+
+
 def require_runtime_receipt(receipt):
-    """Retention is not actual guest/current-stop provenance; no issuer exists."""
-    raise ProbeError('INCOMPLETE', 'call_read_runtime_issuer_unregistered')
+    """Check original native provenance, including after retirement/reap.
+
+    This is an archival fact check, never authorization for a new read. Equal
+    copied data and legacy synthetic storage cannot register a runtime receipt.
+    """
+    deny(type(receipt) is NativePhysicalReadReceipt, 'call_read_runtime_receipt_type')
+    root, owner = _runtime_owner(receipt.binding)
+    method = getattr(root._OwnedCallRuntime, '_require_native_read_receipt', None)
+    incomplete(callable(method), 'call_read_runtime_issuer_unregistered')
+    method(owner, receipt)
+
+
+def _prepare_owned_retainer(registration, binding, root_path, plan_ref, deadline_ns):
+    """Initialize inert storage only; no accounting claim or read grant exists."""
+    from run0_call_budget import ParentAccounting
+    root, owner = _runtime_owner(binding)
+    method = getattr(root._OwnedCallRuntime, '_require_retainer_initialization', None)
+    incomplete(callable(method), 'call_read_runtime_issuer_unregistered')
+    method(owner, registration, binding, root_path, plan_ref, deadline_ns)
+    deny(registration is binding.registration and type(root_path) is type(Path())
+         and root_path.is_absolute() and str(root_path) == owner.prepared.run
+         and type(owner.inventory) is root.RootRawInventory and root_path == owner.inventory.run
+         and type(registration.accounting) is ParentAccounting
+         and owner.accounting is registration.accounting is owner.inventory.accounting,
+         'call_read_retainer_initial_graph')
+    deny(type(plan_ref) is BlobRef and plan_ref.path == 'plan.json', 'call_read_plan_ref')
+    owner.inventory.require_exact(plan_ref, owner.prepared.plan_bytes)
+    _int(deadline_ns, 1)
+    deny(deadline_ns == min(binding.work_deadline_ns, binding.stop_deadline_ns),
+         'call_read_original_epoch_deadline')
+    wire = registration.wire
+    deny(type(wire._raw) is dict and all(type(wire._raw.get(key)) is bytearray
+         for key in ('rsp', 'rsp-out')) and type(registration.read_attempts) is dict
+         and type(registration.read_operations) is dict
+         and registration.read_attempts is owner.read_attempts is wire._read_attempts
+         and registration.read_operations is owner.read_operations is wire._read_operations,
+         'call_read_retainer_initial_alias')
+    # Fixed native bookkeeping/reference construction, separately prepaid before
+    # allocating dictionaries. Payload bytearrays are aliased, never duplicated.
+    owner.accounting.reserve_output(4096)
+    result = object.__new__(_ReadRetainer)
+    values = dict(_origin=None, _registration=registration, _parent=registration.parent_identity,
+        _wire=wire, _session=None, _binding=binding, _transport=binding.transport_identity,
+        _accounting=owner.accounting, _root=root_path, _plan_ref=plan_ref,
+        _raw={key:wire._raw[key] for key in ('rsp', 'rsp-out')},
+        _operations=registration.read_operations, _attempts=registration.read_attempts,
+        _deadline_ns=deadline_ns, _pending=None, _receipts={}, _rows={}, _inventory={},
+        _slots={}, _retained_pending={}, _prepared={}, _failures={}, _revoked=False)
+    for name, value in values.items():
+        setattr(result, name, value)
+    return result
+
+
+def _attach_owned_retainer(retainer, session, registered):
+    """Complete one inert reciprocal graph before Root publishes current epoch."""
+    from run0_call_session import ParentAcquisitionSession
+    deny(type(retainer) is _ReadRetainer and retainer._origin is None,
+         'call_read_retainer_attach_type')
+    root, owner = _runtime_owner(retainer._binding)
+    method = getattr(root._OwnedCallRuntime, '_require_epoch_initialization', None)
+    incomplete(callable(method), 'call_read_runtime_issuer_unregistered')
+    method(owner, retainer._binding, retainer)
+    deny(type(session) is ParentAcquisitionSession
+         and type(registered) is root.RegisteredCurrentEpochBinding
+         and registered._owner is owner and registered.registration is retainer._registration
+         and registered.binding is retainer._binding and registered.retainer is retainer
+         and registered.session is session and session._owner is owner
+         and session._registration is registered.registration
+         and session.binding is registered.binding and session.retainer is retainer
+         and retainer._session is None, 'call_read_retainer_attach_identity')
+    retainer._session = session
 
 
 class _ReadRetainer:
@@ -428,9 +552,9 @@ class _ReadRetainer:
     def _ready(self):
         from run0_call_budget import ParentAccounting
 
-        # There is intentionally no production branch or registration factory.
-        deny(self._origin == 'synthetic_fixture' and not self._revoked,
-             'call_read_retainer_unregistered')
+        if not _synthetic_retainer(self):
+            _retainer_guard(self, '_require_retainer_current')
+        deny(not self._revoked, 'call_read_retainer_unregistered')
         deny(type(self._accounting) is ParentAccounting and type(self._raw) is dict
              and tuple(self._raw) == ('rsp', 'rsp-out')
              and all(type(value) in (bytes, bytearray) for value in self._raw.values()),
@@ -606,6 +730,12 @@ class _ReadRetainer:
              and operation.attempt.started_ns == operation.started_ns
              and operation.attempt.finished_ns == operation.ack_finished_ns,
              'call_read_native_operation')
+        commit_deadline = self._deadline_ns
+        if not _synthetic_retainer(self):
+            # Actual native operation start is the original physical-read lease.
+            # Keep the epoch deadline immutable and refuse late publication even
+            # when file fsync or row formatting crosses the five-second limit.
+            commit_deadline = min(commit_deadline, operation.started_ns + 5_000_000_000)
         positions = (request_position, request_ack_position, response_position, response_ack_position)
         deny(all(type(p) is LiveWirePosition for p in positions)
              and positions == (operation.request_position, operation.request_ack_position,
@@ -617,7 +747,7 @@ class _ReadRetainer:
             _int(stamp, 1)
         deny((started_ns, response_received_ns, ack_finished_ns) ==
              (operation.started_ns, operation.response_received_ns, operation.ack_finished_ns)
-             and started_ns <= response_received_ns <= ack_finished_ns < self._deadline_ns,
+             and started_ns <= response_received_ns <= ack_finished_ns < commit_deadline,
              'call_read_operation_clock')
         deny(type(request_bytes) is bytes and type(response_bytes) is bytes,
              'call_read_packet_bytes')
@@ -654,7 +784,7 @@ class _ReadRetainer:
         # The measured commit follows actual data-file fsync/close. It does not
         # claim to follow formatting of a row that contains its own timestamp.
         finished_ns = time.monotonic_ns()
-        incomplete(ack_finished_ns <= finished_ns < self._deadline_ns,
+        incomplete(ack_finished_ns <= finished_ns < commit_deadline,
                    'call_read_retention_deadline')
         receipt = _native(NativePhysicalReadReceipt, parent=self._parent, session=self._session,
             binding=self._binding, transport_identity=self._transport, epoch=key.epoch,
@@ -670,7 +800,7 @@ class _ReadRetainer:
             data=data, started_ns=started_ns, response_received_ns=response_received_ns,
             finished_ns=finished_ns, result='ok')
         row = self._make_row(receipt, pending)
-        incomplete(time.monotonic_ns() < self._deadline_ns, 'call_read_retention_deadline')
+        incomplete(time.monotonic_ns() < commit_deadline, 'call_read_retention_deadline')
         self._receipts[key.physical_ordinal] = receipt
         self._rows[key.physical_ordinal] = row
         self._retained_pending[key.physical_ordinal] = pending
@@ -695,6 +825,8 @@ class _ReadRetainer:
         return _native(SerializedPhysicalReadRow, fields=tuple(fields), canonical_bytes=raw)
 
     def _receipt(self, receipt):
+        if not _synthetic_retainer(self):
+            _retainer_guard(self, '_require_retainer_archival')
         deny(type(receipt) is NativePhysicalReadReceipt
              and self._receipts.get(receipt.physical_ordinal) is receipt
              and receipt.parent is self._parent and receipt.session is self._session

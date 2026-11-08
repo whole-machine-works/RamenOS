@@ -1,11 +1,13 @@
 """Private retained-byte fixtures only; no public issuer or guest-memory I/O."""
 from dataclasses import fields, replace
+from contextlib import ExitStack
 import hashlib
 import inspect
 import os
 from pathlib import Path
 import tempfile
 import sys
+import time
 import unittest
 from unittest.mock import patch
 
@@ -427,6 +429,153 @@ class ParentReadTests(unittest.TestCase):
         with self.assertRaises(ProbeError):
             self.h.retainer.partial_assembly((first,), 4096, failure_operation_seq=None)
         self.assertEqual(self.h.retainer.seal(pending, **values).result, 'ok')
+
+
+class NativeReadBridgeTests(unittest.TestCase):
+    """Private Root-guard fixtures; no VM, helper or runtime-origin claim."""
+    def setUp(self):
+        self.assertTrue(hasattr(r,'_prepare_owned_retainer'),'native bridge absent: expected RED')
+        import run0_call_capture as root
+        import run0_call_session as session
+        import run0_call_wire as wire
+        from run0_call_owner import ParentDeadlines,ParentOwnedWait
+        self.rootmod,self.sessionmod=root,session
+        self.folder=tempfile.TemporaryDirectory(prefix='native-read-bridge-')
+        self.addCleanup(self.folder.cleanup)
+        self.run=Path(self.folder.name).resolve()
+        self.h=Harness(self.folder.name)
+        self.runtime=object.__new__(root._OwnedCallRuntime)
+        self.wire=object.__new__(wire.CallWire);self.wire._raw=self.h.buffers
+        policy=ParentDeadlines(self.h.ledger.started_ns)
+        self.prepared=private(root.PreparedCallInputs,run=str(self.run),plan_bytes=b'{}\n')
+        self.inventory=root.RootRawInventory(self.run,self.h.ledger)
+        self.plan_ref=self.inventory.put('plan.json',self.prepared.plan_bytes)
+        self.reg=private(root.ClosedOwnedCallRegistration,_owner=self.runtime,prepared=self.prepared,
+            qemu_owner=ParentOwnedWait('qemu',policy),wire=self.wire,deadlines=policy,
+            accounting=self.h.ledger,inventory=self.inventory,parent_identity=object(),
+            transition_owner=None,read_attempts={},read_operations={})
+        self.binding=private(session.CurrentEpochRamBinding,_owner=self.runtime,registration=self.reg,
+            wire=self.wire,parent_identity=self.reg.parent_identity,epoch='C0',
+            transport_identity=('rsp',1,2),work_deadline_ns=policy.effective_work_ns,
+            stop_deadline_ns=self.h.ledger.started_ns+60_000_000_000)
+        for key,value in dict(prepared=self.prepared,_registration=self.reg,_wire=self.wire,
+            accounting=self.h.ledger,inventory=self.inventory,read_attempts=self.reg.read_attempts,
+            read_operations=self.reg.read_operations,_preparing_epoch=(self.binding,None),
+            _current=None,_epochs={}).items():setattr(self.runtime,key,value)
+        self.wire._registration=self.reg
+        self.wire._read_attempts=self.reg.read_attempts
+        self.wire._read_operations=self.reg.read_operations
+        self.deadline=min(self.binding.work_deadline_ns,self.binding.stop_deadline_ns)
+        self.retainer=None
+
+    def guards(self):
+        stack=ExitStack()
+        stack.enter_context(patch.object(self.rootmod,'_issued_call_registration',
+            lambda registration,wire:registration is self.reg and wire is self.wire))
+        def initial(runtime,registration,binding,path,ref,deadline):
+            if runtime is not self.runtime or registration is not self.reg or binding is not self.binding:
+                raise ProbeError('DENY','fixture_initial')
+        def attaching(runtime,binding,retainer):
+            if runtime is not self.runtime or runtime._preparing_epoch!=(binding,retainer):
+                raise ProbeError('DENY','fixture_attaching')
+        def current(runtime,retainer):
+            if (runtime is not self.runtime or runtime._current is None
+                or runtime._current.retainer is not retainer or retainer._revoked
+                or retainer._origin is not None):raise ProbeError('DENY','fixture_current')
+        def archival(runtime,retainer):
+            if runtime is not self.runtime or retainer is not self.retainer or retainer._origin is not None:
+                raise ProbeError('DENY','fixture_archival')
+        def receipt(runtime,value):
+            archival(runtime,self.retainer);self.retainer._receipt(value)
+        for name,method in (('_require_retainer_initialization',initial),
+            ('_require_epoch_initialization',attaching),('_require_retainer_current',current),
+            ('_require_retainer_archival',archival),('_require_native_read_receipt',receipt)):
+            stack.enter_context(patch.object(self.rootmod._OwnedCallRuntime,name,method,create=True))
+        return stack
+
+    def attach(self):
+        retainer=r._prepare_owned_retainer(self.reg,self.binding,self.run,
+                                           self.plan_ref,self.deadline)
+        self.retainer=retainer
+        self.runtime._preparing_epoch=(self.binding,retainer)
+        session=object.__new__(self.sessionmod.ParentAcquisitionSession)
+        for name,value in dict(_owner=self.runtime,_registration=self.reg,binding=self.binding,
+                               retainer=retainer).items():setattr(session,name,value)
+        registered=private(self.rootmod.RegisteredCurrentEpochBinding,_owner=self.runtime,
+            registration=self.reg,binding=self.binding,session=session,retainer=retainer,
+            host_receipt=None,layout_receipt=None)
+        r._attach_owned_retainer(retainer,session,registered)
+        self.runtime._current=registered
+        self.h.parent,self.h.wire,self.h.session,self.h.binding,self.h.retainer=(
+            self.reg.parent_identity,self.wire,session,self.binding,retainer)
+        self.h.ledger.reserve_wire_batch(self.h.batch)
+        return retainer
+
+    def operation(self,pending):
+        values=self.h.operation(pending);stamp=time.monotonic_ns()
+        for obj in (values['operation'],values['operation'].attempt):
+            object.__setattr__(obj,'started_ns',stamp)
+        object.__setattr__(values['operation'],'response_received_ns',stamp+1)
+        object.__setattr__(values['operation'],'ack_finished_ns',stamp+2)
+        object.__setattr__(values['operation'].attempt,'finished_ns',stamp+2)
+        values.update(started_ns=stamp,response_received_ns=stamp+1,ack_finished_ns=stamp+2)
+        return values,stamp
+
+    def test_native01_missing_registration_refuses_before_extra_mutation(self):
+        before=dict(self.h.ledger.view())
+        with self.assertRaises(ProbeError):
+            r._prepare_owned_retainer(self.reg,self.binding,self.run,self.plan_ref,self.deadline)
+        self.assertEqual(dict(self.h.ledger.view()),before)
+
+    def test_native02_inert_aliases_and_one_attachment(self):
+        with self.guards():
+            retainer=self.attach()
+            self.assertIsNone(retainer._origin)
+            self.assertIs(retainer._raw['rsp'],self.h.buffers['rsp'])
+            self.assertIs(retainer._attempts,self.reg.read_attempts)
+            self.assertIs(retainer._operations,self.reg.read_operations)
+            with self.assertRaises(ProbeError):
+                r._attach_owned_retainer(retainer,self.h.session,self.runtime._current)
+
+    def test_native03_root_and_plan_and_deadline_cannot_be_replaced(self):
+        with self.guards():
+            for path,ref,deadline in ((self.run/'other',self.plan_ref,self.deadline),
+                (self.run,replace(self.plan_ref),self.deadline),
+                (self.run,self.plan_ref,self.deadline+1)):
+                with self.assertRaises(ProbeError):
+                    r._prepare_owned_retainer(self.reg,self.binding,path,ref,deadline)
+
+    def test_native04_actual_retained_receipt_remains_archival_after_retirement(self):
+        with self.guards():
+            retainer=self.attach();pending=self.h.pending();values,stamp=self.operation(pending)
+            value=retainer.seal(pending,**values)
+            r.require_runtime_receipt(value)
+            retainer._revoked=True;self.runtime._current=None
+            r.require_runtime_receipt(value)
+            self.assertIs(retainer.export_row(value),retainer._rows[value.physical_ordinal])
+            with self.assertRaises(ProbeError):self.h.pending(1)
+            copied=private(r.NativePhysicalReadReceipt,**{f.name:getattr(value,f.name) for f in fields(value)})
+            with self.assertRaises(ProbeError):r.require_runtime_receipt(copied)
+
+    def test_native05_read_deadline_applies_before_receipt_publication(self):
+        with self.guards():
+            retainer=self.attach();pending=self.h.pending();values,stamp=self.operation(pending)
+            with patch.object(r.time,'monotonic_ns',side_effect=(stamp+4_999_999_999,stamp+5_000_000_000)):
+                with self.assertRaises(ProbeError):retainer.seal(pending,**values)
+            self.assertFalse(retainer._receipts)
+            self.assertEqual(len(retainer.inventory()),3)
+            self.assertTrue(retainer._revoked)
+
+    def test_native06_synthetic_storage_never_becomes_runtime_origin(self):
+        value=self.h.sealed()
+        with self.guards():
+            with self.assertRaises(ProbeError):r.require_runtime_receipt(value)
+
+    def test_native07_incomplete_private_retainer_is_typed_before_io(self):
+        empty=object.__new__(r._ReadRetainer)
+        with patch.object(r.os,'open',side_effect=AssertionError('unexpected IO')) as opened:
+            with self.assertRaisesRegex(ProbeError,'call_read_retainer_fields'):empty._ready()
+        opened.assert_not_called()
 
 
 if __name__ == '__main__':

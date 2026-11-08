@@ -1,6 +1,6 @@
 # Current Status
 
-**Last Updated:** 2026-11-07
+**Last Updated:** 2026-11-08
 **Status:** Active and authoritative for landed state
 **Current Slice:** RUN0 target runtime preparation after merged UI1.1d host process delivery
 **Physical Lane:** S12.4 HIL appliance observation/actuation awaits setup
@@ -322,9 +322,22 @@ editor runtime stage. The retained run later reported zero MB free disk space;
 the original IO errno was not retained, so its cause remains unproved.
 [Runner preparation and failure diagnostics](docs/plans/editor-runner-storage-2026-11-07.md)
 are now independently qualified at the exact source below, with all checks and
-recordings preserved. Actual wire
-issuance, current-stop authority and collector/history integration remain open;
+recordings preserved. Native wire
+issuance, current-stop authority and whole-history qualification remain open;
 these fixtures do not establish another VM capture.
+
+The [same-call source closeout](docs/plans/run0-same-call-source-2026-11-08.md)
+records independently accepted [hosted run 42507270423](https://github.com/whole-machine-works/RamenOS/actions/runs/42507270423)
+at `32a23d`: all nine checks passed. The first real collector attempt stopped
+before any guest-memory read; QEMU and its metadata helper were reaped, with no
+remaining direct children. The identity and cleanup defects are independently
+reviewed and locally fixed at `57dc43b` and `3d30be4`, beyond the hosted result.
+All 280 integrated call tests pass on that local source. The actual metadata
+exposed a cumulative logical copy-budget problem; a fixed 128 MiB development
+profile versus redesign within 32 MiB remains undecided. Neither peak RSS nor
+guest RAM is measured by that ledger. No cap change or retry follows. PR78
+remains draft, stacked on PR77; successor qualification and actual three-stop
+capture remain open.
 
 Changed-candidate run42370785508 subsequently failed the existing agent-backend
 success test when Docker creation was not confirmed before its deadline. The
@@ -345,9 +358,12 @@ ready for separate A3 review, not merged; main remains `2688f245`.
 The [qualification record](docs/plans/editor-runner-storage-2026-11-07.md) binds
 this result to the tested code, not a new execution on this prose successor.
 Full same-VM capture and live I1 remain open. Boot preparation continues through
-the remaining pure-map, wire and collector joins. The pending recovery-benefit
-criterion choice holds further live I1, update and performance experiments;
-it does not block this independent boot preparation.
+static verification, integrated accounting and source-execution qualification.
+Independent decision-artifact update/rollback work is authorized. Default-off
+I1 correctness, fault and mechanism preparation proceeds after the exact
+Rust-reference update and source seam receive independent review. Benefit
+comparison, adoption and activation remain separate; no full I1 readiness is
+established.
 
 The IPC diagnostic reproduced two zero-byte timeouts before a later valid
 reply on the same VM. The separate single-client run succeeded immediately.
