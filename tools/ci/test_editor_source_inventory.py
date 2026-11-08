@@ -1,8 +1,11 @@
 """Pure source admission regressions; never compile or start product processes."""
 import importlib.util
+import ast
+import hashlib
 import json
 import os
 from pathlib import Path
+import re
 import shutil
 import tempfile
 import unittest
@@ -20,6 +23,20 @@ def load(name, path):
 COLLECTOR = load('task_source_fixture', 'tools/ci/native_save_task_sources.py')
 READ = load('read_source_fixture', 'tools/foundry/desktop_editor_native_read_gate.py')
 PREVIEW = load('preview_source_fixture', 'tools/foundry/desktop_editor_native_preview_read_gate.py')
+
+
+class LiveRegistryPinTests(unittest.TestCase):
+    def test_save_shell_and_reader_use_actual_reviewed_registry(self):
+        expected = hashlib.sha256((ROOT / COLLECTOR.REGISTRY).read_bytes()).hexdigest()
+        tree = ast.parse((ROOT / 'tools/ci/desktop_editor_task_result.py').read_text())
+        reader = [ast.literal_eval(node.value) for node in tree.body
+                  if isinstance(node, ast.Assign)
+                  and any(isinstance(target, ast.Name) and target.id == 'REGISTRY_SHA'
+                          for target in node.targets)]
+        shell = (ROOT / 'tools/ci/foundry_desktop_editor_task_ui1_1c.sh').read_text()
+        arguments = re.findall(r'--registry-sha256\s+([0-9a-f]{64})(?=\s|$)', shell)
+        self.assertEqual(reader, [expected])
+        self.assertEqual(arguments, [expected])
 
 
 class SourceInventoryTests(unittest.TestCase):
