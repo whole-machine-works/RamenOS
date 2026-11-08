@@ -9,6 +9,14 @@ rm -f "$EVIDENCE/result.json"
 rm -rf "$EVIDENCE/cases"
 mkdir -p "$EVIDENCE/cases"
 
+# Pure target-compatible placement prerequisite; host authority checks remain below.
+cargo check --locked -p desktop_compositor_core --no-default-features --lib --target x86_64-unknown-none \
+  >"$EVIDENCE/placement-no-std.log" 2>&1
+cargo clippy --locked -p desktop_compositor_core --no-default-features --all-targets -- -D warnings \
+  >"$EVIDENCE/placement-clippy.log" 2>&1
+cargo test --locked -p desktop_compositor_core --no-default-features --test placement -- --test-threads=1 \
+  >"$EVIDENCE/placement-tests.log" 2>&1
+
 cargo build -p desktop_service --lib --no-default-features >"$EVIDENCE/default-build.log" 2>&1
 TARGET_DIR="$(cargo metadata --no-deps --format-version 1 | python3 -c 'import json,sys; print(json.load(sys.stdin)["target_directory"])')"
 PROBE_DIR="$(mktemp -d)"

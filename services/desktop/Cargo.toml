@@ -5,7 +5,7 @@ edition = "2021"
 
 [features]
 default = []
-desktop_v0_dev = ["dep:sha2", "dep:desktop_editor_core"]
+desktop_v0_dev = ["dep:sha2", "dep:desktop_editor_core", "dep:desktop_compositor_core"]
 editor_native_read_v0_dev = ["desktop_v0_dev", "dep:artifact_store_schema"]
 editor_native_preview_v0_dev = ["editor_native_read_v0_dev"]
 editor_native_save_v0_dev = ["editor_native_preview_v0_dev"]
@@ -18,6 +18,7 @@ host_editor_process_v0_dev = ["editor_native_save_v0_dev", "dep:libc"]
 host_editor_process_assertions_v0_dev = ["host_editor_process_v0_dev", "dep:serde_json"]
 
 [dependencies]
+desktop_compositor_core = { path = "../desktop_compositor_core", default-features = false, optional = true }
 serde_json = { version = "1", optional = true }
 desktop_editor_core = { path = "../desktop_editor_core", default-features = false, optional = true }
 kernel_api = { path = "../../kernel_api" }

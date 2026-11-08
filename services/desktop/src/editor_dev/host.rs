@@ -3117,10 +3117,11 @@ impl HostDesktop {
         for pixel in pixels.chunks_exact_mut(4) {
             pixel[3] = 255;
         }
-        pixels[48 * 2560..528 * 2560].fill(255);
-        if let Some(source) = source {
-            pixels[48 * 2560..528 * 2560].copy_from_slice(&source);
-        }
+        desktop_compositor_core::place_app(
+            source.as_ref().map(|frame| frame.as_slice()),
+            &mut pixels,
+        )
+        .map_err(|_| Status::Invalid)?;
         for y in 8..24 {
             for x in 8..24 {
                 let offset = (y * 640 + x) * 4;
@@ -5347,12 +5348,15 @@ impl HostDesktop {
         for pixel in pixels.chunks_exact_mut(4) {
             pixel[3] = 255;
         }
-        pixels[48 * 2560..528 * 2560].fill(255);
-        if !unavailable {
-            if let Some(source) = &source {
-                pixels[48 * 2560..528 * 2560].copy_from_slice(source);
-            }
-        }
+        desktop_compositor_core::place_app(
+            if unavailable {
+                None
+            } else {
+                source.as_ref().map(|frame| frame.as_slice())
+            },
+            &mut pixels,
+        )
+        .map_err(|_| Status::Invalid)?;
         for y in 8..24 {
             for x in 8..24 {
                 let offset = (y * 640 + x) * 4;
@@ -7420,15 +7424,18 @@ impl HostDesktop {
         for p in pixels.chunks_exact_mut(4) {
             p[3] = 255;
         }
-        pixels[48 * 2560..528 * 2560].fill(255);
         let unavailable = observation
             .as_ref()
             .is_some_and(|o| o.label == NativeEditorPhase::Unavailable);
-        if !unavailable {
-            if let Some(source) = &source {
-                pixels[48 * 2560..528 * 2560].copy_from_slice(source);
-            }
-        }
+        desktop_compositor_core::place_app(
+            if unavailable {
+                None
+            } else {
+                source.as_ref().map(|frame| frame.as_slice())
+            },
+            &mut pixels,
+        )
+        .map_err(|_| Status::Invalid)?;
         for y in 8..24 {
             for x in 8..24 {
                 let n = (y * 640 + x) * 4;

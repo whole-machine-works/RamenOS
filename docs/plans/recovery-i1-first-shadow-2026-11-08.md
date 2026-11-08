@@ -4,8 +4,10 @@ The first Store and Linux process consumers now compare the independently
 reviewed C1 recovery module with Rust on actual Save-recovery observations.
 Rust retains all authority and publication decisions. The Store development
 case passes on macOS; the Linux process development case passes with actual
-child cleanup, a committed comparison and a fresh Save. Complete successor
-gate/CI qualification and independent execution review remain open.
+child cleanup, a committed comparison and a fresh Save. The exact first packet
+is qualified at `538a39c50dcbcb6176270b996eb592275b5584f7` in
+[PR79](https://github.com/whole-machine-works/RamenOS/pull/79); separate A3
+approval and merge remain outstanding.
 
 ## Reference and scope
 
@@ -63,6 +65,20 @@ the candidate. The successful Linux development run uses private umask 077 and
 fresh recording context. It is not a complete resealed execution qualification.
 
 ## Qualification and next work
+
+[Hosted run 42521462392, attempt 1](https://github.com/whole-machine-works/RamenOS/actions/runs/42521462392)
+passed all nine checks. Independent execution review joined the actual merge
+`623d8dce8e2ebe2b84988668cbcf82e6730a458e` to the identical head tree, ten
+provider artifacts, all 57 canonical stages and eight preservation stages,
+original18/Reader93, 244 recording and parent-IO joins, and the original three
+archived binaries. The separate supplement passed eight identity controls, the
+bounded-error control, one genuine Store case and four process/cleanup cases,
+with actual Cargo-selected child and owner binaries, no filtered or ignored
+owner cases, zero held producers and confirmed cleanup. The accepted disposition
+has SHA-256 `f3583b89eaaaf77185bfe5151fc421487cd30985db9191f90faa6af9db633b2b`.
+Earlier registry-admission failures and the unexplained Docker setup timeout
+remain retained; the successful run does not explain that timeout. This qualifies
+the first packet only, not any later source, complete I1 or activation.
 
 `just foundry-editor-recovery-shadow-i1-first` runs a required Linux supplement
 with a separate compiler target and evidence/timing directory. It binds the

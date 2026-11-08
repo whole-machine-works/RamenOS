@@ -562,6 +562,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "desktop_compositor_core"
+version = "0.0.0"
+
+[[package]]
 name = "desktop_editor_core"
 version = "0.0.0"
 dependencies = [
@@ -574,6 +578,7 @@ name = "desktop_service"
 version = "0.0.0"
 dependencies = [
  "artifact_store_schema",
+ "desktop_compositor_core",
  "desktop_editor_core",
  "kernel_api",
  "libc",
