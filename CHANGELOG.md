@@ -1,14 +1,17 @@
 # CHANGELOG
 
-## 2026-11-08 — Same-call host source readiness
+## 2026-11-08 — Same-call hosted qualification and first attempt
 
-- Record reviewed successor host source and private fixture controls through
-  the fixed wrapper gate. Static admission and a sealed one-attempt execution plan
-  are independently reviewed. Linux CI and Root's current case checks remain
-  required. Static copy accounting and the explicit geometric replan have scoped
-  measurements; complete-parent execution qualification remains open. No new VM
-  capture or full CI is claimed.
-  [Source closeout](docs/plans/run0-same-call-source-2026-11-08.md).
+- Record independently accepted [run 42507270423](https://github.com/whole-machine-works/RamenOS/actions/runs/42507270423)
+  at `32a23d`: all nine checks passed. Retain the incomplete first live attempt,
+  which admitted no guest-memory reads and reaped both children.
+- Independently review and locally fix the executable identity mismatch and
+  premature cleanup timeout at `57dc43b` and `3d30be4`; all 280 integrated call
+  tests pass. Those fixes require successor qualification.
+- Retain the measured metadata and conditional copy-cost analysis. A fixed
+  development profile versus redesign within the original logical copy cap
+  remains undecided; no cap change or retry follows. PR78 remains draft.
+  [Source and execution record](docs/plans/run0-same-call-source-2026-11-08.md).
 
 ## 2026-11-07 — PR76 complete hosted qualification
 

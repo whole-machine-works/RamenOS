@@ -89,16 +89,17 @@ for separate A3 review; this prose closeout adds no fresh code qualification.
 `NEXT_TASKS.md` remains an executable CI input, so this documentation successor
 requires its own complete hosted Foundry run under the unchanged classification.
 The [same-call source closeout](docs/plans/run0-same-call-source-2026-11-08.md)
-records the reviewed successor source and fixtures; do not redispatch completed
-source packets. Streaming verification and the explicit geometric reservation
-replan now have source review and scoped measurements. Runtime admission and the
-sealed one-attempt execution plan are reviewed. Run complete Linux CI on the fixed
-candidate, then recheck the actual source, inputs and full prepared plan against
-that case before Root authorizes one fresh capture. Native provenance,
-full history and one-VM C0/C1/C2 qualification remain separate. Full capture and
-live I1 are not released by the earlier CI result.
-The pending recovery-benefit criterion choice holds further live I1, update and
-performance experiments; it does not block authorized independent boot preparation.
+records successful hosted qualification at `32a23d` and the incomplete first
+attempt. The independently reviewed local identity fix `57dc43b` and cleanup
+repair `3d30be4` require exact successor qualification. Resolve the choice between
+a fixed 128 MiB development profile and redesign under the existing 32 MiB cap,
+then review a fresh prepared plan and current inputs before a Root-authorized
+retry. This queue authorizes neither a cap change nor another capture.
+Independent decision-artifact update/rollback work is authorized. Default-off
+I1 correctness, fault and mechanism preparation proceeds after the exact
+Rust-reference update and source seam receive independent review. Benefit
+comparison, adoption and activation remain separate; no full I1 readiness is
+established.
 Derive sites from the fresh loaded image and authenticated caller
 bytes; revoke read authority at each resume and obtain a fresh same-stop witness
 and ordinary-RAM proof at each stop. Preserve complete parent command/child
