@@ -812,6 +812,16 @@ pub struct NativeOriginalReply {
     producers: Vec<ProducerId>,
     allocation_closed: bool,
     unpermitted_commit_closed: bool,
+    #[cfg(feature = "editor_recovery_shadow_v0_dev")]
+    shadow_origin: Option<NativeShadowLookupOrigin>,
+}
+#[cfg(feature = "editor_recovery_shadow_v0_dev")]
+struct NativeShadowLookupOrigin {
+    core: Arc<Core>,
+    query_original: Arc<SaveOriginal>,
+    target: Arc<SaveOriginal>,
+    call: Arc<NativeSaveCall>,
+    claimed: bool,
 }
 impl NativeOriginalReply {
     /// Native uncommitted allocation authority closure, not NoAllocation or a receipt.
@@ -2803,6 +2813,17 @@ struct NativeCopy<'a> {
     captured_reply: Option<Envelope>,
 }
 fn copy_read(copy: NativeCopy<'_>, offset: u32, out: &mut [u8]) -> Result<(), StoreStatus> {
+    copy_read_inner(copy, offset, out, false, None, &mut false)
+}
+
+fn copy_read_inner(
+    copy: NativeCopy<'_>,
+    offset: u32,
+    out: &mut [u8],
+    snapshot_only: bool,
+    expected: Option<&[u8; 176]>,
+    publication_attempted: &mut bool,
+) -> Result<(), StoreStatus> {
     let NativeCopy {
         core,
         original,
@@ -2871,11 +2892,16 @@ fn copy_read(copy: NativeCopy<'_>, offset: u32, out: &mut [u8]) -> Result<(), St
             return Err(StoreStatus::Stale);
         }
     }
+    if let Some(expected) = expected {
+        if !receipt || bytes.bytes.as_slice() != expected {
+            return Err(StoreStatus::Stale);
+        }
+    }
     let start = offset as usize;
     let end = start.checked_add(out.len()).ok_or(StoreStatus::Invalid)?;
     let source = bytes.bytes.get(start..end).ok_or(StoreStatus::Invalid)?;
     let full = start == 0 && end == bytes.bytes.len();
-    let capture = if full {
+    let capture = if full && !snapshot_only {
         Some(CaptureReservation::reserve(&attachment)?)
     } else {
         None
@@ -2884,6 +2910,7 @@ fn copy_read(copy: NativeCopy<'_>, offset: u32, out: &mut [u8]) -> Result<(), St
         if receipt {
             let original_state = checked_lock(&original.state)?;
             let bound = original_state.bound.as_ref().ok_or(StoreStatus::Denied)?;
+            *publication_attempted = true;
             native(gate.publish_receipt(
                 &original.claim,
                 bound,
@@ -4136,6 +4163,17 @@ impl StoreHost {
             producers,
             allocation_closed,
             unpermitted_commit_closed,
+            #[cfg(feature = "editor_recovery_shadow_v0_dev")]
+            shadow_origin: (registered.original_scope
+                && registered.call.request().msg_type == 7
+                && target.request.msg_type == 5)
+                .then(|| NativeShadowLookupOrigin {
+                    core: self.core.clone(),
+                    query_original: registered.original.inner.clone(),
+                    target: target.clone(),
+                    call: registered.call.clone(),
+                    claimed: false,
+                }),
         })
     }
 }
@@ -4901,5 +4939,501 @@ impl StoreHost {
             return Ok(true);
         }
         native(attachment.witness.save_producer_joined(id))
+    }
+}
+
+// Host-only advisory recovery comparison. These rows never grant native authority.
+#[cfg(feature = "editor_recovery_shadow_v0_dev")]
+pub use native_runner::recovery_decision::{RecoveryArtifactV0, RecoveryError};
+#[cfg(feature = "editor_recovery_shadow_v0_dev")]
+use native_runner::recovery_decision::{
+    RecoveryDecisionAdapter, RecoveryDispositionV0, RecoveryObservationV0,
+};
+
+#[cfg(feature = "editor_recovery_shadow_v0_dev")]
+pub struct PreparedStoreShadowModule(RecoveryDecisionAdapter);
+#[cfg(feature = "editor_recovery_shadow_v0_dev")]
+impl PreparedStoreShadowModule {
+    pub fn prepare(bytes: &[u8], identity: RecoveryArtifactV0) -> Result<Self, RecoveryError> {
+        const ABI: [u8; 32] = [
+            0x49, 0xda, 0xf5, 0x2d, 0xd6, 0x69, 0x41, 0x13, 0x76, 0x77, 0x0b, 0x3b, 0xc2, 0xa0,
+            0x07, 0xd7, 0xc6, 0xa8, 0xb3, 0x46, 0x84, 0x3b, 0xcd, 0x12, 0x3a, 0x45, 0xda, 0x81,
+            0x39, 0xb0, 0xda, 0x60,
+        ];
+        const C1: [u8; 32] = [
+            0x64, 0x58, 0xa1, 0x73, 0xcd, 0x09, 0xe7, 0x3f, 0xe0, 0xbe, 0x59, 0xb1, 0xa2, 0xd3,
+            0x39, 0xc2, 0x07, 0x0c, 0x33, 0xac, 0x05, 0x62, 0x8b, 0x3d, 0x2d, 0xd5, 0xfb, 0x26,
+            0x4c, 0xb2, 0xe0, 0x79,
+        ];
+        if bytes.len() != 1349 || identity.abi_sha256 != ABI || identity.module_sha256 != C1 {
+            return Err(RecoveryError::ArtifactIdentity);
+        }
+        Ok(Self(RecoveryDecisionAdapter::new(bytes, identity)?))
+    }
+}
+#[cfg(feature = "editor_recovery_shadow_v0_dev")]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum PostCommitShadowPhase {
+    Preclaim,
+    ClaimedNoPublication,
+    PublicationSucceeded,
+    PublicationFailedOrCaptureFailed,
+}
+#[cfg(feature = "editor_recovery_shadow_v0_dev")]
+#[derive(Debug)]
+pub struct PostCommitShadowFailure {
+    status: StoreStatus,
+    phase: PostCommitShadowPhase,
+}
+#[cfg(feature = "editor_recovery_shadow_v0_dev")]
+impl PostCommitShadowFailure {
+    pub fn phase(&self) -> PostCommitShadowPhase {
+        self.phase
+    }
+    pub fn status(&self) -> StoreStatus {
+        self.status
+    }
+}
+#[cfg(feature = "editor_recovery_shadow_v0_dev")]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum PostCommitLookupResult {
+    RetainOriginal,
+    ReceiptValidated,
+}
+#[cfg(feature = "editor_recovery_shadow_v0_dev")]
+pub struct PostCommitShadowCompletion {
+    native: PostCommitLookupResult,
+}
+#[cfg(feature = "editor_recovery_shadow_v0_dev")]
+impl PostCommitShadowCompletion {
+    pub fn into_native(self) -> PostCommitLookupResult {
+        self.native
+    }
+}
+
+#[cfg(feature = "editor_recovery_shadow_v0_dev")]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[repr(u8)]
+pub enum ShadowResultTag {
+    Pending,
+    Committed,
+    DefinitiveNoncommit,
+    Denied,
+    Invalid,
+    ArtifactIdentity,
+    ModuleShape,
+    Engine,
+    InvalidOriginal,
+    Fuel,
+    Stack,
+    Trap,
+    Return,
+    Output,
+    Disagreement,
+}
+#[cfg(feature = "editor_recovery_shadow_v0_dev")]
+#[derive(Clone, Debug)]
+pub struct ShadowComparisonRecord {
+    result: ShadowResultTag,
+    return_code: Option<i32>,
+    disagreement: Option<(RecoveryDispositionV0, RecoveryDispositionV0)>,
+    diagnostic: [u8; 256],
+    diagnostic_len: u16,
+    diagnostic_truncated: bool,
+    original_epoch: u64,
+    receipt: Option<[u8; 176]>,
+}
+#[cfg(feature = "editor_recovery_shadow_v0_dev")]
+impl ShadowComparisonRecord {
+    pub fn result(&self) -> ShadowResultTag {
+        self.result
+    }
+    pub fn receipt(&self) -> Option<&[u8; 176]> {
+        self.receipt.as_ref()
+    }
+    /// Compact, bounded diagnostics; the encoded row carries no authority.
+    pub fn encode(&self) -> Vec<u8> {
+        let mut out = Vec::with_capacity(512);
+        out.extend_from_slice(b"I1R0");
+        out.push(self.result as u8);
+        out.extend_from_slice(&self.original_epoch.to_le_bytes());
+        out.push(u8::from(self.return_code.is_some()));
+        out.extend_from_slice(&self.return_code.unwrap_or_default().to_le_bytes());
+        out.push(u8::from(self.disagreement.is_some()));
+        let (candidate, expected) = self
+            .disagreement
+            .map(|(a, b)| (a as u32, b as u32))
+            .unwrap_or_default();
+        out.extend_from_slice(&candidate.to_le_bytes());
+        out.extend_from_slice(&expected.to_le_bytes());
+        out.push(u8::from(self.diagnostic_truncated));
+        out.extend_from_slice(&self.diagnostic_len.to_le_bytes());
+        out.extend_from_slice(&self.diagnostic[..usize::from(self.diagnostic_len)]);
+        out.push(u8::from(self.receipt.is_some()));
+        if let Some(receipt) = self.receipt {
+            out.extend_from_slice(&receipt);
+        }
+        debug_assert!(out.len() <= 4096);
+        out
+    }
+}
+#[cfg(feature = "editor_recovery_shadow_v0_dev")]
+pub struct PostCommitShadowRecords {
+    rows: Vec<ShadowComparisonRecord>,
+}
+#[cfg(feature = "editor_recovery_shadow_v0_dev")]
+impl PostCommitShadowRecords {
+    pub fn new() -> Self {
+        Self { rows: Vec::new() }
+    }
+    pub fn len(&self) -> usize {
+        self.rows.len()
+    }
+    pub fn is_empty(&self) -> bool {
+        self.rows.is_empty()
+    }
+    pub fn drain(&mut self) -> std::vec::Drain<'_, ShadowComparisonRecord> {
+        self.rows.drain(..)
+    }
+}
+#[cfg(feature = "editor_recovery_shadow_v0_dev")]
+impl Default for PostCommitShadowRecords {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+#[cfg(feature = "editor_recovery_shadow_v0_dev")]
+struct BoundedDiagnostic {
+    bytes: [u8; 256],
+    len: usize,
+    truncated: bool,
+}
+#[cfg(feature = "editor_recovery_shadow_v0_dev")]
+impl std::fmt::Write for BoundedDiagnostic {
+    fn write_str(&mut self, value: &str) -> std::fmt::Result {
+        for c in value.chars() {
+            let mut buf = [0; 4];
+            let part = c.encode_utf8(&mut buf).as_bytes();
+            if self.len + part.len() > self.bytes.len() {
+                self.truncated = true;
+                continue;
+            }
+            if self.truncated {
+                continue;
+            }
+            self.bytes[self.len..self.len + part.len()].copy_from_slice(part);
+            self.len += part.len();
+        }
+        Ok(())
+    }
+}
+#[cfg(feature = "editor_recovery_shadow_v0_dev")]
+fn shadow_record(
+    result: Result<RecoveryDispositionV0, RecoveryError>,
+    epoch: u64,
+    receipt: Option<[u8; 176]>,
+) -> ShadowComparisonRecord {
+    use std::fmt::Write;
+    let mut diagnostic = BoundedDiagnostic {
+        bytes: [0; 256],
+        len: 0,
+        truncated: false,
+    };
+    let mut return_code = None;
+    let mut disagreement = None;
+    let tag = match result {
+        Ok(RecoveryDispositionV0::Pending) => ShadowResultTag::Pending,
+        Ok(RecoveryDispositionV0::Committed) => ShadowResultTag::Committed,
+        Ok(RecoveryDispositionV0::DefinitiveNoncommit) => ShadowResultTag::DefinitiveNoncommit,
+        Ok(RecoveryDispositionV0::Denied) => ShadowResultTag::Denied,
+        Ok(RecoveryDispositionV0::Invalid) => ShadowResultTag::Invalid,
+        Err(error) => {
+            let tag = match &error {
+                RecoveryError::ArtifactIdentity => ShadowResultTag::ArtifactIdentity,
+                RecoveryError::ModuleShape => ShadowResultTag::ModuleShape,
+                RecoveryError::Engine(_) => ShadowResultTag::Engine,
+                RecoveryError::InvalidOriginal => ShadowResultTag::InvalidOriginal,
+                RecoveryError::Fuel => ShadowResultTag::Fuel,
+                RecoveryError::Stack => ShadowResultTag::Stack,
+                RecoveryError::Trap(_) => ShadowResultTag::Trap,
+                RecoveryError::Return(code) => {
+                    return_code = Some(*code);
+                    ShadowResultTag::Return
+                }
+                RecoveryError::Output => ShadowResultTag::Output,
+                RecoveryError::Disagreement {
+                    candidate,
+                    expected,
+                } => {
+                    disagreement = Some((*candidate, *expected));
+                    ShadowResultTag::Disagreement
+                }
+            };
+            let _ = write!(&mut diagnostic, "{error}");
+            tag
+        }
+    };
+    ShadowComparisonRecord {
+        result: tag,
+        return_code,
+        disagreement,
+        diagnostic: diagnostic.bytes,
+        diagnostic_len: diagnostic.len as u16,
+        diagnostic_truncated: diagnostic.truncated,
+        original_epoch: epoch,
+        receipt,
+    }
+}
+
+#[cfg(feature = "editor_recovery_shadow_v0_dev")]
+fn shadow_query_checks(
+    core: &Arc<Core>,
+    original: &OriginalNativeSave,
+    query: &desktop_service::editor_dev::NativeSaveEntry,
+    reply: &NativeOriginalReply,
+    joined: &[JoinedProducerProof],
+) -> Result<(), StoreStatus> {
+    let origin = reply.shadow_origin.as_ref().ok_or(StoreStatus::Denied)?;
+    if !Arc::ptr_eq(core, &origin.core)
+        || !Arc::ptr_eq(&original.inner, &origin.target)
+        || origin.call.request().msg_type != 7
+        || origin.target.request.msg_type != 5
+        || u64_at(&origin.call.request().payload, 24) != op_of(&origin.target.request)
+    {
+        return Err(StoreStatus::Denied);
+    }
+    let attachment = core.save_attachment()?;
+    if !checked_lock(&attachment.originals)?
+        .iter()
+        .any(|row| Arc::ptr_eq(row, &origin.target))
+    {
+        return Err(StoreStatus::Denied);
+    }
+    // Query origin is the genuine registered Core owner, not a reconstructed id.
+    if origin
+        .query_original
+        .core
+        .upgrade()
+        .is_none_or(|c| !Arc::ptr_eq(&c, core))
+    {
+        return Err(StoreStatus::Denied);
+    }
+    native(origin.call.validate_entry(&attachment.witness, query))?;
+    native(origin.call.admit_original(&attachment.witness))?;
+    {
+        let object = core.object(origin.target.grant.object)?;
+        let state = checked_lock(&object.state)?;
+        let gate = native(attachment.issuer.lock())?;
+        let view = native(gate.admit_original_call(&origin.call))?;
+        if view.actor != origin.target.grant.actor
+            || view.object_id != object.id
+            || view.object_generation != origin.target.tag.object_generation
+            || view
+                .intent_id
+                .is_some_and(|id| Some(id) != origin.target.view.intent_id)
+        {
+            return Err(StoreStatus::Denied);
+        }
+        if state.journal.selected_generation != origin.target.tag.object_generation {
+            return Err(StoreStatus::Stale);
+        }
+    }
+    for id in query
+        .producer_ids()
+        .into_iter()
+        .chain(reply.producers.iter())
+    {
+        let mut observation = None;
+        for proof in joined {
+            if let Ok(actual) = attachment.witness.verify_join_for(id, proof) {
+                observation = Some(actual);
+                break;
+            }
+        }
+        let actual = match observation {
+            Some(actual) => Some(actual),
+            None => native(attachment.witness.save_join_observation_for(id))?,
+        };
+        if !matches!(
+            actual.map(|v| v.outcome),
+            Some(desktop_service::editor_dev::JoinOutcome::Returned)
+        ) {
+            return Err(StoreStatus::Denied);
+        }
+    }
+    let wire = a::SaveStatusReply::decode(&reply.wire)?;
+    if wire.request_id != u64_at(&origin.call.request().payload, 0) {
+        return Err(StoreStatus::Denied);
+    }
+    match &reply.observation {
+        NativeOriginalObservation::CommitPending { binding } if matches!(wire.status, x if x == StoreStatus::Unknown as u32 || x == StoreStatus::NotReady as u32) =>
+        {
+            let op = op_of(&origin.target.request);
+            if (wire.status == StoreStatus::Unknown as u32 && wire.operation_id != op)
+                || (wire.status == StoreStatus::NotReady as u32 && wire.operation_id != 0)
+                || wire.revision != 0
+                || wire.receipt_shm != 0
+                || wire.receipt_len != 0
+                || checked_lock(&origin.target.state)?.binding.as_ref() != Some(binding)
+            {
+                return Err(StoreStatus::Denied);
+            }
+        }
+        NativeOriginalObservation::Receipt { binding, receipt } if wire.status == 0 => {
+            if wire.operation_id != op_of(&origin.target.request)
+                || checked_lock(&origin.target.state)?.binding.as_ref() != Some(binding)
+                || !Arc::ptr_eq(&receipt.core, core)
+                || !Arc::ptr_eq(&receipt.original, &origin.target)
+                || !Arc::ptr_eq(&receipt.call, &origin.call)
+                || wire.receipt_shm != receipt.descriptor.handle.pack()
+                || wire.receipt_len != 176
+            {
+                return Err(StoreStatus::Denied);
+            }
+        }
+        _ => return Err(StoreStatus::Denied),
+    }
+    Ok(())
+}
+
+#[cfg(feature = "editor_recovery_shadow_v0_dev")]
+impl StoreHost {
+    pub fn compare_post_commit_shadow(
+        &self,
+        original: &OriginalNativeSave,
+        query: &desktop_service::editor_dev::NativeSaveEntry,
+        reply: &mut NativeOriginalReply,
+        joined: &[JoinedProducerProof],
+        module: &PreparedStoreShadowModule,
+        records: &mut PostCommitShadowRecords,
+    ) -> Result<PostCommitShadowCompletion, PostCommitShadowFailure> {
+        let failure = |status, phase| PostCommitShadowFailure { status, phase };
+        if records.rows.len() >= 16 {
+            return Err(failure(
+                StoreStatus::Exhausted,
+                PostCommitShadowPhase::Preclaim,
+            ));
+        }
+        records
+            .rows
+            .try_reserve(1)
+            .map_err(|_| failure(StoreStatus::Exhausted, PostCommitShadowPhase::Preclaim))?;
+        shadow_query_checks(&self.core, original, query, reply, joined)
+            .map_err(|e| failure(e, PostCommitShadowPhase::Preclaim))?;
+        let origin = reply
+            .shadow_origin
+            .as_mut()
+            .ok_or_else(|| failure(StoreStatus::Denied, PostCommitShadowPhase::Preclaim))?;
+        if origin.claimed {
+            return Err(failure(
+                StoreStatus::Denied,
+                PostCommitShadowPhase::Preclaim,
+            ));
+        }
+        origin.claimed = true;
+        let (binding, receipt) = match &reply.observation {
+            NativeOriginalObservation::CommitPending { binding } => (binding.clone(), None),
+            NativeOriginalObservation::Receipt { binding, receipt } => {
+                let mut snapshot = [0; 176];
+                copy_read_inner(
+                    NativeCopy {
+                        core: &receipt.core,
+                        original: &receipt.original,
+                        call: &receipt.call,
+                        data: &receipt.data,
+                        descriptor: &receipt.descriptor,
+                        receipt: true,
+                        recovery: receipt.recovery,
+                        captured_reply: receipt.capture_reply,
+                    },
+                    0,
+                    &mut snapshot,
+                    true,
+                    None,
+                    &mut false,
+                )
+                .map_err(|e| failure(e, PostCommitShadowPhase::ClaimedNoPublication))?;
+                let wire = a::SaveStatusReply::decode(&reply.wire)
+                    .map_err(|e| failure(e.into(), PostCommitShadowPhase::ClaimedNoPublication))?;
+                let decoded = schema(EditorSaveReceiptV0::decode_le(&snapshot))
+                    .map_err(|e| failure(e, PostCommitShadowPhase::ClaimedNoPublication))?;
+                if decoded.operation_id != wire.operation_id
+                    || decoded.result_revision != wire.revision
+                {
+                    return Err(failure(
+                        StoreStatus::Denied,
+                        PostCommitShadowPhase::ClaimedNoPublication,
+                    ));
+                }
+                (binding.clone(), Some(snapshot))
+            }
+            _ => {
+                return Err(failure(
+                    StoreStatus::Denied,
+                    PostCommitShadowPhase::ClaimedNoPublication,
+                ));
+            }
+        };
+        let epoch = original.inner.grant.epoch;
+        let observation = match &receipt {
+            Some(bytes) => RecoveryObservationV0::Receipt(bytes),
+            None => RecoveryObservationV0::Pending,
+        };
+        let result = module.0.decide(&binding, epoch, observation);
+        records.rows.push(shadow_record(result, epoch, receipt));
+        shadow_query_checks(&self.core, original, query, reply, joined)
+            .map_err(|e| failure(e, PostCommitShadowPhase::ClaimedNoPublication))?;
+        if let NativeOriginalObservation::Receipt { receipt: held, .. } = &reply.observation {
+            let mut copied = [0; 176];
+            let mut attempted = false;
+            let result = copy_read_inner(
+                NativeCopy {
+                    core: &held.core,
+                    original: &held.original,
+                    call: &held.call,
+                    data: &held.data,
+                    descriptor: &held.descriptor,
+                    receipt: true,
+                    recovery: held.recovery,
+                    captured_reply: held.capture_reply,
+                },
+                0,
+                &mut copied,
+                false,
+                receipt.as_ref(),
+                &mut attempted,
+            );
+            if let Err(status) = result {
+                let phase = if attempted {
+                    PostCommitShadowPhase::PublicationFailedOrCaptureFailed
+                } else {
+                    PostCommitShadowPhase::ClaimedNoPublication
+                };
+                return Err(failure(status, phase));
+            }
+            Ok(PostCommitShadowCompletion {
+                native: PostCommitLookupResult::ReceiptValidated,
+            })
+        } else {
+            Ok(PostCommitShadowCompletion {
+                native: PostCommitLookupResult::RetainOriginal,
+            })
+        }
+    }
+}
+
+#[cfg(all(test, feature = "editor_recovery_shadow_v0_dev"))]
+mod shadow_record_tests {
+    use super::*;
+
+    #[test]
+    fn shadow_bounded_error_preserves_failure_and_utf8_prefix() {
+        let error = RecoveryError::Trap(anyhow::anyhow!("{}", "é".repeat(300)));
+        let record = shadow_record(Err(error), 7, None);
+        assert_eq!(record.result(), ShadowResultTag::Trap);
+        assert!(record.diagnostic_truncated);
+        assert!(std::str::from_utf8(&record.diagnostic[..record.diagnostic_len as usize]).is_ok());
+        assert!(record.encode().len() <= 4096);
     }
 }

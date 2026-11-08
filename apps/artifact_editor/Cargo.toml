@@ -32,6 +32,10 @@ host_editor_process_assertions_v0_dev = [
   "host_editor_process_v0_dev",
   "desktop_service/host_editor_process_assertions_v0_dev",
 ]
+host_editor_recovery_shadow_v0_dev = [
+  "host_editor_process_v0_dev",
+  "store_service/editor_recovery_shadow_v0_dev",
+]
 
 # Linux child has no Desktop, Store or schema dependency activation.
 host_editor_process_child_v0_dev = ["dep:desktop_editor_core", "dep:kernel_api", "dep:libc"]
@@ -79,6 +83,11 @@ required-features = ["host_editor_process_setup_v0_dev"]
 name = "process_task"
 path = "tests/process_task.rs"
 required-features = ["host_editor_process_v0_dev"]
+
+[[test]]
+name = "recovery_shadow"
+path = "tests/recovery_shadow.rs"
+required-features = ["host_editor_recovery_shadow_v0_dev", "host_editor_process_assertions_v0_dev"]
 
 [[test]]
 name = "process_linux_prerequisites"

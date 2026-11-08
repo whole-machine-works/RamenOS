@@ -68,6 +68,13 @@ distinct non-author T2 reproduction. This completes only the named technical Q1
 prerequisites. I1, every remaining live owner obligation, update/rollback benefit,
 full Q1/all-18 receiving acceptance and activation remain open.
 
+The [first recovery shadow consumer](docs/plans/recovery-i1-first-shadow-2026-11-08.md)
+has default-off Store and process integration. Development tests exercise genuine
+Store Pending-to-terminal recovery and process lost-reply terminal recovery with
+an actual Committed C1 comparison, retained receipt and fresh Save. Rust retains
+all effects. Successor gate/CI qualification remains open; process Pending,
+remaining live faults, update/rollback and all-18 acceptance are separate.
+
 The default-off Linux process implementation merged through
 [PR52](https://github.com/whole-machine-works/RamenOS/pull/52) on November 5 as
 `c9ed54a5b69a1a279d7014929bf932288aa86ec6`, after separate A3 approval of reviewed

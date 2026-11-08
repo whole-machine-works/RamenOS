@@ -287,6 +287,16 @@ jobs:
           name: editor-process-linux-prerequisites-${{ github.run_id }}-${{ github.run_attempt }}
           path: out/editor-process-linux-prerequisites/
           if-no-files-found: error
+      - name: Run first recovery shadow owner controls
+        run: python3 tools/ci/stage_timer.py --directory out/editor-recovery-shadow-i1/timings --label editor-recovery-shadow-i1 -- just foundry-editor-recovery-shadow-i1-first
+      - name: Retain recovery shadow owner evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: editor-recovery-shadow-i1-${{ github.run_id }}-${{ github.run_attempt }}
+          path: out/editor-recovery-shadow-i1/
+          include-hidden-files: true
+          if-no-files-found: error
       - name: Retain actual editor stage timings
         if: always()
         uses: actions/upload-artifact@v4

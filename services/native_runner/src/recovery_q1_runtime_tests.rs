@@ -493,10 +493,7 @@ mod controls {
     fn t1_released_manifest_matches_exact_bytes_and_refuses_change() {
         let fixture = SyntheticStage::new(&synthetic("i32.const 7 return"));
         let path = fixture.root.path().join("reviewed-manifest.json");
-        let raw = include_bytes!(concat!(
-            env!("CARGO_MANIFEST_DIR"),
-            "/../../docs/contracts/recovery-q1-t1-manifest-v1.json"
-        ));
+        let raw = include_bytes!("../../../docs/contracts/recovery-q1-t1-manifest-v1.json");
         let mut file = OpenOptions::new()
             .write(true)
             .create_new(true)

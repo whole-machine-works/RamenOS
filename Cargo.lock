@@ -1676,6 +1676,7 @@ dependencies = [
  "kernel_api",
  "libc",
  "memmap2",
+ "native_runner",
  "rand",
  "serde",
  "serde_json",
