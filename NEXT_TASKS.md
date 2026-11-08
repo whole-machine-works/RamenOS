@@ -60,7 +60,10 @@ has a reviewed reference/seam and qualified default-off integration at PR79
 A3 approval/merge remain outstanding. Take the remaining live owner/fault families and independently prepared
 artifact update/rollback work. The [next owner/fault packet](docs/plans/recovery-i1-owner-faults-2026-11-08.md)
 now implements the separate snapshot barrier, six Store controls and two actual
-child-death controls; qualify its exact successor before closing those cases.
+child-death controls. PR81's first run failed the new watchdog case's fresh
+Save with `Unknown`; retain that unresolved failure and use the bounded diagnostic
+and pre-execution binary retention on the changed successor. Qualify that exact
+head before closing those cases; a later PASS does not establish a cause or fix.
 Process Pending needs a separate owner-preserving
 packet; the existing editor waits for its live Commit flight. Keep benefit,
 complete cost comparison, all-18 acceptance and activation separate. Preserve

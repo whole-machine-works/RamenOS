@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## 2026-11-08 — Recovery fault failure retention
+
+- Preserve PR81's first failed watchdog/fresh-Save result and unresolved cause.
+- Add failure-only bounded call/intent, IO, operation and join diagnostics without
+  changing the original success assertion or deadlines.
+- Retain actual test binaries before execution and source snapshots after failure;
+  keep ordinary runner behavior and all checks. Successor qualification is open.
+  [Failure record](docs/plans/recovery-i1-owner-faults-2026-11-08.md).
+
 ## 2026-11-08 — Recovery owner and fault assertions
 
 - Add a separately default-off, bounded real-snapshot barrier with exact owners,

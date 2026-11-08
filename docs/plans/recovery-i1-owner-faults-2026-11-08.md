@@ -45,3 +45,29 @@ successor CI and execution review are pending. These cases advance portions of
 the live owner obligations; they do not close all eighteen, process live-flight
 Pending, an admitted adapter-error artifact, updates/rollback, practical benefit,
 activation, target persistence or physical durability.
+
+## First hosted failure and diagnostic successor
+
+[PR81 run42527957627, attempt1](https://github.com/whole-machine-works/RamenOS/actions/runs/42527957627)
+on `16227de` passed every canonical lane stage but failed the expanded supplement:
+five Store fault cases passed, and the watchdog case's fresh sibling Commit
+returned `Unknown` (10) where the unchanged assertion requires success (0).
+The watchdog abort and fresh original query had already passed. The later new
+process-fault target was not reached. All ten provider artifacts and the failure
+are retained. No causal timeout, IO failure or runtime repair is established.
+
+The diagnostic successor preserves that assertion and every lease/deadline. Only
+on failure it reports bounded actual intent/call entry and deadline observations,
+wire status, operation/permit/transition state, IO/exchange rows and real producer
+join observations. These are sequential observations rather than an atomic
+snapshot or cleanup proof; diagnostic panics and stderr errors cannot replace
+the original failure. Focused and unfiltered six-case Linux development runs pass,
+but did not emit this diagnostic, and do not explain the earlier failure.
+
+The supplement now retains each actual Cargo-selected harness before discovery
+and execution through an optional runner argument, so a failed owner case keeps
+its binary identity and bytes. Successor gates reuse that verified copy, preserve
+normal default behavior and still fail on every missing/ignored/failed case.
+Failure also retains a final source snapshot without replacing its first error.
+Independent Python controls cover an actual owned failing harness, exclusive-path
+refusal and missing-target refusal. Complete successor qualification remains open.

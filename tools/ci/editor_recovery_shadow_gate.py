@@ -115,6 +115,7 @@ def execute(requested):
     previous = os.environ.copy()
     previous_umask = os.umask(0o077)
     result["private_umask"] = "077"
+    before = None
     try:
         preparation.require(platform.system() == "Linux", "actual Linux process controls required")
         fixture = ROOT / FIXTURE
@@ -150,11 +151,17 @@ def execute(requested):
         retained = {}
         (output / "binaries").mkdir(mode=0o700)
 
-        def retain(label, identity):
+        def retain(label, identity, prepared=None):
             source = Path(identity["path"])
             preparation.require(runner.input_identity(source) == identity, "I1 binary changed before retention")
             destination = output / "binaries" / label
-            shutil.copyfile(source, destination)
+            if prepared is None:
+                shutil.copyfile(source, destination)
+            else:
+                preparation.require(Path(prepared["path"]).resolve() == destination.resolve(),
+                                    "I1 prepared binary path differs")
+                preparation.require(runner.input_identity(destination) == prepared,
+                                    "I1 prepared binary changed")
             copied = runner.input_identity(destination)
             preparation.require(copied["sha256"] == identity["sha256"]
                                 and copied["bytes"] == identity["bytes"], "I1 binary retention differs")
@@ -200,10 +207,13 @@ def execute(requested):
             command(label, [sys.executable, str(ROOT / "tools/ci/selected_test_runner.py"),
                             "--package", package, "--test", test, "--features", features,
                             "--required-input", str(fixture), "--required-input", str(child),
+                            "--retain-test-binary", str(output / "binaries" / label),
                             "--output", str(output / label)])
             summary = json.loads((output / label / "summary.json").read_text())
             validate_summary(summary, package, test, required)
-            retain(label, summary["targets"][0]["binary_identity"])
+            retained_target = summary["targets"][0]
+            retain(label, retained_target["binary_identity"],
+                   retained_target["retained_binary_identity"])
             command(label + "-clippy", ["cargo", "clippy", "--locked", "-p", package,
                                         "--test", test, "--features", features, "--", "-D", "warnings"])
         preparation.require(runner.input_identity(child) == child_identity, "I1 child changed")
@@ -218,6 +228,15 @@ def execute(requested):
             result["status"] = "FAIL"
         return 2 if result["status"] == "INCOMPLETE" else 1
     finally:
+        # Failed assertions still retain the final source view; preserve the
+        # first failure if this independent diagnostic also fails.
+        if before is not None and not (output / "source-after.json").exists():
+            try:
+                after = snapshot()
+                preparation.write_json(output / "source-after.json", after)
+                result["failure_source_unchanged"] = before == after
+            except (preparation.PreparationError, OSError, ValueError, KeyError) as error:
+                result["source_after_failure_error"] = str(error)[:1024]
         os.umask(previous_umask)
         os.environ.clear()
         os.environ.update(previous)

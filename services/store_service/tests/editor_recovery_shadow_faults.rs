@@ -241,6 +241,8 @@ fn join_lookup(
     }
 }
 struct CommitAttempt {
+    call_entered: Instant,
+    call_deadline: Instant,
     entry: desktop::NativeSaveEntry,
     call: store::RegisteredNativeSave,
     operation: u64,
@@ -347,12 +349,17 @@ impl NativeRig {
             &request,
             1,
         ));
+        let native_call = store_ok(entry.wait_once());
+        let call_entered = native_call.entered();
+        let call_deadline = native_call.deadline();
         let call = store_ok(
             self.store
                 .host()
-                .register_native_save(launch.endpoint(), store_ok(entry.wait_once())),
+                .register_native_save(launch.endpoint(), native_call),
         );
         CommitAttempt {
+            call_entered,
+            call_deadline,
             entry,
             call,
             operation: allocation.operation_id,
@@ -997,16 +1004,107 @@ fn run_terminal_snapshot_barrier(mode: &str) {
     );
     let fresh_sibling = rig.get_mut().unchanged_save(&other, &sibling_editor, 1);
     assert!(fresh_sibling.operation > sibling_attempt.operation);
+    let fresh_entered = Instant::now();
+    let fresh_deadline = fresh_sibling._intent.deadline();
     let fresh_reply = store_ok(
         rig.get()
             .store
             .host()
             .execute_native_save(&fresh_sibling.call),
     );
-    assert_eq!(
-        store_ok(a::CommitReply::decode(fresh_reply.wire())).status,
-        0
-    );
+    let fresh_returned = Instant::now();
+    let fresh_wire = store_ok(a::CommitReply::decode(fresh_reply.wire()));
+    if fresh_wire.status != 0 {
+        // Diagnostics must never replace the original status assertion.
+        let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            let emit = |label: &str, value: &serde_json::Value| {
+                use std::io::Write;
+                const MAX_LINE: usize = 16 * 1024;
+                let mut bytes = serde_json::to_vec(value).unwrap_or_default();
+                if bytes.len() > MAX_LINE {
+                    bytes = b"{\"diagnostic_truncated\":true}".to_vec();
+                }
+                let mut stderr = std::io::stderr().lock();
+                let _ = writeln!(stderr, "{} {}", label, String::from_utf8_lossy(&bytes));
+            };
+            let report = |phase: &str| match rig.get().store.controller().evidence() {
+                Ok(e) => {
+                    let object = e
+                        .objects
+                        .iter()
+                        .find(|o| o.selected.selected_object_id == 102);
+                    let op = object.and_then(|o| {
+                        o.operations
+                            .iter()
+                            .find(|row| row.allocation.operation_id == fresh_sibling.operation)
+                    });
+                    let io = e.io_events.iter().filter(|row| row.selected_object_id == 102 && row.operation_id == fresh_sibling.operation).take(32).map(|row| serde_json::json!({
+                        "point": format!("{:?}", row.point), "sequence": row.sequence,
+                        "writer_id": row.writer_id, "outcome": match row.outcome {
+                            store::IoOutcome::Began => "began", store::IoOutcome::Completed => "completed",
+                            store::IoOutcome::SimulatedFailure => "simulated_failure", store::IoOutcome::ActualFailure => "actual_failure",
+                        }
+                    })).collect::<Vec<_>>();
+                    let exchanges = e.exchanges.iter().filter(|row| row.selected_object_id == 102 && row.operation_id == fresh_sibling.operation).take(16).map(|row| serde_json::json!({
+                        "elapsed_us": row.elapsed_us, "reply_present": row.actual_reply_wire.is_some(), "reply_suppressed": row.reply_suppressed,
+                    })).collect::<Vec<_>>();
+                    let counts = rig.get().desktop.native_producer_counts();
+                    let row = serde_json::json!({"kind":"i1_fresh_save_failure", "phase":phase, "mode":mode,
+                        "scope":"sequential live observations, not atomic or closure proof", "operation":fresh_sibling.operation,
+                        "wire_status":fresh_wire.status, "wire_operation":fresh_wire.operation_id,
+                        "intent_remaining_at_call_us":fresh_deadline.saturating_duration_since(fresh_entered).as_micros(),
+                        "call_elapsed_us":fresh_returned.duration_since(fresh_entered).as_micros(),
+                        "intent_expired_at_return":fresh_returned >= fresh_deadline,
+                        "native_call_age_at_execution_us":fresh_entered.saturating_duration_since(fresh_sibling.call_entered).as_micros(),
+                        "native_call_remaining_at_execution_us":fresh_sibling.call_deadline.saturating_duration_since(fresh_entered).as_micros(),
+                        "native_call_expired_at_return":fresh_returned >= fresh_sibling.call_deadline,
+                        "object":object.map(|o| serde_json::json!({"revision":o.selected.revision, "dispatch":o.mutation_dispatch_count,
+                            "permits":o.permit_count,"transitions":o.transition_count,"quarantined":o.mutation_quarantined,"pending_writer_id":o.pending_writer_id})),
+                        "operation_row":op.map(|o| serde_json::json!({"state":o.state,"permit_present":o.permit.is_some(),"receipt_present":o.receipt.is_some(),"closure":o.closure})),
+                        "io":io, "io_limit":32, "exchanges":exchanges, "exchange_limit":16,
+                        "producers":{"held":counts.held,"io":counts.io,"joining":counts.joining,"active_io":counts.active_io,"active_non_io":counts.active_non_io}});
+                    emit("I1_FRESH_SAVE_FAILURE", &row);
+                }
+                Err(error) => emit(
+                    "I1_FRESH_SAVE_FAILURE",
+                    &serde_json::json!({"phase":phase,"evidence_status":error.status as u32}),
+                ),
+            };
+            report("before_join");
+            let end = Instant::now() + Duration::from_secs(2);
+            for id in fresh_sibling
+                .entry
+                .producer_ids()
+                .into_iter()
+                .chain(fresh_reply.producers())
+                .take(16)
+            {
+                loop {
+                    match rig.get().store.host().join_native_save_finished(id) {
+                        Ok(proof) => {
+                            emit(
+                                "I1_FRESH_SAVE_JOIN",
+                                &serde_json::json!({"outcome":format!("{:?}", proof.outcome())}),
+                            );
+                            break;
+                        }
+                        Err(StoreStatus::NotReady) if Instant::now() < end => {
+                            std::thread::yield_now()
+                        }
+                        Err(status) => {
+                            emit(
+                                "I1_FRESH_SAVE_JOIN_STATUS",
+                                &serde_json::json!({"status":format!("{status:?}")}),
+                            );
+                            break;
+                        }
+                    }
+                }
+            }
+            report("after_join");
+        }));
+    }
+    assert_eq!(fresh_wire.status, 0);
     rig.get().join(&fresh_sibling.entry, &fresh_reply);
     let (other_entry, other_call) = rig.get().read(&other, 1200);
     let other_reply = store_ok(rig.get().store.host().execute_native_save(&other_call));
