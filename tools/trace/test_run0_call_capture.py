@@ -166,7 +166,7 @@ class PreparationControls(unittest.TestCase):
             result=capture.prepare_call_inputs(root/'inputs',run,root/'source.json',root/'abi.json',**args)
             self.assertIs(type(result),capture.PreparedCallInputs)
             self.assertEqual(result.plan['context'],'call')
-            self.assertEqual(result.plan['kind'],'run0_call_owned_capture_plan_v0')
+            self.assertEqual(result.plan['kind'],'run0_same_call_map_plan_v1')
             self.assertIn(result.abi_ref[0],dict(result.prior_blobs))
             self.assertIn(result.caller_manifest_ref[0],dict(result.prior_blobs))
             self.assertEqual(result.plan['caller_manifest_ref'],list(result.caller_manifest_ref))
@@ -179,6 +179,16 @@ class PreparationControls(unittest.TestCase):
             bound.assert_called_once()
             spawn.assert_not_called()
             self.assertFalse(run.exists())
+
+    def test_cap10_observer_uses_frozen_parent_identity_and_closed_sources(self):
+        base={'schema_version':1,'kind':'old reset source','python':
+              {'path':'/fixture/python','sha256':'f'*64,'length':1},'sources':[]}
+        with patch.object(witness,'observer_source_bytes',return_value=raw_json(base)), \
+             patch.object(witness,'_read_regular',return_value=(b'pass\n',None)):
+            observer=json.loads(capture.parent_observer_source_bytes())
+        self.assertEqual(observer['kind'],'run0_same_call_map_observer_source_v1')
+        self.assertEqual(tuple(row['path'] for row in observer['sources']),capture.PARENT_SOURCE_NAMES)
+        self.assertIn('run0_call_runtime.py',capture.PARENT_SOURCE_NAMES)
 
 
 class ImmutableInventoryControls(unittest.TestCase):

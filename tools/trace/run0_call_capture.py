@@ -25,6 +25,8 @@ deny, incomplete = base.deny, base.incomplete
 REF_KEYS = ('path', 'sha256', 'length')
 INPUT_BYTES = 256 << 20
 CALLER_MANIFEST_SHA256 = 'fa31830fa2607c355fae3fa3b1146b376bbb1ac700c0382dffcdfce3a639b16b'
+PLAN_KIND = 'run0_same_call_map_plan_v1'
+OBSERVER_KIND = 'run0_same_call_map_observer_source_v1'
 PLAN_INPUT_FIELDS = ('prior_admission_ref', 'profile_mapping_ref', 'capability_ref',
                      'source_persistence_ref', 'caller_manifest_ref')
 PARENT_SOURCE_NAMES = witness.C0_OBSERVER_SOURCE_NAMES + (
@@ -486,7 +488,7 @@ def parent_observer_source_bytes():
                         'sha256':hashlib.sha256(data).hexdigest()})
     deny(len(set(PARENT_SOURCE_NAMES)) == len(PARENT_SOURCE_NAMES),
          'call_capture_source_inventory')
-    return witness.canonical(dict(schema_version=1, kind='run0_call_observer_v0',
+    return witness.canonical(dict(schema_version=1, kind=OBSERVER_KIND,
                                   python=initial['python'], sources=sources))
 
 
@@ -574,7 +576,7 @@ class BoundCallTarget:
 
 class _OwnedCallRuntime:
     """Reserved exact owner shape; no constructor currently publishes a graph."""
-    __slots__ = ('prepared', '_registration', 'qemu_owner', '_wire', 'deadlines',
+    __slots__ = ('prepared', '_plan', '_registration', 'qemu_owner', '_wire', 'deadlines',
         'accounting', 'inventory', 'parent_identity', 'transition_owner',
         'read_attempts', 'read_operations', 'native', 'before_spawn',
         'before_spawn_ns', '_descriptors', '_children', '_launch_identity',
@@ -645,7 +647,7 @@ def prepare_call_inputs(inputs, run, source_dossier, host_abi, *, prior_admissio
     witness.validate_native_layout(layout)
     observer = parent_observer_source_bytes()
     manifest = [witness.CaptureEvidence.ref(name, raw) for name, raw in frozen]
-    plan = dict(plan, kind='run0_call_owned_capture_plan_v0', context='call',
+    plan = dict(plan, kind=PLAN_KIND, context='call',
         observer_ref=witness.CaptureEvidence.ref('observer.json', observer),
         prior_inputs_sha256=hashlib.sha256(witness.canonical(manifest)).hexdigest(),
         **{name:list(ref) for name,ref in zip(PLAN_INPUT_FIELDS,refs)})
