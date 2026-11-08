@@ -85,7 +85,7 @@ class HostControls(unittest.TestCase):
         wire._host_lease=wire._host_peer=wire._host_before=wire._host_after=wire._host_receipt=None
         runtime.prepared=prepared;runtime._registration=registration;runtime._wire=wire
         runtime.qemu_owner=owner;runtime.deadlines=policy;runtime.accounting=ledger
-        runtime._launch_identity=(0x801,7,len(rf.elf_fixture()))
+        runtime._launch_identity=dict(device=0x801,inode=7,size=len(rf.elf_fixture()))
         runtime.native=type('Native',(),{'sigchld':lambda _:bytes(152),
             'filesystem_magic':lambda _,fd:witness.NATIVE_LAYOUT['proc_super_magic']})()
         runtime._observations={};runtime._failure=None;runtime._closed=False
@@ -146,6 +146,35 @@ class HostControls(unittest.TestCase):
             o=host._OwnedParentObservation(reg,s,b)
         r._observations[s.epoch]=o
         return o
+
+    def test_runtime_launch_identity_shape_denied_before_io_then_fresh_success(self):
+        class Foreign(dict):pass
+        malformed=(None,(),{}, {'device':1,'inode':2},
+            {'device':1,'inode':2,'size':3,'extra':4},
+            Foreign(device=1,inode=2,size=3),
+            {'device':True,'inode':2,'size':3},
+            {'device':1,'inode':False,'size':3},
+            {'device':1,'inode':2,'size':True},
+            {'device':1,'inode':2,'size':'3'})
+        for value in malformed:
+            g=self.graph();g[0]._launch_identity=value
+            with patch.object(host.os,'open',side_effect=AssertionError('unexpected IO')), \
+                 patch.object(ParentOwnedHelper,'start',side_effect=AssertionError('unexpected helper')):
+                with self.assertRaises(ProbeError) as error:self.observation(g)
+                self.assertEqual(error.exception.status,'DENY')
+            self.assertEqual(self.observation(self.graph()).launch_identity,
+                             (0x801,7,len(rf.elf_fixture())))
+        g=self.graph();del g[0]._launch_identity
+        with patch.object(host.os,'open',side_effect=AssertionError('unexpected IO')):
+            with self.assertRaises(ProbeError) as error:self.observation(g)
+            self.assertEqual(error.exception.status,'DENY')
+
+    def test_runtime_launch_identity_checks_metadata_before_fields_then_fresh_success(self):
+        for change in ('device','inode','size','hash','build_id'):
+            with self.subTest(change=change):
+                _,observation,receipt=self.observed(changed=change)
+                self.assertIsNone(receipt);self.assertNotIn('fields',observation.helpers)
+                self.assertIsNotNone(self.observed()[2])
 
     def test_public_receipt_constructor_and_foreign_graph_refuse(self):
         with self.assertRaises(TypeError):host.ParentHostObservationReceipt()
@@ -209,7 +238,10 @@ class HostControls(unittest.TestCase):
                 start.assert_not_called()
 
     def observed(self, *, changed=None, epoch='C0'):
-        g=self.graph(epoch);o=self.observation(g);r,reg,w,stop,before,lease=g
+        g=self.graph(epoch)
+        if changed in ('device','inode','size'):
+            g[0]._launch_identity[changed]+=1
+        o=self.observation(g);r,reg,w,stop,before,lease=g
         with tempfile.TemporaryDirectory() as folder,self.admitted(g),ExitStack() as stack:
             proc=Path(folder)/'proc';directory=proc/str(o.child.pid);directory.mkdir(parents=True)
             rest=[b'S',str(os.getpid()).encode(),*([b'0']*17),b'721231',*([b'0']*30)]
@@ -255,12 +287,16 @@ class HostControls(unittest.TestCase):
             stack.enter_context(patch.object(host.os,'pidfd_open',lambda pid:opened(directory/'stat',os.O_RDONLY),create=True))
             stack.enter_context(patch.object(host,'pidfd_check',lambda fd:{'observed_ns':time.monotonic_ns(),'readable':False,'hangup':False,'error':None}))
             stack.enter_context(patch.object(host._OwnedParentObservation,'_send_frame',send))
-            if changed=='abi':o.abi=replace(o.abi,elf=replace(o.abi.elf,sha256='0'*64))
+            if changed in ('abi','hash'):o.abi=replace(o.abi,elf=replace(o.abi.elf,sha256='0'*64))
+            if changed=='build_id':o.abi=replace(o.abi,elf=replace(o.abi.elf,build_id='0'*40))
             if changed=='peer':
                 stack.enter_context(patch.object(wiremod.CallWire,'host_peer_credentials',lambda *args:native(wiremod.ParentPeerReceipt,raw_bytes=struct.pack('=iII',1,os.getuid(),os.getgid()),observed_ns=time.monotonic_ns())))
             if changed is None:receipt=o.observe()
             else:
-                with self.assertRaises(ProbeError):o.observe()
+                with self.assertRaises(ProbeError) as error:o.observe()
+                if changed in ('device','inode','size','hash','build_id'):
+                    self.assertEqual(error.exception.reason,'owned_exe_identity')
+                    self.assertNotIn('fields',o.helpers)
                 receipt=None
         return g,o,receipt
 

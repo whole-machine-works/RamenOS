@@ -245,6 +245,13 @@ class _OwnedParentObservation(witness.OwnedCPUObservation):
                  and registration.qemu_owner is runtime.qemu_owner
                  and registration.prepared is runtime.prepared,
                  "call_host_registration_identity")
+            identity = getattr(runtime, "_launch_identity", None)
+            deny(type(identity) is dict and len(identity) == 3
+                 and all(type(key) is str for key in identity)
+                 and identity.keys() == {"device", "inode", "size"}
+                 and all(type(identity[key]) is int for key in ("device", "inode", "size")),
+                 "call_host_launch_identity")
+            launch_identity = (identity["device"], identity["inode"], identity["size"])
             wire = runtime._wire
             deny(type(stop) is transport.EpochStopReceipt
                  and stop._registration is registration and stop._wire is wire
@@ -259,7 +266,7 @@ class _OwnedParentObservation(witness.OwnedCPUObservation):
             _registers(before_registers.values)
             super().__init__(runtime.qemu_owner.child, None, _ParentBudget(registration),
                 runtime.native, runtime.prepared.field_abi,
-                str(Path(runtime.prepared.inputs) / "qemu"), runtime._launch_identity)
+                str(Path(runtime.prepared.inputs) / "qemu"), launch_identity)
         except C0DecodeError as error:
             raise ProbeError(error.status, error.reason) from error
         except AttributeError as error:
