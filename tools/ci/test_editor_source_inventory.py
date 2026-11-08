@@ -1,8 +1,11 @@
 """Pure source admission regressions; never compile or start product processes."""
 import importlib.util
+import ast
+import hashlib
 import json
 import os
 from pathlib import Path
+import re
 import shutil
 import tempfile
 import unittest
@@ -20,6 +23,48 @@ def load(name, path):
 COLLECTOR = load('task_source_fixture', 'tools/ci/native_save_task_sources.py')
 READ = load('read_source_fixture', 'tools/foundry/desktop_editor_native_read_gate.py')
 PREVIEW = load('preview_source_fixture', 'tools/foundry/desktop_editor_native_preview_read_gate.py')
+TASK = load('save_source_fixture', 'tools/ci/desktop_editor_task_result.py')
+RELIABILITY = load('reliability_source_fixture', 'tools/ci/editor_reliability_gate.py')
+
+
+class LiveRegistryPinTests(unittest.TestCase):
+    def test_all_four_live_source_admissions_before_native_execution(self):
+        fd = os.open(ROOT, os.O_RDONLY | os.O_DIRECTORY)
+        try:
+            with tempfile.TemporaryDirectory(prefix='source-admission-') as temporary:
+                output = Path(temporary).resolve()
+                registry = json.loads((ROOT / COLLECTOR.REGISTRY).read_bytes())
+                rows = COLLECTOR.capture(fd, registry['paths'])
+                raw = READ.h.compact(rows)
+                manifest = output / 'save.json'
+                manifest.write_bytes(raw)
+                TASK.manifest_rows(READ.h, fd, manifest, hashlib.sha256(raw).hexdigest())
+                for name, gate in (('read', READ), ('preview', PREVIEW)):
+                    destination = output / name
+                    destination.mkdir(mode=0o700)
+                    if gate is READ:
+                        gate.freeze_sources(fd, destination)
+                    else:
+                        gate.freeze_sources(READ.h, fd, destination)
+                raw = (ROOT / RELIABILITY.REGISTRY).read_bytes()
+                self.assertEqual(hashlib.sha256(raw).hexdigest(), RELIABILITY.REGISTRY_SHA)
+                registry = json.loads(raw)
+                RELIABILITY.admit_registry(READ.h, registry)
+                RELIABILITY.snapshot(READ.h, COLLECTOR, fd, registry)
+        finally:
+            os.close(fd)
+
+    def test_save_shell_and_reader_use_actual_reviewed_registry(self):
+        expected = hashlib.sha256((ROOT / COLLECTOR.REGISTRY).read_bytes()).hexdigest()
+        tree = ast.parse((ROOT / 'tools/ci/desktop_editor_task_result.py').read_text())
+        reader = [ast.literal_eval(node.value) for node in tree.body
+                  if isinstance(node, ast.Assign)
+                  and any(isinstance(target, ast.Name) and target.id == 'REGISTRY_SHA'
+                          for target in node.targets)]
+        shell = (ROOT / 'tools/ci/foundry_desktop_editor_task_ui1_1c.sh').read_text()
+        arguments = re.findall(r'--registry-sha256\s+([0-9a-f]{64})(?=\s|$)', shell)
+        self.assertEqual(reader, [expected])
+        self.assertEqual(arguments, [expected])
 
 
 class SourceInventoryTests(unittest.TestCase):

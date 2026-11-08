@@ -1,7 +1,28 @@
 # DECISIONS (ADR-lite)
 
-**Last Updated:** 2026-10-14
+**Last Updated:** 2026-11-08
 **Status:** Active
+
+## 2026-11-08 — Default-off recovery shadow consumer
+
+Use the reviewed C1 module as an advisory comparison on genuine Store recovery
+observations. Rust retains the actual original operation, authorization,
+publication and protected Saved checks. A private one-use reply origin and a
+closed snapshot/compare/finalize operation keep serialized facts from becoming
+permission; no locks remain held across module execution.
+
+Keep the first process consumer on the existing terminal-recovery path. Its live
+Commit flight ordering stays unchanged. Bounded, drainable diagnostics preserve
+actual errors and publication phases without making a full diagnostic buffer
+permanently consume query authority. Run this feature in a separate required
+Linux supplement so its compiler outputs cannot overwrite canonical archived
+binaries. The existing collector and assertion checks remain in force through
+additive source registries.
+
+This implements the reviewed recovery v0 boundary as trusted host development
+work. Full owner/fault qualification, independent version update/rollback,
+measured benefit and activation remain separate. See the
+[first-consumer record](docs/plans/recovery-i1-first-shadow-2026-11-08.md).
 
 ## 2026-10-14 — Explicit codecs, retained outcomes and finite authority epochs
 

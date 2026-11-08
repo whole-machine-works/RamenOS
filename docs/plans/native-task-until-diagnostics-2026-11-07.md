@@ -65,3 +65,13 @@ test-executable/source admission, all original deadlines and every check.
 Retain any new failure and its actual operation/owner state. This diagnostic
 packet establishes no timeout fix, successful Linux repetition, earlier D19
 cause, full P0-P3 requalification, target durability or release authority.
+
+## Later hosted qualification
+
+PR75 subsequently passed all nine checks at `f5b62a3` in
+[run 42366488017](https://github.com/whole-machine-works/RamenOS/actions/runs/42366488017).
+The retained independent mechanical audit verifies the 57 canonical stages,
+eight preservation checks, 918 source files and three archived binaries for
+that source. The earlier Save47 failure and its unknown cause remain unchanged.
+This later result closes the named hosted prerequisite for PR75, not execution
+qualification of the changed I1 consumer.

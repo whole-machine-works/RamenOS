@@ -1,6 +1,6 @@
 # Current Status
 
-**Last Updated:** 2026-11-06
+**Last Updated:** 2026-11-08
 **Status:** Active and authoritative for landed state
 **Current Slice:** RUN0 target runtime preparation after merged UI1.1d host process delivery
 **Physical Lane:** S12.4 HIL appliance observation/actuation awaits setup
@@ -23,11 +23,14 @@ on macOS/Linux. That landed result is a trusted in-process host consumer. Models
 are unnecessary for the task. Target execution and target persistence remain
 unfinished.
 
-The latest hosted capacity failure is localized to history Save47, but its
+The retained hosted capacity failure is localized to history Save47, but its
 cause remains unknown. [Failure-only timeout diagnostics](docs/plans/native-task-until-diagnostics-2026-11-07.md)
 now retain the same-iteration observation and genuine Store state without
 changing the1500ms deadline or original panic. Source review and Darwin failure
-controls pass; a new Linux observation and final hosted qualification remain open.
+controls pass. PR75 subsequently passed all nine hosted checks at `f5b62a3`
+in [run 42366488017](https://github.com/whole-machine-works/RamenOS/actions/runs/42366488017).
+That result preserves the failure and does not explain its cause; the changed
+I1 candidate requires its own qualification.
 
 The recovery comparison has a default-off host adapter behind
 `recovery_decision_v0_dev`. It checks a pinned module and ABI, starts a fresh
@@ -73,6 +76,13 @@ now accepts the independent original build, fresh Linux 627-row/T1 runs and a
 distinct non-author T2 reproduction. This completes only the named technical Q1
 prerequisites. I1, every remaining live owner obligation, update/rollback benefit,
 full Q1/all-18 receiving acceptance and activation remain open.
+
+The [first recovery shadow consumer](docs/plans/recovery-i1-first-shadow-2026-11-08.md)
+has default-off Store and process integration. Development tests exercise genuine
+Store Pending-to-terminal recovery and process lost-reply terminal recovery with
+an actual Committed C1 comparison, retained receipt and fresh Save. Rust retains
+all effects. Successor gate/CI qualification remains open; process Pending,
+remaining live faults, update/rollback and all-18 acceptance are separate.
 
 The default-off Linux process implementation merged through
 [PR52](https://github.com/whole-machine-works/RamenOS/pull/52) on November 5 as

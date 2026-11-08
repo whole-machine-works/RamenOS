@@ -1027,6 +1027,22 @@ impl GateState {
     }
 }
 impl NativeSaveCall {
+    /// Validate identity of two already-owned capabilities, not current admission.
+    #[cfg(feature = "editor_recovery_shadow_v0_dev")]
+    pub fn validate_entry(
+        &self,
+        witness: &RegistryWitness,
+        entry: &NativeSaveEntry,
+    ) -> Result<(), Status> {
+        if !same(&self.authority, &witness.authority)
+            || !same(&self.authority, &entry.authority)
+            || !Arc::ptr_eq(&self.life, &entry.life)
+        {
+            return Err(Status::Denied);
+        }
+        Ok(())
+    }
+
     pub fn request(&self) -> &Envelope {
         &self.life.view.request
     }

@@ -98,6 +98,11 @@ equivalent on the fixed candidate, without duplicating both. Reuse focused evide
 only for unchanged transitive inputs and environment; compiler reuse still requires
 fresh assertions. A prose extension does not make a gate-consumed file non-executable.
 
+After changing editor path dependencies, generated sources or frozen source
+registries, run `just codegen` and `just foundry-editor-source-admission` before
+long gates or CI. The fast check exercises all four existing source-admission
+gates and their digest bindings without running product processes.
+
 Full preflight requires Linux, Python `jsonschema`, Docker with builtin seccomp,
 and the already installed pinned image. Missing prerequisites produce `INCOMPLETE`.
 Use focused host/QEMU gates on macOS and report limitations. Setup, gate coverage,

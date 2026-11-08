@@ -1,13 +1,23 @@
 # CHANGELOG
 
+## 2026-11-08 — First default-off recovery shadow consumer
+
+- Add authenticated Store comparison and process terminal-recovery integration
+  using the exact reviewed C1 module, with Rust retaining publication authority.
+- Exercise genuine Pending/terminal, origin/replay denial, bounded record capacity,
+  lost reply and fresh Save in focused development tests; retain earlier failures.
+- Add an isolated required Linux CI supplement and additive source registries.
+  Complete successor qualification and the broader I1 obligations remain open.
+  [Scope and evidence](docs/plans/recovery-i1-first-shadow-2026-11-08.md).
+
 ## 2026-11-07 — Native task timeout evidence
 
 - Retain failure-only same-iteration editor/chrome/producer observations and
   existing Store snapshots at the original bounded asynchronous assertion.
 - Preserve1500ms, the original panic, all eighteen cases and success-path IO;
   isolate secondary diagnostic failures and verify fresh genuine Saves on host.
-- Keep the actual Save47 cause and Linux qualification open. See the
-  [source and control record](docs/plans/native-task-until-diagnostics-2026-11-07.md).
+- Retain the unknown Save47 cause. Later PR75 hosted qualification passed at
+  `f5b62a3`; see the [source and control record](docs/plans/native-task-until-diagnostics-2026-11-07.md).
 
 ## 2026-11-07 — Linux technical recovery prerequisites complete
 

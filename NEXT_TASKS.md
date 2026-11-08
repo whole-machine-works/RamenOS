@@ -1,6 +1,6 @@
 # Next Tasks
 
-**Last Updated:** 2026-11-06
+**Last Updated:** 2026-11-08
 **Status:** Authoritative ready work and acceptance dependencies
 
 [Current Status](CURRENT_STATUS.md) records landed behavior; [Roadmap](ROADMAP.md)
@@ -54,12 +54,14 @@ canonical successes. Do not redispatch its source, fixtures or completed run.
 The [Linux technical closeout](docs/plans/recovery-linux-technical-closeout-2026-11-07.md)
 now accepts the independent original compiler build, fresh Linux corpus/T1 and
 distinct T2 reproduction. Do not redispatch those completed technical packets.
-Freeze the I1 authorized observation/owner handoff and separately review its
-source, real-host scenarios, executable and execution plan before running the
-shadow join. Then close remaining live obligations and the registered independent
-update/rollback benefit and complete cost comparison. Final receiving acceptance
-closes all 18. Preserve one Rust effect owner and the original operation, epoch
-and deadline throughout.
+The [first I1 Store/process consumer](docs/plans/recovery-i1-first-shadow-2026-11-08.md)
+has a reviewed reference/seam and implemented default-off integration. Qualify the
+exact candidate and required Linux supplement before closing this first packet.
+Then take the remaining live owner/fault families and independently prepared
+artifact update/rollback work. Process Pending needs a separate owner-preserving
+packet; the existing editor waits for its live Commit flight. Keep benefit,
+complete cost comparison, all-18 acceptance and activation separate. Preserve
+one Rust effect owner and the original operation, epoch and deadline throughout.
 The practical cost budgets are adoption criteria; exceeding them retains Rust
 and does not block correctness work or the target editing task. No activation
 or full Q1 result follows from the corpus replay alone.
@@ -106,8 +108,9 @@ Linux host scope and the source-bound
 Keep a separate reliability packet for the retained capacity, D19 and D09
 failures, whose historical causes remain unknown. The
 [original-task timeout hook](docs/plans/native-task-until-diagnostics-2026-11-07.md)
-retains state at a distinct failure point. Use it for PR75's source-bound next
-Linux observation; the retained Save47 timeout remains unresolved. Existing
+retains state at a distinct failure point. PR75's diagnostic-enabled Linux
+qualification passed at `f5b62a3`; do not redispatch that completed qualification.
+Use the hook if a fresh candidate fails; the retained Save47 cause remains unresolved. Existing
 deadlines and assertions stay fixed. Save receipt-failure diagnostics
 and D09 parent-phase timings are implemented; use them before adding another
 instrumentation layer. Joint reservation/census for both complete frame exports

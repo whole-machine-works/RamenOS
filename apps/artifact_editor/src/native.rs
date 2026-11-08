@@ -45,6 +45,10 @@ struct SaveChains {
     startup: Option<ReadStartup>,
     registration_failures: Vec<store::NativeSaveRegistrationFailure>,
     lookup_cleanup: LookupCleanup,
+    #[cfg(all(target_os = "linux", feature = "host_editor_recovery_shadow_v0_dev"))]
+    shadow_module: Option<store::PreparedStoreShadowModule>,
+    #[cfg(all(target_os = "linux", feature = "host_editor_recovery_shadow_v0_dev"))]
+    shadow_records: store::PostCommitShadowRecords,
 }
 
 #[derive(Clone, Copy)]
@@ -116,6 +120,8 @@ struct LookupFlight {
     entry: desktop::NativeSaveEntry,
     reply: Option<store::NativeOriginalReply>,
     joined: Vec<desktop::JoinedProducerProof>,
+    #[cfg(all(target_os = "linux", feature = "host_editor_recovery_shadow_v0_dev"))]
+    shadow_spent: bool,
 }
 
 impl NativeArtifactEditor {
@@ -185,6 +191,10 @@ impl SaveChains {
             startup: None,
             registration_failures: Vec::new(),
             lookup_cleanup: LookupCleanup::CoreOwned,
+            #[cfg(all(target_os = "linux", feature = "host_editor_recovery_shadow_v0_dev"))]
+            shadow_module: None,
+            #[cfg(all(target_os = "linux", feature = "host_editor_recovery_shadow_v0_dev"))]
+            shadow_records: store::PostCommitShadowRecords::new(),
         }
     }
     fn read_editor(
@@ -899,6 +909,8 @@ impl SaveChains {
                 entry,
                 reply: None,
                 joined: Vec::new(),
+                #[cfg(all(target_os = "linux", feature = "host_editor_recovery_shadow_v0_dev"))]
+                shadow_spent: false,
             });
             let call = chain.lookup.as_ref().unwrap().entry.wait_once()?;
             match self.store.observe_original(call, original) {
@@ -921,6 +933,13 @@ impl SaveChains {
         match self.finish_lookup(chain, &mut lookup, now) {
             Ok(retain) => Ok(retain),
             Err(error) => {
+                #[cfg(all(target_os = "linux", feature = "host_editor_recovery_shadow_v0_dev"))]
+                if lookup.shadow_spent {
+                    // join_lookup already retained the genuine returned joins.
+                    // This claimed reply must never reach the ordinary copier;
+                    // the retained original can obtain a fresh query later.
+                    return Err(error);
+                }
                 chain.lookup = Some(lookup);
                 Err(error)
             }
@@ -987,6 +1006,46 @@ impl SaveChains {
         let Some(reply) = lookup.reply.as_mut() else {
             return Ok(true);
         };
+        #[cfg(all(target_os = "linux", feature = "host_editor_recovery_shadow_v0_dev"))]
+        if matches!(self.lookup_cleanup, LookupCleanup::ProcessOwned)
+            && matches!(chain.stage, Stage::ObserveCommit)
+            && !chain.recover_rejected_commit
+            && matches!(
+                reply.observation(),
+                store::NativeOriginalObservation::CommitPending { .. }
+                    | store::NativeOriginalObservation::Receipt { .. }
+            )
+        {
+            if let Some(module) = self.shadow_module.as_ref() {
+                let original = chain
+                    .flight
+                    .as_ref()
+                    .map(|flight| flight.registered.original())
+                    .or(chain.original.as_ref())
+                    .ok_or(NativeEditorError::InvalidReceipt)?;
+                return match self.store.compare_post_commit_shadow(
+                    original,
+                    &lookup.entry,
+                    reply,
+                    &lookup.joined,
+                    module,
+                    &mut self.shadow_records,
+                ) {
+                    Ok(completion) => {
+                        lookup.shadow_spent = true;
+                        match completion.into_native() {
+                            store::PostCommitLookupResult::RetainOriginal => Ok(true),
+                            store::PostCommitLookupResult::ReceiptValidated => Ok(false),
+                        }
+                    }
+                    Err(failure) => {
+                        lookup.shadow_spent =
+                            !matches!(failure.phase(), store::PostCommitShadowPhase::Preclaim);
+                        Err(failure.status().into())
+                    }
+                };
+            }
+        }
         match reply.observation() {
             store::NativeOriginalObservation::AllocationPending
             | store::NativeOriginalObservation::CommitPending { .. } => {
@@ -1098,6 +1157,32 @@ fn status(value: u32) -> Result<StoreStatus, NativeEditorError> {
 mod process;
 #[cfg(all(target_os = "linux", feature = "host_editor_process_v0_dev"))]
 pub use process::{ProcessArtifactEditor, ProcessEditorOpenFailure, ProcessOpenCleanup};
+
+#[cfg(all(target_os = "linux", feature = "host_editor_recovery_shadow_v0_dev"))]
+impl ProcessArtifactEditor {
+    /// Installs the already authenticated fixed module before an original Save exists.
+    pub fn install_recovery_shadow(
+        &mut self,
+        module: store::PreparedStoreShadowModule,
+    ) -> Result<(), NativeEditorError> {
+        if self.chains.shadow_module.is_some() || !self.chains.pending.is_empty() {
+            return Err(NativeEditorError::Exhausted);
+        }
+        self.chains.shadow_module = Some(module);
+        Ok(())
+    }
+
+    pub fn recovery_shadow_record_count(&self) -> usize {
+        self.chains.shadow_records.len()
+    }
+
+    /// Draining diagnostics never changes any original or lookup claim.
+    pub fn drain_recovery_shadow_records(
+        &mut self,
+    ) -> impl Iterator<Item = store::ShadowComparisonRecord> + '_ {
+        self.chains.shadow_records.drain()
+    }
+}
 
 #[cfg(test)]
 #[path = "native_tests.rs"]
