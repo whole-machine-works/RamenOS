@@ -21,6 +21,16 @@ FIXTURE = "services/store_service/tests/fixtures/recovery-c1.wasm"
 C1_SHA = "6458a173cd09e73fe0be59b1a2d339c2070c33ac05628b3d2dd5fb264cb2e079"
 STORE_CASE = "real_commit_pending_then_terminal_replay_refused_and_fresh_owner_remains_usable"
 PROCESS_CASE = "genuine_lost_reply_terminal_and_fresh_save"
+IDENTITY_CASES = ["editor_dev::native_authority::native_shadow_identity_tests::" + name for name in (
+    "shadow_identity_exact_call_rejects_second_same_actor_query_and_recovers",
+    "shadow_identity_foreign_witness_and_entry_authority_are_denied",
+    "shadow_identity_missing_and_reserved_join_are_none_without_consumption",
+    "shadow_identity_actual_returned_join_is_read_only_and_matches_proof",
+    "shadow_identity_actual_panicked_join_is_not_promoted_to_returned",
+    "shadow_identity_foreign_authority_origin_kind_and_proof_are_denied",
+    "shadow_identity_generation_and_memo_identity_corruption_are_denied",
+    "shadow_identity_retired_origin_and_non_save_origin_never_imply_join",
+)]
 EXTRAS = {"tools/ci/editor_recovery_shadow_gate.py",
           "tools/ci/test_editor_recovery_shadow_gate.py", "tools/ci/cargo_artifact.py",
           "tools/ci/stage_timer.py", ".github/workflows/ci.yml"}
@@ -145,13 +155,19 @@ def execute(requested):
         (output / "recordings").mkdir(mode=0o700)
         os.environ["RAMEN_NATIVE_TASK_EVIDENCE"] = str(output / "recordings")
         os.environ["RAMEN_NATIVE_TASK_RUN_NONCE"] = secrets.token_hex(16)
+
+        def unit_group(label, package, case_filter, expected, exact=False):
+            command(label, ["cargo", "test", "--locked", "-p", package, "--lib",
+                            "--features", "editor_recovery_shadow_v0_dev", case_filter,
+                            "--", *(["--exact"] if exact else []),
+                            "--format=json", "-Z", "unstable-options"])
+            text = (output / (label + ".stdout")).read_text()
+            end = runner.json_rows(text)[-1]
+            runner.validate_outcomes(text, sorted(expected), 0, end["filtered_out"])
+
+        unit_group("join-identity", "desktop_service", "shadow_identity_", IDENTITY_CASES)
         bounded = "editor_store::native_save::shadow_record_tests::shadow_bounded_error_preserves_failure_and_utf8_prefix"
-        command("bounded-errors", ["cargo", "test", "--locked", "-p", "store_service", "--lib",
-                                   "--features", "editor_recovery_shadow_v0_dev", bounded,
-                                   "--", "--exact", "--format=json", "-Z", "unstable-options"])
-        text = (output / "bounded-errors.stdout").read_text()
-        end = runner.json_rows(text)[-1]
-        runner.validate_outcomes(text, [bounded], 0, end["filtered_out"])
+        unit_group("bounded-errors", "store_service", bounded, [bounded], exact=True)
         for label, package, test, features, required in [
             ("store", "store_service", "editor_recovery_shadow", "editor_recovery_shadow_v0_dev", STORE_CASE),
             ("process", "artifact_editor", "recovery_shadow",

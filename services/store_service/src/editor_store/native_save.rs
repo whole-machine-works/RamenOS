@@ -5355,7 +5355,7 @@ impl StoreHost {
                 )
                 .map_err(|e| failure(e, PostCommitShadowPhase::ClaimedNoPublication))?;
                 let wire = a::SaveStatusReply::decode(&reply.wire)
-                    .map_err(|e| failure(e.into(), PostCommitShadowPhase::ClaimedNoPublication))?;
+                    .map_err(|e| failure(e, PostCommitShadowPhase::ClaimedNoPublication))?;
                 let decoded = schema(EditorSaveReceiptV0::decode_le(&snapshot))
                     .map_err(|e| failure(e, PostCommitShadowPhase::ClaimedNoPublication))?;
                 if decoded.operation_id != wire.operation_id
