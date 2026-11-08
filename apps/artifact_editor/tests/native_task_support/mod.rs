@@ -1555,13 +1555,88 @@ impl Fixture {
         let deadline = Instant::now() + Duration::from_millis(1500);
         loop {
             ok(app.step(now));
-            if p(&ok(app.observe(now))) {
+            let observation = ok(app.observe(now));
+            if p(&observation) {
                 break;
             }
-            assert!(
-                Instant::now() < deadline,
-                "bounded real asynchronous completion"
-            );
+            let within_deadline = Instant::now() < deadline;
+            if !within_deadline {
+                // Retain this iteration's actual observation before owners unwind.
+                // These reads never reconcile, publish, join or prove quiescence.
+                let diagnostic = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                    let chrome = match self
+                        .drivers
+                        .iter()
+                        .find(|driver| driver.s.session_id == observation.actor.session_id)
+                    {
+                        Some(driver) => match self.dc.save_chrome_observation(&driver.s.compositor)
+                        {
+                            Ok(actual) => recording::dto_native_save_chrome_observation(&actual),
+                            Err(status) => serde_json::json!({"error_status": status as u32}),
+                        },
+                        None => {
+                            serde_json::json!({"error": "actual observation session not retained"})
+                        }
+                    };
+                    // Desktop aliases are read-only; the Store list helper also
+                    // prunes stale aliases and is deliberately not called here.
+                    let producers = self.h.native_producers();
+                    assert!(producers.len() <= 64, "bounded actual producer diagnostic");
+                    let mut joins = Vec::with_capacity(producers.len());
+                    for id in &producers {
+                        let joined = match self.host().native_save_producer_joined(id) {
+                            Ok(actual) => serde_json::json!({"joined": actual}),
+                            Err(status) => serde_json::json!({"error_status": status as u32}),
+                        };
+                        joins.push(serde_json::json!({
+                            "producer_id": id.producer_id(),
+                            "actual_join_recorded": self.joined.contains(&id.producer_id()),
+                            "authenticated_join_observation": joined,
+                        }));
+                    }
+                    let counts = self.h.native_producer_counts();
+                    let value = serde_json::json!({
+                        "schema_version": 1,
+                        "scope": "until deadline failure; sequential observations, not an atomic snapshot",
+                        "acceptance": false,
+                        "snapshot_is_quiescence_proof": false,
+                        "join_boolean_is_returned_or_authority_proof": false,
+                        "empty_producer_list_is_completion_proof": false,
+                        "core_epoch_index": self.core_ordinal,
+                        "semantic_now_ms": now,
+                        "timeout_budget_ms": 1500,
+                        "deadline_overrun_ns": Instant::now().saturating_duration_since(deadline).as_nanos(),
+                        "observation": recording::dto_native_editor_observation(&observation),
+                        "chrome": chrome,
+                        "producer_counts": recording::dto_producer_counts(&counts),
+                        "active_non_io": counts.active_non_io,
+                        "active_io": counts.active_io,
+                        "producer_observations": joins,
+                        "recorded_native_join_id_count": self.joined.len(),
+                        "recorded_native_join_ids": self.joined.iter().take(256).copied().collect::<Vec<_>>(),
+                        "recorded_native_join_ids_truncated": self.joined.len() > 256,
+                        "next_store_snapshot": self.snapshot_ordinal.get(),
+                    });
+                    let bytes = ok(serde_json::to_vec(&value));
+                    assert!(bytes.len() <= 64 * 1024, "compact failure observation cap");
+                    let mut stderr = std::io::stderr().lock();
+                    let _ = std::io::Write::write_all(
+                        &mut stderr,
+                        b"NATIVE_TASK_UNTIL_FAILURE_DIAGNOSTIC ",
+                    );
+                    let _ = std::io::Write::write_all(&mut stderr, &bytes);
+                    let _ = std::io::Write::write_all(&mut stderr, b"\n");
+                    drop(stderr);
+                    self.store_snapshot("final", "final_before_cleanup", None, None);
+                }));
+                if diagnostic.is_err() {
+                    let _ = std::io::Write::write_all(
+                        &mut std::io::stderr().lock(),
+                        b"NATIVE_TASK_UNTIL_FAILURE_DIAGNOSTIC incomplete; original assertion still failed\n",
+                    );
+                }
+            }
+            assert!(within_deadline, "bounded real asynchronous completion");
             thread::sleep(Duration::from_millis(1));
         }
         self.join_all();

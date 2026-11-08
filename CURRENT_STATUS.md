@@ -23,6 +23,15 @@ on macOS/Linux. That landed result is a trusted in-process host consumer. Models
 are unnecessary for the task. Target execution and target persistence remain
 unfinished.
 
+The retained hosted capacity failure is localized to history Save47, but its
+cause remains unknown. [Failure-only timeout diagnostics](docs/plans/native-task-until-diagnostics-2026-11-07.md)
+now retain the same-iteration observation and genuine Store state without
+changing the1500ms deadline or original panic. Source review and Darwin failure
+controls pass. PR75 subsequently passed all nine hosted checks at `f5b62a3`
+in [run 42366488017](https://github.com/whole-machine-works/RamenOS/actions/runs/42366488017).
+That result preserves the failure and does not explain its cause; the changed
+I1 candidate requires its own qualification.
+
 The recovery comparison has a default-off host adapter behind
 `recovery_decision_v0_dev`. It checks a pinned module and ABI, starts a fresh
 bounded Wasmtime instance for each observation, and checks the result against
