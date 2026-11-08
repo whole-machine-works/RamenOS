@@ -478,6 +478,8 @@ def result(evidence):
                         "docs/DESKTOP_EDITOR_WIRE_V1.md", "docs/plans/desktop-editor-v0.md",
                         "tools/ci/desktop_editor_result.py", "tools/ci/foundry_desktop_editor_host_ui1_1a.sh"))
     sources.update(str(p) for p in Path("services/desktop").rglob("*") if p.is_file())
+    for crate in ("services/desktop_editor_core", "services/desktop_compositor_core"):
+        sources.update(str(p) for p in Path(crate).rglob("*") if p.is_file())
     sources.update(str(p) for p in Path("kernel_api/src").rglob("*.rs"))
     return dict(schema_version=1, gate="foundry-desktop-editor-host-ui1-1a", outcome="PASS",
                 scope="volatile-in-process-editor", host=platform.platform(),

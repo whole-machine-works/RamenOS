@@ -13,6 +13,7 @@ members = [
   "apps/artifact_editor", # UI1.1c: default-off in-process native Save task consumer
   "services/portals",
   "services/desktop", # UI1.0: opt-in typed host preview/launch lifetime
+  "services/desktop_compositor_core", # UI2: allocation-free fixed app placement
   "services/desktop_editor_core", # UI1.1d: bounded edit/raster and typed process data
   "services/domain_manager",
   "services/capsule_relay",

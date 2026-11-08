@@ -15,6 +15,13 @@ and [Changelog](CHANGELOG.md), outside routine agent intake.
 
 ## Execution state
 
+The [UI2 placement prerequisite](docs/plans/desktop-compositor-core-ui2-2026-11-08.md)
+is implemented as a dependency-free, allocation-free `no_std` core used by all
+three existing host compositor paths. Focused pixel, refusal and host controls
+pass, including bare-target compilation; complete successor CI qualification
+remains pending. Target framebuffer authority, scanout and target service joins
+remain unimplemented.
+
 The default-off UI1.1c host task reads an approved artifact, processes logical
 keyboard input, edits bounded text, renders offscreen frames, saves through typed
 Store authority and reconciles original outcomes through joined-owner reopen.
@@ -81,8 +88,10 @@ The [first recovery shadow consumer](docs/plans/recovery-i1-first-shadow-2026-11
 has default-off Store and process integration. Development tests exercise genuine
 Store Pending-to-terminal recovery and process lost-reply terminal recovery with
 an actual Committed C1 comparison, retained receipt and fresh Save. Rust retains
-all effects. Successor gate/CI qualification remains open; process Pending,
-remaining live faults, update/rollback and all-18 acceptance are separate.
+all effects. PR79 at `538a39c` passed all nine hosted checks and independent
+source/evidence review, including the separate Linux supplement, 57 canonical
+and eight preservation stages. A3 approval and merge remain outstanding. Process
+Pending, remaining live faults, update/rollback and all-18 acceptance are separate.
 
 The default-off Linux process implementation merged through
 [PR52](https://github.com/whole-machine-works/RamenOS/pull/52) on November 5 as

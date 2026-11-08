@@ -55,9 +55,9 @@ The [Linux technical closeout](docs/plans/recovery-linux-technical-closeout-2026
 now accepts the independent original compiler build, fresh Linux corpus/T1 and
 distinct T2 reproduction. Do not redispatch those completed technical packets.
 The [first I1 Store/process consumer](docs/plans/recovery-i1-first-shadow-2026-11-08.md)
-has a reviewed reference/seam and implemented default-off integration. Qualify the
-exact candidate and required Linux supplement before closing this first packet.
-Then take the remaining live owner/fault families and independently prepared
+has a reviewed reference/seam and qualified default-off integration at PR79
+`538a39c`, with all nine hosted checks and independent execution review; separate
+A3 approval/merge remain outstanding. Take the remaining live owner/fault families and independently prepared
 artifact update/rollback work. Process Pending needs a separate owner-preserving
 packet; the existing editor waits for its live Commit flight. Keep benefit,
 complete cost comparison, all-18 acceptance and activation separate. Preserve
@@ -254,7 +254,7 @@ the target-memory handoff is resolved; no model study gates these packets.
 | RUN0.0 → RUN0 | Use the reviewed entry-input helper; supply actual profile/diagnostic provenance and complete bounded capture/profile and raw-map/retention assertions under the [entry preparation](docs/plans/run0-relocated-entry-preparation-v0.md) | Obtain actual initial table access, complete retained ranges and final firmware-exit map; prove allocation/write/read/reuse plus S8 in QEMU. Then one target application with grants, denial, failure/restart. Pure selector, entry-input admission or external memory reads do not prove guest access/runtime. |
 | IN0 | Select one input controller and obtain Reference Vault + Oracle protocol_trace, then freeze typed keyboard/failure contract | Actual device-backed keyboard reports with malformed/reset/unplug/bounded-queue/denied delivery assertions. Host injection supports consumer work but cannot qualify the driver. Physical execution waits for H0/H1. |
 | STORE0 | Use selected block Vault/Oracle; freeze actual QEMU block read/write/flush and bounded Store durability assertions | Implement one device-backed path and named Store consumer. Target save/reopen joins this evidence; embedded vectors and firmware NVMe detection do not supply it. |
-| UI2 | Freeze target compositor/display and service adapter boundaries after host contracts | Port exact required services, then join RUN0+IN0+display with unchanged human task in QEMU; join STORE0 for persistent save/reopen. Name every remaining host service. Qualified machine repeat needs H0/H1, device evidence and relevant S12/S13. |
+| UI2 | Fixed `no_std` app placement now has all three host consumers; successor qualification pending. Freeze framebuffer authority/lifetime and target service boundaries next | Port exact required services, then join RUN0+IN0+display with unchanged human task in QEMU; join STORE0 for persistent save/reopen. Name every remaining host service. Qualified machine repeat needs H0/H1, device evidence and relevant S12/S13. |
 | REC0 | S13 selection/publication contract and versioned failure schema | Inactive-slot publication/readback, revisioned selection and interrupted phases in host/QEMU. Physical new-slot and rollback boots remain H3. |
 | SW-A / SW-E | Remaining authority or provider-supervision controls in separate assigned files | Run named Linux/Docker gates; preserve unknown authority, failed/pending attempts, original cleanup and private bank/funded-work-order controls. Avoid repeating landed canary/accounting controls. Full A2 precedes paid model collection; no agent-study barrier on desktop work. |
 

@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## 2026-11-08 — Fixed compositor placement prerequisite
+
+- Extract dependency-free, allocation-free `no_std` BGRA app placement and use it
+  in the general, preview and native Save host compositors, preserving trusted
+  chrome, authority checks and publication ownership.
+- Add malformed-length/no-write and fresh-success controls, retain all existing
+  host checks, and require bare-target compilation in the existing editor gate.
+- Focused controls pass; successor CI remains pending. Target scanout and runtime
+  are separate. [Scope](docs/plans/desktop-compositor-core-ui2-2026-11-08.md).
+
 ## 2026-11-08 — First default-off recovery shadow consumer
 
 - Add authenticated Store comparison and process terminal-recovery integration
@@ -7,7 +17,8 @@
 - Exercise genuine Pending/terminal, origin/replay denial, bounded record capacity,
   lost reply and fresh Save in focused development tests; retain earlier failures.
 - Add an isolated required Linux CI supplement and additive source registries.
-  Complete successor qualification and the broader I1 obligations remain open.
+  PR79 `538a39c` subsequently passed all nine checks and independent execution
+  review; separate A3 approval/merge and the broader I1 obligations remain open.
   [Scope and evidence](docs/plans/recovery-i1-first-shadow-2026-11-08.md).
 
 ## 2026-11-07 — Native task timeout evidence
