@@ -199,6 +199,27 @@ def input_identity(path):
         raise RunnerError(f"required input unavailable: {path}") from error
 
 
+def retain_test_binary(source, destination, expected):
+    destination = Path(destination)
+    created = False
+    try:
+        fd = os.open(destination, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o700)
+        created = True
+        os.fchmod(fd, 0o700)
+        with os.fdopen(fd, "wb") as target, Path(source).open("rb") as original:
+            for chunk in iter(lambda: original.read(1024 * 1024), b""):
+                target.write(chunk)
+        retained = input_identity(destination)
+        require(input_identity(source) == expected, "selected test executable changed during retention")
+        require((retained["sha256"], retained["bytes"]) == (expected["sha256"], expected["bytes"]),
+                "retained test executable differs")
+        return retained
+    except BaseException:
+        if created:
+            destination.unlink(missing_ok=True)
+        raise
+
+
 def interrupted(signum, frame):
     raise InterruptedError(f"owned command interrupted by signal {signum}")
 
@@ -338,6 +359,8 @@ def execute(args):
                "environment_sha256": hashlib.sha256(json.dumps(sorted(os.environ.items())).encode()).hexdigest(),
                "required_inputs": {}}
     try:
+        retain = getattr(args, "retain_test_binary", None)
+        require(retain is None or args.test is not None, "binary retention requires an explicit --test")
         features = getattr(args, "features", None)
         require(features is None or (type(features) is str and 0 < len(features) <= 1024
                 and re.fullmatch(r"[A-Za-z0-9_./,-]+", features)), "invalid explicit features")
@@ -358,10 +381,14 @@ def execute(args):
         summary["commands"].append(compile_record)
         require(compile_record["exit_code"] == 0, "Cargo test compilation failed")
         artifacts = parse_artifacts((output / "compile.stdout").read_text(), package["id"], Path(package["manifest_path"]).parent, args.test, package["targets"])
+        require(retain is None or len(artifacts) == 1, "binary retention requires exactly one test harness")
         discoveries = {}
         for index, artifact in enumerate(artifacts):
             identity = input_identity(Path(artifact["executable"]))
             artifact["binary_identity"] = identity
+            summary["targets"].append(artifact)
+            if retain is not None:
+                artifact["retained_binary_identity"] = retain_test_binary(artifact["executable"], retain, identity)
             listed = run_owned([artifact["executable"], "--list", "--format=json", "-Z", "unstable-options"], output, f"list-{index}")
             summary["commands"].append(listed)
             require(listed["exit_code"] == 0, "test discovery process failed")
@@ -371,14 +398,17 @@ def execute(args):
             names = selected[artifact["executable"]]
             artifact["selected"] = names
             artifact["discovered"] = discoveries[artifact["executable"]]
+        for index, artifact in enumerate(artifacts):
+            names = artifact["selected"]
             if names:
                 command = [artifact["executable"], "--format=json", "-Z", "unstable-options", "--show-output", "--exact", *names]
                 skipped = sorted(set(discoveries[artifact["executable"]]) - set(names))
                 result = run_owned(command, output, f"run-{index}")
                 summary["commands"].append(result)
+                require(input_identity(Path(artifact["executable"])) == artifact["binary_identity"], "selected test executable changed")
                 artifact["passed"] = validate_outcomes((output / f"run-{index}.stdout").read_text(), names, result["exit_code"], len(skipped))
-            require(input_identity(Path(artifact["executable"])) == artifact["binary_identity"], "selected test executable changed")
-            summary["targets"].append(artifact)
+            else:
+                require(input_identity(Path(artifact["executable"])) == artifact["binary_identity"], "selected test executable changed")
         summary["doctests"] = {"requested": args.include_doc_tests, "run": False, "reason": "not_requested"}
         if args.include_doc_tests:
             require(args.test is None, "explicit integration target has no doc-test scope")
@@ -402,6 +432,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--package", required=True)
     parser.add_argument("--test")
+    parser.add_argument("--retain-test-binary", type=Path)
     parser.add_argument("--features")
     parser.add_argument("--filter", action="append", default=[])
     parser.add_argument("--require-filter", action="append", default=[])

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""First I1 real-owner controls; separate from canonical editor acceptance."""
+"""I1 real-owner and fault controls; separate from canonical editor acceptance."""
 from __future__ import annotations
 
 import argparse
@@ -21,6 +21,18 @@ FIXTURE = "services/store_service/tests/fixtures/recovery-c1.wasm"
 C1_SHA = "6458a173cd09e73fe0be59b1a2d339c2070c33ac05628b3d2dd5fb264cb2e079"
 STORE_CASE = "real_commit_pending_then_terminal_replay_refused_and_fresh_owner_remains_usable"
 PROCESS_CASE = "genuine_lost_reply_terminal_and_fresh_save"
+STORE_FAULT_CASES = [
+    "actual_terminal_snapshot_barrier_checks_query_and_unrelated_progress",
+    "actual_expired_query_rejects_native_publication_after_c1_then_fresh_query_succeeds",
+    "actual_token_drop_aborts_before_c1_then_fresh_query_succeeds",
+    "actual_watchdog_aborts_before_c1_then_fresh_query_succeeds",
+    "actual_revocation_keeps_original_scope_and_never_grants_saved",
+    "actual_reopened_store_compares_original_epoch_and_fresh_save",
+]
+PROCESS_FAULT_CASES = [
+    "actual_child_death_after_permit_keeps_original_then_c1_recovery_and_fresh_save",
+    "actual_child_death_before_permit_has_no_effect_or_shadow_then_fresh_save",
+]
 IDENTITY_CASES = ["editor_dev::native_authority::native_shadow_identity_tests::" + name for name in (
     "shadow_identity_exact_call_rejects_second_same_actor_query_and_recovers",
     "shadow_identity_foreign_witness_and_entry_authority_are_denied",
@@ -67,8 +79,10 @@ def validate_summary(summary, package, target, required):
                         "one explicit I1 integration harness required")
     row = targets[0]
     discovered = row.get("discovered")
+    required_cases = [required] if isinstance(required, str) else required
     preparation.require(row.get("name") == target and row.get("kind") == "test"
-                        and isinstance(discovered, dict) and required in discovered
+                        and isinstance(discovered, dict) and bool(required_cases)
+                        and all(case in discovered for case in required_cases)
                         and all(value is False for value in discovered.values())
                         and row.get("selected") == sorted(discovered)
                         and row.get("passed") == sorted(discovered),
@@ -95,12 +109,13 @@ def execute(requested):
         parent.mkdir(parents=True, exist_ok=True)
         requested = parent / ("run." + secrets.token_hex(8))
     output = preparation.fresh_output(requested)
-    result = {"schema_version": 1, "status": "INCOMPLETE", "scope": "i1-first-owner-controls",
+    result = {"schema_version": 1, "status": "INCOMPLETE", "scope": "i1-first-and-owner-fault-controls",
               "full_i1": False, "process_pending": False, "update_rollback": False,
               "benefit": False, "activation": False, "commands": []}
     previous = os.environ.copy()
     previous_umask = os.umask(0o077)
     result["private_umask"] = "077"
+    before = None
     try:
         preparation.require(platform.system() == "Linux", "actual Linux process controls required")
         fixture = ROOT / FIXTURE
@@ -136,11 +151,17 @@ def execute(requested):
         retained = {}
         (output / "binaries").mkdir(mode=0o700)
 
-        def retain(label, identity):
+        def retain(label, identity, prepared=None):
             source = Path(identity["path"])
             preparation.require(runner.input_identity(source) == identity, "I1 binary changed before retention")
             destination = output / "binaries" / label
-            shutil.copyfile(source, destination)
+            if prepared is None:
+                shutil.copyfile(source, destination)
+            else:
+                preparation.require(Path(prepared["path"]).resolve() == destination.resolve(),
+                                    "I1 prepared binary path differs")
+                preparation.require(runner.input_identity(destination) == prepared,
+                                    "I1 prepared binary changed")
             copied = runner.input_identity(destination)
             preparation.require(copied["sha256"] == identity["sha256"]
                                 and copied["bytes"] == identity["bytes"], "I1 binary retention differs")
@@ -156,9 +177,10 @@ def execute(requested):
         os.environ["RAMEN_NATIVE_TASK_EVIDENCE"] = str(output / "recordings")
         os.environ["RAMEN_NATIVE_TASK_RUN_NONCE"] = secrets.token_hex(16)
 
-        def unit_group(label, package, case_filter, expected, exact=False):
+        def unit_group(label, package, case_filter, expected, exact=False,
+                       features="editor_recovery_shadow_v0_dev"):
             command(label, ["cargo", "test", "--locked", "-p", package, "--lib",
-                            "--features", "editor_recovery_shadow_v0_dev", case_filter,
+                            "--features", features, case_filter,
                             "--", *(["--exact"] if exact else []),
                             "--format=json", "-Z", "unstable-options"])
             text = (output / (label + ".stdout")).read_text()
@@ -168,25 +190,37 @@ def execute(requested):
         unit_group("join-identity", "desktop_service", "shadow_identity_", IDENTITY_CASES)
         bounded = "editor_store::native_save::shadow_record_tests::shadow_bounded_error_preserves_failure_and_utf8_prefix"
         unit_group("bounded-errors", "store_service", bounded, [bounded], exact=True)
+        watchdog_prefix = "editor_store::native_save::shadow_pause_boundary_tests::"
+        watchdogs = [watchdog_prefix + name for name in (
+            "late_release_refuses_at_internal_deadline", "release_requires_entered_and_is_one_use")]
+        unit_group("snapshot-watchdog", "store_service", watchdog_prefix, watchdogs,
+                   features="editor_recovery_shadow_assertions_v0_dev")
         for label, package, test, features, required in [
             ("store", "store_service", "editor_recovery_shadow", "editor_recovery_shadow_v0_dev", STORE_CASE),
             ("process", "artifact_editor", "recovery_shadow",
              "host_editor_recovery_shadow_v0_dev,host_editor_process_assertions_v0_dev", PROCESS_CASE),
+            ("store-faults", "store_service", "editor_recovery_shadow_faults",
+             "editor_recovery_shadow_assertions_v0_dev", STORE_FAULT_CASES),
+            ("process-faults", "artifact_editor", "recovery_shadow_owner_faults",
+             "host_editor_recovery_shadow_v0_dev,host_editor_process_assertions_v0_dev", PROCESS_FAULT_CASES),
         ]:
             command(label, [sys.executable, str(ROOT / "tools/ci/selected_test_runner.py"),
                             "--package", package, "--test", test, "--features", features,
                             "--required-input", str(fixture), "--required-input", str(child),
+                            "--retain-test-binary", str(output / "binaries" / label),
                             "--output", str(output / label)])
             summary = json.loads((output / label / "summary.json").read_text())
             validate_summary(summary, package, test, required)
-            retain(label, summary["targets"][0]["binary_identity"])
+            retained_target = summary["targets"][0]
+            retain(label, retained_target["binary_identity"],
+                   retained_target["retained_binary_identity"])
             command(label + "-clippy", ["cargo", "clippy", "--locked", "-p", package,
                                         "--test", test, "--features", features, "--", "-D", "warnings"])
         preparation.require(runner.input_identity(child) == child_identity, "I1 child changed")
         after = snapshot()
         preparation.write_json(output / "source-after.json", after)
         preparation.require(before == after, "I1 source changed during assertions")
-        result["status"] = "PASS_FIRST_OWNER_CONTROLS"
+        result["status"] = "PASS_FIRST_AND_OWNER_FAULT_CONTROLS"
         return 0
     except (preparation.PreparationError, runner.RunnerError, OSError, ValueError, KeyError) as error:
         result["error"] = str(error)
@@ -194,6 +228,15 @@ def execute(requested):
             result["status"] = "FAIL"
         return 2 if result["status"] == "INCOMPLETE" else 1
     finally:
+        # Failed assertions still retain the final source view; preserve the
+        # first failure if this independent diagnostic also fails.
+        if before is not None and not (output / "source-after.json").exists():
+            try:
+                after = snapshot()
+                preparation.write_json(output / "source-after.json", after)
+                result["failure_source_unchanged"] = before == after
+            except (preparation.PreparationError, OSError, ValueError, KeyError) as error:
+                result["source_after_failure_error"] = str(error)[:1024]
         os.umask(previous_umask)
         os.environ.clear()
         os.environ.update(previous)

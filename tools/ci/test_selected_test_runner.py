@@ -38,6 +38,48 @@ def outcomes(*names, event="ok"):
 
 
 class SelectedRunnerTests(unittest.TestCase):
+    def test_failed_owned_integration_retains_binary_and_target_metadata(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / 'tests').mkdir()
+            (root / 'tests' / 'faults.rs').write_text('fixture')
+            binary = root / 'harness'
+            binary.write_text('#!' + sys.executable + '\nimport sys\n' +
+                              'print(' + repr(discovered('actual_failure')) + ') if "--list" in sys.argv else print(' + repr(outcomes('actual_failure', event='failed')) + ')\n' +
+                              'sys.exit(0 if "--list" in sys.argv else 37)\n')
+            binary.chmod(0o700)
+            target = {'name': 'faults', 'kind': ['test'], 'src_path': str(root / 'tests' / 'faults.rs'), 'test': True}
+            package = {'name': 'store_service', 'id': 'fixture#store_service@1', 'manifest_path': str(root / 'Cargo.toml'), 'targets': [target]}
+            program = {'reason': 'compiler-artifact', 'package_id': package['id'], 'target': target, 'profile': {'test': True}, 'executable': str(binary)}
+            cargo = root / 'cargo'
+            cargo.write_text('#!' + sys.executable + '\nimport json,sys\n' +
+                             'print(' + repr(json.dumps({'packages': [package]})) + ') if "metadata" in sys.argv else (print(' + repr(json.dumps(program)) + '), print(' + repr(json.dumps({'reason': 'build-finished', 'success': True})) + '))\n')
+            cargo.chmod(0o700)
+            retained = root / 'retained'
+            command = [sys.executable, str(Path(runner.__file__)), '--package', 'store_service', '--test', 'faults', '--filter', 'actual_failure', '--retain-test-binary', str(retained), '--output', str(root / 'out')]
+            result = subprocess.run(command, cwd=root, env=dict(os.environ, PATH=str(root) + os.pathsep + os.environ['PATH']), capture_output=True, text=True, timeout=15)
+            self.assertNotEqual(result.returncode, 0)
+            summary = json.loads((root / 'out' / 'summary.json').read_text())
+            self.assertEqual(summary['status'], 'FAIL')
+            self.assertEqual(retained.read_bytes(), binary.read_bytes())
+            self.assertEqual(retained.stat().st_mode & 0o777, 0o700)
+            target_result = summary['targets'][0]
+            self.assertEqual(target_result['selected'], ['actual_failure'])
+            self.assertEqual(target_result['discovered'], {'actual_failure': False})
+            self.assertEqual(target_result['binary_identity']['sha256'], target_result['retained_binary_identity']['sha256'])
+            self.assertEqual(target_result['binary_identity']['bytes'], target_result['retained_binary_identity']['bytes'])
+            self.assertEqual(next(row for row in summary['commands'] if row['argv'][0] == str(binary) and '--list' not in row['argv'])['exit_code'], 37)
+            again = list(command)
+            again[again.index('--output') + 1] = str(root / 'collision-out')
+            self.assertNotEqual(subprocess.run(again, cwd=root, env=dict(os.environ, PATH=str(root) + os.pathsep + os.environ['PATH']), capture_output=True, timeout=15).returncode, 0)
+            self.assertEqual(retained.read_bytes(), binary.read_bytes())
+            collision = json.loads((root / 'collision-out' / 'summary.json').read_text())
+            self.assertFalse(any('--list' in row['argv'] for row in collision['commands']))
+            no_test = list(command)
+            del no_test[no_test.index('--test'):no_test.index('--test') + 2]
+            no_test[no_test.index('--output') + 1] = str(root / 'no-test-out')
+            self.assertNotEqual(subprocess.run(no_test, cwd=root, env=dict(os.environ, PATH=str(root) + os.pathsep + os.environ['PATH']), capture_output=True, timeout=15).returncode, 0)
+            self.assertEqual(json.loads((root / 'no-test-out' / 'summary.json').read_text())['commands'], [])
     def test_cargo_keeps_library_and_binary_targets(self):
         actual = runner.parse_artifacts(rows(artifact(), artifact(kind="bin", executable="/target/bin"), {"reason": "build-finished", "success": True}),
                                         "fixture#store_service@1", Path("/fixture"))

@@ -93,6 +93,15 @@ source/evidence review, including the separate Linux supplement, 57 canonical
 and eight preservation stages. A3 approval and merge remain outstanding. Process
 Pending, remaining live faults, update/rollback and all-18 acceptance are separate.
 
+The [next recovery owner/fault controls](docs/plans/recovery-i1-owner-faults-2026-11-08.md)
+are implemented behind a separate assertion feature. Six real Store cases and
+two Linux child-death paths have focused development evidence, including fresh
+Saves and selected-byte checks after reopen. Exact successor hosted qualification
+and independent execution review remain pending. PR81's first hosted run passed
+all canonical stages but failed the new watchdog case's subsequent fresh Save
+with `Unknown`; its cause remains unresolved. The diagnostic successor preserves
+that failure and the assertion. No full I1 or activation follows.
+
 The default-off Linux process implementation merged through
 [PR52](https://github.com/whole-machine-works/RamenOS/pull/52) on November 5 as
 `c9ed54a5b69a1a279d7014929bf932288aa86ec6`, after separate A3 approval of reviewed

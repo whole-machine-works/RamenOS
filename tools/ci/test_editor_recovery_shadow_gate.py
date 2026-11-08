@@ -70,6 +70,21 @@ class GateControls(unittest.TestCase):
             with self.assertRaises(gate.preparation.PreparationError):
                 self.check(value)
 
+    def test_each_required_owner_case_must_be_discovered_and_executed(self):
+        cases = ["first_actual_owner", "second_actual_owner"]
+        value = copy.deepcopy(self.value)
+        row = value["targets"][0]
+        row.update(discovered={case: False for case in cases}, selected=list(cases), passed=list(cases))
+        gate.validate_summary(value, "artifact_editor", "recovery_shadow", cases)
+        for missing in cases:
+            denied = copy.deepcopy(value)
+            row = denied["targets"][0]
+            row["discovered"].pop(missing)
+            row["selected"].remove(missing)
+            row["passed"].remove(missing)
+            with self.assertRaises(gate.preparation.PreparationError):
+                gate.validate_summary(denied, "artifact_editor", "recovery_shadow", cases)
+
     def test_uncertain_or_failed_owned_command_refuses(self):
         for field, bad in [("exit_code", 101), ("reaped", False),
                            ("group_stop_before_reap", False), ("error", "timeout")]:

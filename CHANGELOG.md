@@ -1,5 +1,24 @@
 # CHANGELOG
 
+## 2026-11-08 — Recovery fault failure retention
+
+- Preserve PR81's first failed watchdog/fresh-Save result and unresolved cause.
+- Add failure-only bounded call/intent, IO, operation and join diagnostics without
+  changing the original success assertion or deadlines.
+- Retain actual test binaries before execution and source snapshots after failure;
+  keep ordinary runner behavior and all checks. Successor qualification is open.
+  [Failure record](docs/plans/recovery-i1-owner-faults-2026-11-08.md).
+
+## 2026-11-08 — Recovery owner and fault assertions
+
+- Add a separately default-off, bounded real-snapshot barrier with exact owners,
+  unchanged leases, and no authority or publication bypass.
+- Cover concurrent Save progress, expiry, abort, revocation, old-epoch reopen
+  and child death around the actual Commit permit, followed by fresh Saves.
+- Keep original suites and add required unfiltered fault targets; focused checks
+  pass while exact successor hosted qualification remains pending.
+  [Scope and limits](docs/plans/recovery-i1-owner-faults-2026-11-08.md).
+
 ## 2026-11-08 — Fixed compositor placement prerequisite
 
 - Extract dependency-free, allocation-free `no_std` BGRA app placement and use it
