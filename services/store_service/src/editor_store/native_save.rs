@@ -822,6 +822,8 @@ struct NativeShadowLookupOrigin {
     target: Arc<SaveOriginal>,
     call: Arc<NativeSaveCall>,
     claimed: bool,
+    #[cfg(feature = "editor_recovery_shadow_assertions_v0_dev")]
+    snapshot_pause: Option<Arc<ShadowSnapshotPauseState>>,
 }
 impl NativeOriginalReply {
     /// Native uncommitted allocation authority closure, not NoAllocation or a receipt.
@@ -4173,6 +4175,8 @@ impl StoreHost {
                     target: target.clone(),
                     call: registered.call.clone(),
                     claimed: false,
+                    #[cfg(feature = "editor_recovery_shadow_assertions_v0_dev")]
+                    snapshot_pause: None,
                 }),
         })
     }
@@ -5380,6 +5384,15 @@ impl StoreHost {
             Some(bytes) => RecoveryObservationV0::Receipt(bytes),
             None => RecoveryObservationV0::Pending,
         };
+        #[cfg(feature = "editor_recovery_shadow_assertions_v0_dev")]
+        if let Some(pause) = reply
+            .shadow_origin
+            .as_mut()
+            .and_then(|origin| origin.snapshot_pause.take())
+        {
+            wait_shadow_snapshot_pause(&pause)
+                .map_err(|e| failure(e, PostCommitShadowPhase::ClaimedNoPublication))?;
+        }
         let result = module.0.decide(&binding, epoch, observation);
         records.rows.push(shadow_record(result, epoch, receipt));
         shadow_query_checks(&self.core, original, query, reply, joined)
@@ -5435,5 +5448,195 @@ mod shadow_record_tests {
         assert!(record.diagnostic_truncated);
         assert!(std::str::from_utf8(&record.diagnostic[..record.diagnostic_len as usize]).is_ok());
         assert!(record.encode().len() <= 4096);
+    }
+}
+
+// Fixed fixture-only synchronization for actual owned shadow observations.
+#[cfg(feature = "editor_recovery_shadow_assertions_v0_dev")]
+struct ShadowSnapshotPauseState {
+    state: Mutex<ShadowSnapshotPauseFlags>,
+    changed: Condvar,
+}
+#[cfg(feature = "editor_recovery_shadow_assertions_v0_dev")]
+#[derive(Default)]
+struct ShadowSnapshotPauseFlags {
+    entered: bool,
+    deadline: Option<Instant>,
+    released: bool,
+    aborted: bool,
+    exited: bool,
+}
+#[cfg(feature = "editor_recovery_shadow_assertions_v0_dev")]
+pub struct ShadowSnapshotPause {
+    shared: Arc<ShadowSnapshotPauseState>,
+}
+#[cfg(feature = "editor_recovery_shadow_assertions_v0_dev")]
+impl FixtureController {
+    pub fn arm_shadow_after_snapshot(
+        &self,
+        original: &OriginalNativeSave,
+        query: &desktop_service::editor_dev::NativeSaveEntry,
+        reply: &mut NativeOriginalReply,
+    ) -> Result<ShadowSnapshotPause, FixtureError> {
+        let origin = reply
+            .shadow_origin
+            .as_mut()
+            .ok_or_else(|| FixtureError::new(StoreStatus::Denied))?;
+        if !Arc::ptr_eq(&self.core, &origin.core)
+            || !Arc::ptr_eq(&original.inner, &origin.target)
+            || origin.claimed
+            || origin.snapshot_pause.is_some()
+            || self.core.closed.load(Ordering::Acquire)
+            || !matches!(reply.observation, NativeOriginalObservation::Receipt { .. })
+        {
+            return Err(FixtureError::new(StoreStatus::Denied));
+        }
+        let attachment = self.core.save_attachment().map_err(FixtureError::new)?;
+        native(origin.call.validate_entry(&attachment.witness, query))
+            .map_err(FixtureError::new)?;
+        native(origin.call.admit_original(&attachment.witness)).map_err(FixtureError::new)?;
+        let shared = Arc::new(ShadowSnapshotPauseState {
+            state: Mutex::new(ShadowSnapshotPauseFlags::default()),
+            changed: Condvar::new(),
+        });
+        origin.snapshot_pause = Some(shared.clone());
+        Ok(ShadowSnapshotPause { shared })
+    }
+}
+#[cfg(feature = "editor_recovery_shadow_assertions_v0_dev")]
+impl ShadowSnapshotPause {
+    fn wait(&self, exited: bool) -> Result<(), FixtureError> {
+        let deadline = Instant::now() + Duration::from_millis(2000);
+        let mut state = checked_lock(&self.shared.state).map_err(FixtureError::new)?;
+        while if exited {
+            !state.exited
+        } else {
+            !state.entered
+        } {
+            if state.aborted && !exited {
+                return Err(FixtureError::new(StoreStatus::Denied));
+            }
+            let left = deadline.saturating_duration_since(Instant::now());
+            if left.is_zero() {
+                return Err(FixtureError::new(StoreStatus::Timeout));
+            }
+            let (next, _) = self
+                .shared
+                .changed
+                .wait_timeout(state, left)
+                .map_err(|_| FixtureError::new(StoreStatus::Internal))?;
+            state = next;
+        }
+        Ok(())
+    }
+    pub fn wait_until_entered(&self) -> Result<(), FixtureError> {
+        self.wait(false)
+    }
+    pub fn wait_until_exited(&self) -> Result<(), FixtureError> {
+        self.wait(true)
+    }
+    pub fn release(&mut self) -> Result<(), FixtureError> {
+        let mut state = checked_lock(&self.shared.state).map_err(FixtureError::new)?;
+        if !state.entered || state.released || state.aborted || state.exited {
+            return Err(FixtureError::new(StoreStatus::Denied));
+        }
+        if state
+            .deadline
+            .is_none_or(|deadline| Instant::now() >= deadline)
+        {
+            state.aborted = true;
+            self.shared.changed.notify_all();
+            return Err(FixtureError::new(StoreStatus::Timeout));
+        }
+        state.released = true;
+        self.shared.changed.notify_all();
+        Ok(())
+    }
+}
+#[cfg(feature = "editor_recovery_shadow_assertions_v0_dev")]
+impl Drop for ShadowSnapshotPause {
+    fn drop(&mut self) {
+        if let Ok(mut state) = self.shared.state.lock() {
+            if !state.released && !state.exited {
+                state.aborted = true;
+                self.shared.changed.notify_all();
+            }
+        }
+    }
+}
+#[cfg(feature = "editor_recovery_shadow_assertions_v0_dev")]
+fn wait_shadow_snapshot_pause(shared: &ShadowSnapshotPauseState) -> Result<(), StoreStatus> {
+    let mut state = checked_lock(&shared.state)?;
+    if state.aborted {
+        state.exited = true;
+        shared.changed.notify_all();
+        return Err(StoreStatus::Denied);
+    }
+    let deadline = Instant::now() + Duration::from_millis(2000);
+    state.deadline = Some(deadline);
+    state.entered = true;
+    shared.changed.notify_all();
+    while !state.released && !state.aborted {
+        let left = deadline.saturating_duration_since(Instant::now());
+        if left.is_zero() {
+            state.aborted = true;
+            break;
+        }
+        let (next, _) = shared
+            .changed
+            .wait_timeout(state, left)
+            .map_err(|_| StoreStatus::Internal)?;
+        state = next;
+    }
+    let result = if state.released {
+        Ok(())
+    } else {
+        Err(StoreStatus::Timeout)
+    };
+    state.exited = true;
+    shared.changed.notify_all();
+    result
+}
+
+#[cfg(all(test, feature = "editor_recovery_shadow_assertions_v0_dev"))]
+mod shadow_pause_boundary_tests {
+    use super::*;
+
+    #[test]
+    fn late_release_refuses_at_internal_deadline() {
+        let shared = Arc::new(ShadowSnapshotPauseState {
+            state: Mutex::new(ShadowSnapshotPauseFlags {
+                entered: true,
+                deadline: Some(Instant::now()),
+                ..ShadowSnapshotPauseFlags::default()
+            }),
+            changed: Condvar::new(),
+        });
+        let mut pause = ShadowSnapshotPause {
+            shared: shared.clone(),
+        };
+        assert_eq!(pause.release().err().unwrap().status, StoreStatus::Timeout);
+        let state = shared.state.lock().unwrap();
+        assert!(state.aborted);
+        assert!(!state.released);
+    }
+
+    #[test]
+    fn release_requires_entered_and_is_one_use() {
+        let shared = Arc::new(ShadowSnapshotPauseState {
+            state: Mutex::new(ShadowSnapshotPauseFlags::default()),
+            changed: Condvar::new(),
+        });
+        let mut pause = ShadowSnapshotPause {
+            shared: shared.clone(),
+        };
+        assert_eq!(pause.release().err().unwrap().status, StoreStatus::Denied);
+        {
+            let mut state = shared.state.lock().unwrap();
+            state.entered = true;
+            state.deadline = Some(Instant::now() + Duration::from_secs(1));
+        }
+        pause.release().unwrap();
+        assert_eq!(pause.release().err().unwrap().status, StoreStatus::Denied);
     }
 }

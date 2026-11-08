@@ -108,3 +108,8 @@ required-features = ["host_editor_process_assertions_v0_dev"]
 name = "editor-process"
 path = "src/bin/editor-process.rs"
 required-features = ["host_editor_process_child_v0_dev"]
+
+[[test]]
+name = "recovery_shadow_owner_faults"
+path = "tests/recovery_shadow_owner_faults.rs"
+required-features = ["host_editor_recovery_shadow_v0_dev", "host_editor_process_assertions_v0_dev"]

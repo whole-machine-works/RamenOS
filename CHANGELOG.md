@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## 2026-11-08 — Recovery owner and fault assertions
+
+- Add a separately default-off, bounded real-snapshot barrier with exact owners,
+  unchanged leases, and no authority or publication bypass.
+- Cover concurrent Save progress, expiry, abort, revocation, old-epoch reopen
+  and child death around the actual Commit permit, followed by fresh Saves.
+- Keep original suites and add required unfiltered fault targets; focused checks
+  pass while exact successor hosted qualification remains pending.
+  [Scope and limits](docs/plans/recovery-i1-owner-faults-2026-11-08.md).
+
 ## 2026-11-08 — Fixed compositor placement prerequisite
 
 - Extract dependency-free, allocation-free `no_std` BGRA app placement and use it
