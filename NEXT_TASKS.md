@@ -1,6 +1,6 @@
 # Next Tasks
 
-**Last Updated:** 2026-11-07
+**Last Updated:** 2026-11-08
 **Status:** Authoritative ready work and acceptance dependencies
 
 [Current Status](CURRENT_STATUS.md) records landed behavior; [Roadmap](ROADMAP.md)
@@ -88,11 +88,13 @@ accepted run 42372873439 and both retained failures. PR76 remains open and ready
 for separate A3 review; this prose closeout adds no fresh code qualification.
 `NEXT_TASKS.md` remains an executable CI input, so this documentation successor
 requires its own complete hosted Foundry run under the unchanged classification.
-Freeze the remaining
-pure-map/wire interfaces before parallel source work, then implement the closed
-collector and firmware-call/return capture for fresh C0/C1/C2 in one VM.
-Actual issuers, final history/inventory and qualification of that future collector
-remain separate. Full capture and live I1 are not released by this CI result.
+The [same-call source closeout](docs/plans/run0-same-call-source-2026-11-08.md)
+records the reviewed successor source and fixtures; do not redispatch completed
+source packets. Repair fixed streaming input verification, assess the integrated
+common-ledger budget, run complete Linux CI and independently review the exact
+execution plan. The public runtime guard remains `INCOMPLETE`. Native provenance,
+full history and one-VM C0/C1/C2 qualification remain separate. Full capture and
+live I1 are not released by the earlier CI result.
 The pending recovery-benefit criterion choice holds further live I1, update and
 performance experiments; it does not block authorized independent boot preparation.
 Derive sites from the fresh loaded image and authenticated caller

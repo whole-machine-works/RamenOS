@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## 2026-11-08 — Same-call host source readiness
+
+- Record reviewed successor host source and private fixture controls through
+  the fixed wrapper gate. The public runtime guard remains `INCOMPLETE`;
+  static verification accounting, integrated budget and source execution
+  qualification remain open. No new VM capture or full CI is claimed.
+  [Source closeout](docs/plans/run0-same-call-source-2026-11-08.md).
+
 ## 2026-11-07 — PR76 complete hosted qualification
 
 - Record independently accepted [run 42372873439](https://github.com/whole-machine-works/RamenOS/actions/runs/42372873439),
