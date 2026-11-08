@@ -446,6 +446,9 @@ foundry-editor-process-preparation-ui1-1d:
 foundry-editor-recovery-shadow-i1-first:
 	python3 ./tools/ci/editor_recovery_shadow_gate.py
 
+foundry-editor-source-admission:
+	python3 -B -m unittest discover -s tools/ci -p test_editor_source_inventory.py
+
 foundry-editor-process-linux-prerequisites-ui1-1d:
 	python3 tools/ci/editor_process_linux_prerequisites.py
 
