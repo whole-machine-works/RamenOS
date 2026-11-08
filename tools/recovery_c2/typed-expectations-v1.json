@@ -1,0 +1,119 @@
+{
+  "kind": "c2_typed_expected_cases_v1",
+  "evaluator": "root; specified before C2 execution using unchanged Rust/schema contract, not candidate output",
+  "module_sha256": "fbcceae4411b17f2e517a8539991bfb41b097b2aa2b037ca58a828972a3b3ce4",
+  "abi_sha256": "49daf52dd669411376770b3bc2a007d7c6a8b346843bcd123a45da8139b0da60",
+  "fixture": {
+    "actor": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "selected_object_id": 6,
+    "selected_generation": 7,
+    "operation_id": 21,
+    "expected_revision": 9,
+    "expected_content_hash": "0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a",
+    "source": [
+      11,
+      12,
+      13
+    ],
+    "source_content_hash": "0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e",
+    "epoch": 17,
+    "permit": [
+      18,
+      19
+    ],
+    "committed_flags": 0
+  },
+  "cases": [
+    {
+      "id": "pending",
+      "construction": "valid original, epoch17, Pending",
+      "expected": "Pending",
+      "candidate_call": true
+    },
+    {
+      "id": "denied",
+      "construction": "valid original, epoch17, Denied",
+      "expected": "Denied",
+      "candidate_call": true
+    },
+    {
+      "id": "invalid",
+      "construction": "valid original, epoch17, Invalid",
+      "expected": "Invalid",
+      "candidate_call": true
+    },
+    {
+      "id": "committed",
+      "construction": "valid original, epoch17, valid committed receipt for same binding/epoch",
+      "expected": "Committed",
+      "candidate_call": true
+    },
+    {
+      "id": "noncommit",
+      "construction": "valid original, epoch17, canonical noncommit receipt for same binding/epoch",
+      "expected": "DefinitiveNoncommit",
+      "candidate_call": true
+    },
+    {
+      "id": "foreign_operation",
+      "construction": "valid original21, receipt from valid binding22 at epoch17",
+      "expected": "Invalid",
+      "candidate_call": true
+    },
+    {
+      "id": "foreign_epoch",
+      "construction": "valid original21, epoch17, receipt bound to same original at epoch18",
+      "expected": "Invalid",
+      "candidate_call": true
+    },
+    {
+      "id": "foreign_binding",
+      "construction": "valid original21, receipt for otherwise-valid binding with different source content hash",
+      "expected": "Invalid",
+      "candidate_call": true
+    },
+    {
+      "id": "malformed_receipt",
+      "construction": "valid original21, valid committed receipt then schema-version byte0 xor1",
+      "expected": "Invalid",
+      "candidate_call": true
+    },
+    {
+      "id": "zero_epoch",
+      "construction": "valid original21, epoch0, Pending",
+      "expected": "RecoveryError::InvalidOriginal",
+      "candidate_call": false
+    },
+    {
+      "id": "invalid_original",
+      "construction": "otherwise-valid original with operation_id=0, epoch17, Pending",
+      "expected": "RecoveryError::InvalidOriginal",
+      "candidate_call": false
+    },
+    {
+      "id": "module_identity",
+      "construction": "constructor actual C2 with one-bit-wrong expected module digest",
+      "expected": "RecoveryError::ArtifactIdentity",
+      "candidate_call": false
+    },
+    {
+      "id": "abi_identity",
+      "construction": "constructor actual C2 with one-bit-wrong expected ABI digest",
+      "expected": "RecoveryError::ArtifactIdentity",
+      "candidate_call": false
+    }
+  ],
+  "fresh_success": "After each non-success disposition or refusal, same admitted adapter (or a fresh correctly admitted constructor after constructor refusal) must decide a valid committed binding22/epoch17 as Committed. Each API call internally instantiates fresh bounded Wasmtime state. No Store authority/effects.",
+  "raw_leg": "All 627 ordered immutable R0 cases including duplicate inputs, exact returns/full16 output and errors, through unchanged private test-only invoke semantics; never describe as public decide calls.",
+  "references": [
+    "services/native_runner/src/recovery_decision.rs::project/reference",
+    "services/native_runner/src/recovery_decision_tests.rs::binding/committed",
+    "artifact_store_schema/src/editor_save.rs::EditorSaveReceiptV0::noncommit/validate_binding"
+  ]
+}

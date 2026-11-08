@@ -17,9 +17,9 @@ and [Changelog](CHANGELOG.md), outside routine agent intake.
 
 The [UI2 placement prerequisite](docs/plans/desktop-compositor-core-ui2-2026-11-08.md)
 is implemented as a dependency-free, allocation-free `no_std` core used by all
-three existing host compositor paths. Focused pixel, refusal and host controls
-pass, including bare-target compilation; complete successor CI qualification
-remains pending. Target framebuffer authority, scanout and target service joins
+three existing host compositor paths. PR80 at `b97f096` passed all nine hosted
+checks and independent source/evidence review, including all 57 canonical and
+eight preservation stages. Separate A3 approval and merge remain outstanding. Target framebuffer authority, scanout and target service joins
 remain unimplemented.
 
 The default-off UI1.1c host task reads an approved artifact, processes logical
@@ -83,6 +83,13 @@ now accepts the independent original build, fresh Linux 627-row/T1 runs and a
 distinct non-author T2 reproduction. This completes only the named technical Q1
 prerequisites. I1, every remaining live owner obligation, update/rollback benefit,
 full Q1/all-18 receiving acceptance and activation remain open.
+
+The [C2 build/correspondence packet](docs/plans/recovery-c2-correspondence-2026-11-08.md)
+records a separate identical-byte rebuild and one matching run of all 627 R0 raw
+cases, thirteen public-API observations and thirteen fresh followups. Independent
+actual-result review accepts this finite technical scope; successor harness CI
+remains pending. Store still admits only C1;
+independent update/rollback, benefit and activation remain open.
 
 The [first recovery shadow consumer](docs/plans/recovery-i1-first-shadow-2026-11-08.md)
 has default-off Store and process integration. Development tests exercise genuine

@@ -7,6 +7,7 @@ python3 tools/ci/test_broker_gate_once.py
 python3 tools/ci/test_ci_lanes.py
 python3 -B tools/ci/test_agent_runner_diagnostics.py
 python3 tools/ci/test_editor_source_inventory.py
+python3 -B tools/recovery_c2/test_correspondence.py
 python3 tools/ci/test_build_cache.py
 python3 tools/ci/test_dev_check.py
 python3 tools/ci/test_dev_recipe.py
