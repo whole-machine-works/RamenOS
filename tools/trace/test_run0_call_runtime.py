@@ -288,6 +288,100 @@ class RuntimeControls(unittest.TestCase):
                 fresh,_=self.graph_fixture(stack);fresh.inventory.put('plan.json',b'{}\n')
                 runtime._validate_path_closure(fresh)
 
+    def cleanup_socket_fixture(self,stack):
+        path=Path(stack.enter_context(tempfile.TemporaryDirectory(prefix='call-cleanup-'))).resolve()
+        path.chmod(0o700);now=time.monotonic_ns();policy=ParentDeadlines(now);ledger=ParentAccounting(now)
+        inv=capture.RootRawInventory(path,ledger);prepared=native(capture.PreparedCallInputs,plan_bytes=b'{}',run=str(path))
+        rt=runtime._new_inert_runtime(prepared,policy,ledger,inv,object());rt._plan=runtime._freeze_plan({},ledger)
+        streams={};peers={}
+        for name in ('qmp-in','rsp','serial','debug','qemu_stdout','qemu_stderr'):
+            local,peer=socket.socketpair();stack.callback(local.close);stack.callback(peer.close)
+            local.setblocking(False);peer.setblocking(False);streams[name]=local;peers[name]=peer
+        rt.qemu_owner.child=native(subprocess.Popen,pid=os.getpid()+100000,returncode=None,
+            stdout=streams['qemu_stdout'],stderr=streams['qemu_stderr'],_child_created=False)
+        stack.enter_context(patch.object(capture,'require_call_runtime_registration',lambda *a:None))
+        wire=runtime._publish_owned_graph(rt,streams);stack.callback(wire.close);wire._activate_io()
+        rt._failure=runtime.wiremod.Failure('DENY','original_failure');wire._latch_failure(rt._failure)
+        return rt,wire,streams,peers
+
+    def test_failed_cleanup_polls_live_writer_then_drains_reaped_eof(self):
+        import signal
+        with ExitStack() as stack:
+            rt,wire,streams,peers=self.cleanup_socket_fixture(stack);failures=[dict(status='DENY',reason='original_failure')]
+            events=[]
+            for name,p in peers.items():p.sendall(b'tail' if name!='qmp-in' else b'partial')
+            def wait(owner,deadline=None,*,pump=None):
+                if pump:pump()
+                events.append(('wait',len(wire.eofs),wire._drain))
+                if not any(x[0]=='term' for x in events):return None
+                owner.reaped=True;owner.returncode=0;owner.child.returncode=0;return 0
+            def send(owner,sig,name):
+                self.assertEqual(sig,signal.SIGTERM);events.append(('term',len(wire.eofs),wire._drain))
+                for peer in peers.values():peer.shutdown(socket.SHUT_WR)
+                owner._receipt('signal_term',time.monotonic_ns(),'ok')
+            stack.enter_context(patch.object(ParentOwnedWait,'wait',wait))
+            stack.enter_context(patch.object(ParentOwnedWait,'_signal',send))
+            runtime._cleanup(rt,streams,failures)
+            self.assertEqual(failures,[dict(status='DENY',reason='original_failure')])
+            self.assertIsNone(events[0][2]);self.assertEqual(events[0][1],0)
+            self.assertEqual(events[1][0],'term');self.assertIsNone(events[1][2])
+            self.assertEqual(len(wire.eofs),6);self.assertIsNotNone(wire._drain)
+            self.assertEqual(wire._drain.failure.reason,'original_failure')
+            self.assertEqual(bytes(wire._raw['qmp-out']),b'');self.assertEqual(bytes(wire._raw['rsp-out']),b'')
+        with ExitStack() as fresh:
+            other,wire,streams,peers=self.cleanup_socket_fixture(fresh)
+            self.assertIsNone(wire._drain);self.assertEqual(len(wire.eofs),0)
+
+    def test_failed_cleanup_retains_read_error_and_original_failure(self):
+        import errno
+        with ExitStack() as stack:
+            rt,wire,streams,peers=self.cleanup_socket_fixture(stack);failures=[dict(status='DENY',reason='original_failure')]
+            peers['serial'].sendall(b'pending');original_read=os.readv
+            def readv(fd,buffers):
+                if fd==streams['serial'].fileno():raise OSError(errno.EIO,'synthetic read error')
+                return original_read(fd,buffers)
+            def wait(owner,deadline=None,*,pump=None):
+                if pump:pump()
+                if not owner.actions:return None
+                owner.reaped=True;owner.returncode=0;owner.child.returncode=0;return 0
+            def signal_owner(owner,sig,name):
+                owner.actions.append(name)
+                for peer in peers.values():peer.shutdown(socket.SHUT_WR)
+            stack.enter_context(patch.object(os,'readv',readv));stack.enter_context(patch.object(ParentOwnedWait,'wait',wait))
+            stack.enter_context(patch.object(ParentOwnedWait,'_signal',signal_owner))
+            runtime._cleanup(rt,streams,failures)
+            self.assertEqual(failures[0]['reason'],'original_failure')
+            self.assertTrue(any(x['reason']=='call_io_error' for x in failures))
+            self.assertTrue(any(x.stream=='serial' and x.errno==errno.EIO for x in wire._io_errors))
+            self.assertIsNone(wire._drain)
+        with ExitStack() as fresh:
+            rt,wire,_,_=self.cleanup_socket_fixture(fresh);self.assertIsNone(wire._drain)
+
+    def test_lost_owner_polls_without_signalling_or_claiming_complete(self):
+        with ExitStack() as stack:
+            rt,wire,streams,peers=self.cleanup_socket_fixture(stack);rt.qemu_owner.ownership_lost=True
+            failures=[dict(status='DENY',reason='original_failure')];peers['serial'].sendall(b'tail')
+            with patch.object(ParentOwnedWait,'_signal',side_effect=AssertionError('signal lost owner')):
+                runtime._cleanup(rt,streams,failures)
+            self.assertEqual(failures[0]['reason'],'original_failure')
+            self.assertTrue(wire.raw('serial').endswith(b'tail'));self.assertIsNone(wire._drain)
+            self.assertEqual(len(wire.eofs),0)
+        with ExitStack() as fresh:
+            rt,wire,_,_=self.cleanup_socket_fixture(fresh);self.assertIsNone(wire._drain)
+
+    def test_hard_expiry_is_retained_during_failure_cleanup(self):
+        with ExitStack() as stack:
+            rt,wire,streams,peers=self.cleanup_socket_fixture(stack);rt.qemu_owner.ownership_lost=True
+            failures=[dict(status='DENY',reason='original_failure')]
+            with patch.object(runtime.time,'monotonic_ns',return_value=rt.deadlines.effective_hard_ns), \
+                 patch.object(ParentOwnedWait,'_signal',side_effect=AssertionError('signal lost owner')):
+                runtime._cleanup(rt,streams,failures)
+            self.assertEqual(failures[0]['reason'],'original_failure')
+            self.assertTrue(any(x['reason']=='call_runtime_cleanup_deadline' for x in failures))
+            self.assertIsNone(wire._drain)
+        with ExitStack() as fresh:
+            rt,wire,_,_=self.cleanup_socket_fixture(fresh);self.assertIsNone(wire._drain)
+
     def test_cleanup_retains_original_cause_and_owned_attempts_after_interrupt(self):
         import signal
         with ExitStack() as stack:

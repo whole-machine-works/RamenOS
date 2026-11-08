@@ -348,7 +348,7 @@ def _abort_wire_epoch(owner,wire,failure):
 def _require_wire_failure_drain(owner,wire):
     _graph(owner,wire)
     deny(owner._failure is not None or wire.failure is not None,'call_runtime_failure_drain')
-    deny(not owner._closed and not owner.qemu_owner.ownership_lost,'call_runtime_failure_owner')
+    deny(not owner._closed,'call_runtime_failure_owner')
     incomplete(time.monotonic_ns()<owner.deadlines.effective_hard_ns,'call_runtime_cleanup_deadline')
 
 
@@ -1382,7 +1382,7 @@ def _cleanup(owner,streams,failures):
     wire=owner._wire
     def pump():
         if wire is None:return
-        try:wire._drain_failed_owner(min(time.monotonic_ns()+10_000_000,owner.deadlines.effective_hard_ns))
+        try:wire._poll_failed_owner()
         except BaseException as error:
             # Every real failure is retained; repeated polls cannot grow metadata.
             value=_failure(error)
@@ -1395,7 +1395,14 @@ def _cleanup(owner,streams,failures):
             except BaseException as error:_record_failure(owner,error,failures)
         if failures:
             _cleanup_wait(owner,pump,failures)
-            pump()
+            child=owner.qemu_owner
+            if wire is not None and child.reaped and not child.ownership_lost:
+                try:wire._drain_failed_owner(owner.deadlines.effective_hard_ns)
+                except BaseException as error:
+                    value=_failure(error)
+                    if value not in failures and len(failures)<32:failures.append(value)
+            else:
+                pump()
         for observation in tuple(owner._observations.values()):
             for helper in observation.helpers.values():
                 if not helper.closed:

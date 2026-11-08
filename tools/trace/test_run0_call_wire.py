@@ -7,6 +7,7 @@ import threading
 import time
 import unittest
 from unittest.mock import patch
+from types import SimpleNamespace
 
 from boot_profile_capture import ProbeError
 from run0_call_budget import ParentAccounting
@@ -274,12 +275,48 @@ class ParentWireTests(unittest.TestCase):
             self.assertIs(type(receipt),w.ParentDrainReceipt);self.assertEqual(len(receipt.eofs),6)
             self.assertIsNone(receipt.failure);self.assertEqual(receipt.quit_operation.result,'ok')
             self.assertFalse(obj.raw('qmp-out').endswith(b'\r\n'));self.assertEqual(len(obj.flights),3)
+    def test_failure_poll_is_nonblocking_no_receipt_and_hard_deadline(self):
+        with patch.object(w,'_root_guard',return_value=None):
+            obj,peer,peers=self.ready();obj._latch_failure(w.Failure('DENY','original'))
+            before=(len(obj.raw('qmp-out')),len(obj.raw('rsp-out')))
+            peer.sendall(b'partial')
+            obj._poll_failed_owner()
+            self.assertIsNone(obj._drain);self.assertEqual(len(obj.eofs),0)
+            self.assertEqual((len(obj.raw('qmp-out')),len(obj.raw('rsp-out'))),before)
+            self.no_send(peer);self.no_send(peers['rsp'])
+            with patch.object(w.time,'monotonic_ns',return_value=obj._policy.effective_hard_ns):
+                with self.assertRaises(ProbeError):obj._poll_failed_owner()
+        self.test_actual_fixed_prelaunch_and_fresh_after_rejection()
+
+    def test_failed_final_drain_requires_actual_reaped_writer(self):
+        with patch.object(w,'_root_guard',return_value=None):
+            obj,peer,_=self.ready();obj._latch_failure(w.Failure('DENY','original'))
+            owner=SimpleNamespace(reaped=False,ownership_lost=False,returncode=None,
+                                  child=SimpleNamespace(returncode=None))
+            object.__setattr__(obj._registration,'qemu_owner',owner);peer.sendall(b'pending')
+            with patch.object(w.os,'readv',side_effect=AssertionError('read before reap')):
+                with self.assertRaises(ProbeError):obj._drain_failed_owner(obj._policy.effective_hard_ns)
+            self.assertIsNone(obj._drain);self.assertEqual(len(obj.eofs),0)
+        self.test_actual_fixed_prelaunch_and_fresh_after_rejection()
+
+    def test_nonblocking_poll_eintr_stops_at_original_deadline(self):
+        with patch.object(w,'_root_guard',return_value=None):
+            obj,_,_=self.ready();deadline=obj._policy.effective_hard_ns
+            with patch.object(obj._selector,'select',side_effect=[InterruptedError(),ProbeError('DENY','second_select')]), \
+                 patch.object(w.time,'monotonic_ns',return_value=deadline):
+                with self.assertRaises(ProbeError) as error:
+                    obj._poll(deadline,'call_drain_timeout',wait=False,drain=True)
+                self.assertEqual(error.exception.reason,'call_drain_timeout')
+        self.test_actual_fixed_prelaunch_and_fresh_after_rejection()
+
     def test_failure_only_drain_zero_send_preserves_cause(self):
         with patch.object(w,'_root_guard',return_value=None):
             obj,peer,peers=self.ready();obj._latch_failure(w.Failure('DENY','original'))
             before=len(obj.raw('rsp-out'));qbefore=len(obj.raw('qmp-out'))
             peer.sendall(b'partial');peer.shutdown(socket.SHUT_WR)
             for name,p in peers.items():p.sendall(b'bad' if name=='rsp' else b'tail');p.shutdown(socket.SHUT_WR)
+            object.__setattr__(obj._registration,'qemu_owner',SimpleNamespace(reaped=True,ownership_lost=False,
+                returncode=0,child=SimpleNamespace(returncode=0)))
             receipt=obj._drain_failed_owner(obj._policy.effective_hard_ns)
             self.assertEqual(len(receipt.eofs),6);self.assertEqual(obj.failure.reason,'original')
             self.assertEqual(len(obj.raw('rsp-out')),before);self.assertEqual(len(obj.raw('qmp-out')),qbefore)
@@ -292,6 +329,8 @@ class ParentWireTests(unittest.TestCase):
             done=self.next_peer(peer,peers['rsp'],0x4000,None,7,quit=True,reply=False)
             with self.assertRaises(ProbeError):obj.terminate_parent(closed)
             done();self.assertIsNone(obj._quit_reply);self.assertEqual(obj._quit.result,'error')
+            object.__setattr__(obj._registration,'qemu_owner',SimpleNamespace(reaped=True,ownership_lost=False,
+                returncode=0,child=SimpleNamespace(returncode=0)))
             obj._drain_failed_owner(obj._policy.effective_hard_ns)
             self.assertEqual(len(obj.eofs),6);self.assertIsNotNone(obj.failure)
         self.test_three_flights_one_owner_and_strict_quit()

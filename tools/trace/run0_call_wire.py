@@ -437,7 +437,9 @@ class CallWire:
         try:
             while True:
                 try:ready=self._selector.select(self._time_left(deadline,reason) if wait else 0);break
-                except InterruptedError:continue
+                except InterruptedError:
+                    self._time_left(deadline,reason)
+                    continue
             for key,mask in ready:
                 if mask&selectors.EVENT_READ:self._read(key,deadline,reason,drain=drain)
         finally:
@@ -1167,13 +1169,32 @@ class CallWire:
         if not failed:self._state='DONE'
         self._drain=receipt;return receipt
 
-    def _drain_failed_owner(self,deadline_ns):
-        # No request, ACK, queued write, new permission or repaired success. Root
-        # alone retains signal/wait/close ownership and may repeat this drain
-        # against the same original hard deadline after TERM/KILL.
+    def _poll_failed_owner(self):
+        # One nonblocking, failure-only pump. No receipt, sends or new authority.
         _root_guard(self,'_require_wire_failure_drain')
         deny(self._failure is not None and not self._closed,'call_failure_drain_state')
+        deadline=self._policy.effective_hard_ns
+        self._time_left(deadline,'call_drain_timeout')
         self._failed_draining=True
+        if self._selector is not None:
+            self._poll(deadline,'call_drain_timeout',wait=False,drain=True)
+
+    def _drain_failed_owner(self,deadline_ns):
+        # Complete failure-only drain is permitted only after the writer's
+        # actual wait, against the original hard deadline, never a poll slice.
+        _root_guard(self,'_require_wire_failure_drain')
+        deny(self._failure is not None and not self._closed,'call_failure_drain_state')
+        owner=self._registration.qemu_owner
+        deny(owner.reaped is True and owner.ownership_lost is False
+             and type(owner.returncode) is int and owner.child.returncode==owner.returncode,
+             'call_failure_drain_writer')
+        deny(type(deadline_ns) is int and deadline_ns==self._policy.effective_hard_ns,
+             'call_drain_deadline')
+        self._failed_draining=True
+        while self._selector is not None and self._selector.get_map():
+            self._poll(deadline_ns,'call_drain_timeout',drain=True)
+        incomplete(len(self._eofs)==6 and {r.stream for r in self._eofs}=={'qmp-in',*STREAMS},
+                   'call_failure_drain_eof')
         return self._drain_terminal(deadline_ns,failed=True)
 
 
