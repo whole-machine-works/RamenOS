@@ -57,8 +57,8 @@ distinct T2 reproduction. Do not redispatch those completed technical packets.
 The [first I1 Store/process consumer](docs/plans/recovery-i1-first-shadow-2026-11-08.md)
 has a reviewed reference/seam and qualified default-off integration at PR79
 `538a39c`, with all nine hosted checks and independent execution review; separate
-A3 approval/merge remain outstanding. Take the remaining live owner/fault families and independently prepared
-artifact update/rollback work. The [next owner/fault packet](docs/plans/recovery-i1-owner-faults-2026-11-08.md)
+A3 approval/merge remain outstanding. Take the remaining live owner/fault
+families. The [next owner/fault packet](docs/plans/recovery-i1-owner-faults-2026-11-08.md)
 now implements the separate snapshot barrier, six Store controls and two actual
 child-death controls. PR81's first run failed the new watchdog case's fresh
 Save with `Unknown`; retain that unresolved failure and use the bounded diagnostic
@@ -70,10 +70,11 @@ complete cost comparison, all-18 acceptance and activation separate. Preserve
 one Rust effect owner and the original operation, epoch and deadline throughout.
 The [C2 technical packet](docs/plans/recovery-c2-correspondence-2026-11-08.md)
 has an identical-byte independent rebuild and matching raw/typed correspondence
-run with independently accepted actual results; qualify the new harness
-integration separately. Prepare
-independent update/rollback using these exact artifacts after that acceptance;
-keep Store's existing C1 selection unchanged until its new seam is reviewed.
+run with independently accepted actual results. Qualify the new harness
+integration separately. The [independent update packet](docs/plans/recovery-shadow-update-2026-11-08.md)
+has focused Linux results for live C1/C2 selection and rollback. Qualify the full
+Linux supplement. For benefit measurement, register a release change with
+actual costs in the Rust comparator and include latency and peak host memory.
 The practical cost budgets are adoption criteria; exceeding them retains Rust
 and does not block correctness work or the target editing task. No activation
 or full Q1 result follows from the corpus replay alone.

@@ -9,11 +9,13 @@ import editor_recovery_shadow_gate as gate
 
 class GateControls(unittest.TestCase):
     def test_fixed_fixture_identity_before_build(self):
-        raw = (gate.ROOT / gate.FIXTURE).read_bytes()
-        gate.validate_fixture(raw)
-        for bad in (b"", raw[:-1], raw[:-1] + bytes([raw[-1] ^ 1])):
-            with self.assertRaises(gate.preparation.PreparationError):
-                gate.validate_fixture(bad)
+        for path, validate in ((gate.FIXTURE, gate.validate_fixture),
+                               (gate.C2_FIXTURE, gate.validate_update_fixture)):
+            raw = (gate.ROOT / path).read_bytes()
+            validate(raw)
+            for bad in (b"", raw[:-1], raw[:-1] + bytes([raw[-1] ^ 1])):
+                with self.assertRaises(gate.preparation.PreparationError):
+                    validate(bad)
 
     def test_foreign_child_package_features_source_or_target_refuse(self):
         with tempfile.TemporaryDirectory() as temporary:

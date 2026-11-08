@@ -19,6 +19,11 @@ pub enum NativeEditorError {
     Store(StoreStatus),
     InvalidReceipt,
     Exhausted,
+    #[cfg(all(
+        target_os = "linux",
+        feature = "host_editor_recovery_shadow_update_v0_dev"
+    ))]
+    ShadowUpdate(store::RecoveryShadowUpdateError),
 }
 impl From<Status> for NativeEditorError {
     fn from(value: Status) -> Self {
@@ -47,6 +52,11 @@ struct SaveChains {
     lookup_cleanup: LookupCleanup,
     #[cfg(all(target_os = "linux", feature = "host_editor_recovery_shadow_v0_dev"))]
     shadow_module: Option<store::PreparedStoreShadowModule>,
+    #[cfg(all(
+        target_os = "linux",
+        feature = "host_editor_recovery_shadow_update_v0_dev"
+    ))]
+    shadow_selector: Option<store::RecoveryShadowSelector>,
     #[cfg(all(target_os = "linux", feature = "host_editor_recovery_shadow_v0_dev"))]
     shadow_records: store::PostCommitShadowRecords,
 }
@@ -122,6 +132,11 @@ struct LookupFlight {
     joined: Vec<desktop::JoinedProducerProof>,
     #[cfg(all(target_os = "linux", feature = "host_editor_recovery_shadow_v0_dev"))]
     shadow_spent: bool,
+    #[cfg(all(
+        target_os = "linux",
+        feature = "host_editor_recovery_shadow_update_v0_dev"
+    ))]
+    shadow_pin: Option<store::PinnedRecoveryShadowModule>,
 }
 
 impl NativeArtifactEditor {
@@ -193,6 +208,11 @@ impl SaveChains {
             lookup_cleanup: LookupCleanup::CoreOwned,
             #[cfg(all(target_os = "linux", feature = "host_editor_recovery_shadow_v0_dev"))]
             shadow_module: None,
+            #[cfg(all(
+                target_os = "linux",
+                feature = "host_editor_recovery_shadow_update_v0_dev"
+            ))]
+            shadow_selector: None,
             #[cfg(all(target_os = "linux", feature = "host_editor_recovery_shadow_v0_dev"))]
             shadow_records: store::PostCommitShadowRecords::new(),
         }
@@ -848,11 +868,32 @@ impl SaveChains {
         chain: &mut SaveChain,
         now: u64,
     ) -> Result<bool, NativeEditorError> {
+        if !self.prepare_lookup(chain, now)? {
+            return Ok(true);
+        }
+        let mut lookup = chain.lookup.take().unwrap();
+        match self.finish_lookup(chain, &mut lookup, now) {
+            Ok(retain) => Ok(retain),
+            Err(error) => {
+                #[cfg(all(target_os = "linux", feature = "host_editor_recovery_shadow_v0_dev"))]
+                if lookup.shadow_spent {
+                    return Err(error);
+                }
+                chain.lookup = Some(lookup);
+                Err(error)
+            }
+        }
+    }
+    fn prepare_lookup(
+        &mut self,
+        chain: &mut SaveChain,
+        now: u64,
+    ) -> Result<bool, NativeEditorError> {
         if chain.lookup.is_none() {
             // No new registration/admission can accumulate behind an unknown
             // registration owner. Existing lookup completion may still progress.
             if self.registration_failure.is_some() || !self.registration_failures.is_empty() {
-                return Ok(true);
+                return Ok(false);
             }
             let original = if chain.recover_rejected_commit
                 && matches!(chain.stage, Stage::ObserveAllocation)
@@ -869,7 +910,7 @@ impl SaveChains {
                         // A local construction error or partial entry can
                         // retain real ownership without an authentic Store
                         // original. Keep it pending for quarantine.
-                        None => return Ok(true),
+                        None => return Ok(false),
                     },
                 }
             };
@@ -898,9 +939,25 @@ impl SaveChains {
                         .operation_id,
                 }
                 .encode(self.launch.endpoint().handle)?,
-                _ => return Ok(true),
+                _ => return Ok(false),
             };
             let request = canonical(request)?;
+            #[cfg(all(
+                target_os = "linux",
+                feature = "host_editor_recovery_shadow_update_v0_dev"
+            ))]
+            let shadow_pin = if matches!(self.lookup_cleanup, LookupCleanup::ProcessOwned)
+                && matches!(chain.stage, Stage::ObserveCommit)
+                && !chain.recover_rejected_commit
+            {
+                self.shadow_selector
+                    .as_ref()
+                    .map(|selector| selector.pin())
+                    .transpose()
+                    .map_err(NativeEditorError::ShadowUpdate)?
+            } else {
+                None
+            };
             let entry =
                 self.desktop
                     .begin_save_recovery(original.observation_origin(), &request, now)?;
@@ -911,6 +968,11 @@ impl SaveChains {
                 joined: Vec::new(),
                 #[cfg(all(target_os = "linux", feature = "host_editor_recovery_shadow_v0_dev"))]
                 shadow_spent: false,
+                #[cfg(all(
+                    target_os = "linux",
+                    feature = "host_editor_recovery_shadow_update_v0_dev"
+                ))]
+                shadow_pin,
             });
             let call = chain.lookup.as_ref().unwrap().entry.wait_once()?;
             match self.store.observe_original(call, original) {
@@ -926,24 +988,7 @@ impl SaveChains {
             let lookup = chain.lookup.as_mut().unwrap();
             self.join_lookup(lookup)?
         };
-        if !ready {
-            return Ok(true);
-        }
-        let mut lookup = chain.lookup.take().unwrap();
-        match self.finish_lookup(chain, &mut lookup, now) {
-            Ok(retain) => Ok(retain),
-            Err(error) => {
-                #[cfg(all(target_os = "linux", feature = "host_editor_recovery_shadow_v0_dev"))]
-                if lookup.shadow_spent {
-                    // join_lookup already retained the genuine returned joins.
-                    // This claimed reply must never reach the ordinary copier;
-                    // the retained original can obtain a fresh query later.
-                    return Err(error);
-                }
-                chain.lookup = Some(lookup);
-                Err(error)
-            }
-        }
+        Ok(ready)
     }
     fn join_lookup(&self, lookup: &mut LookupFlight) -> Result<bool, NativeEditorError> {
         // A failed/partial registration has not supplied a completed query.
@@ -1016,7 +1061,17 @@ impl SaveChains {
                     | store::NativeOriginalObservation::Receipt { .. }
             )
         {
-            if let Some(module) = self.shadow_module.as_ref() {
+            #[cfg(all(
+                target_os = "linux",
+                feature = "host_editor_recovery_shadow_update_v0_dev"
+            ))]
+            let selected_module = lookup.shadow_pin.as_ref().map(|pin| pin.module());
+            #[cfg(not(all(
+                target_os = "linux",
+                feature = "host_editor_recovery_shadow_update_v0_dev"
+            )))]
+            let selected_module: Option<&store::PreparedStoreShadowModule> = None;
+            if let Some(module) = selected_module.or(self.shadow_module.as_ref()) {
                 let original = chain
                     .flight
                     .as_ref()
@@ -1168,6 +1223,13 @@ impl ProcessArtifactEditor {
         if self.chains.shadow_module.is_some() || !self.chains.pending.is_empty() {
             return Err(NativeEditorError::Exhausted);
         }
+        #[cfg(all(
+            target_os = "linux",
+            feature = "host_editor_recovery_shadow_update_v0_dev"
+        ))]
+        if self.chains.shadow_selector.is_some() {
+            return Err(NativeEditorError::Exhausted);
+        }
         self.chains.shadow_module = Some(module);
         Ok(())
     }
@@ -1181,6 +1243,128 @@ impl ProcessArtifactEditor {
         &mut self,
     ) -> impl Iterator<Item = store::ShadowComparisonRecord> + '_ {
         self.chains.shadow_records.drain()
+    }
+}
+
+#[cfg(all(
+    target_os = "linux",
+    feature = "host_editor_recovery_shadow_update_assertions_v0_dev"
+))]
+pub enum ShadowArmOutcome {
+    NotReady,
+    Armed {
+        pause: store::ShadowSnapshotPause,
+        identity: store::RecoveryShadowIdentity,
+    },
+}
+#[cfg(all(
+    target_os = "linux",
+    feature = "host_editor_recovery_shadow_update_assertions_v0_dev"
+))]
+#[derive(Debug)]
+pub enum ShadowArmError {
+    Editor(NativeEditorError),
+    Fixture(store::FixtureError),
+}
+
+#[cfg(all(
+    target_os = "linux",
+    feature = "host_editor_recovery_shadow_update_v0_dev"
+))]
+impl ProcessArtifactEditor {
+    pub fn install_recovery_shadow_selector(
+        &mut self,
+        selector: store::RecoveryShadowSelector,
+    ) -> Result<(), NativeEditorError> {
+        if self.chains.shadow_selector.is_some()
+            || self.chains.shadow_module.is_some()
+            || !self.chains.pending.is_empty()
+        {
+            return Err(NativeEditorError::Exhausted);
+        }
+        self.chains.shadow_selector = Some(selector);
+        Ok(())
+    }
+}
+
+#[cfg(all(
+    target_os = "linux",
+    feature = "host_editor_recovery_shadow_update_assertions_v0_dev"
+))]
+impl ProcessArtifactEditor {
+    pub fn assertion_arm_next_terminal_shadow(
+        &mut self,
+        controller: &store::FixtureController,
+        now: u64,
+    ) -> Result<ShadowArmOutcome, ShadowArmError> {
+        self.chains
+            .cleanup_startup()
+            .map_err(ShadowArmError::Editor)?;
+        let mut index = 0;
+        while index < self.chains.pending.len() {
+            let mut chain = self.chains.pending.remove(index);
+            let progress = self.chains.progress(&mut chain, now);
+            let proceed = match progress {
+                Ok(false) => continue,
+                Ok(true) if chain.flight.as_ref().is_some_and(|f| f.execution.is_some()) => false,
+                Ok(true) => true,
+                Err(NativeEditorError::Store(StoreStatus::Stale))
+                    if matches!(self.chains.lookup_cleanup, LookupCleanup::ProcessOwned)
+                        && matches!(chain.stage, Stage::ObserveCommit)
+                        && chain.flight.is_none()
+                        && chain.original.is_some() =>
+                {
+                    true
+                }
+                Err(error) => {
+                    self.chains.pending.insert(index, chain);
+                    return Err(ShadowArmError::Editor(error));
+                }
+            };
+            let result = if proceed
+                && matches!(self.chains.lookup_cleanup, LookupCleanup::ProcessOwned)
+                && matches!(chain.stage, Stage::ObserveCommit)
+                && !chain.recover_rejected_commit
+            {
+                match self.chains.prepare_lookup(&mut chain, now) {
+                    Err(error) => Err(ShadowArmError::Editor(error)),
+                    Ok(false) => Ok(ShadowArmOutcome::NotReady),
+                    Ok(true) => {
+                        let original = chain
+                            .flight
+                            .as_ref()
+                            .map(|f| f.registered.original())
+                            .or(chain.original.as_ref());
+                        let lookup = chain.lookup.as_mut().expect("ready lookup retained");
+                        match (original, lookup.shadow_pin.as_ref(), lookup.reply.as_mut()) {
+                            (Some(original), Some(pin), Some(reply))
+                                if matches!(
+                                    reply.observation(),
+                                    store::NativeOriginalObservation::Receipt { .. }
+                                ) =>
+                            {
+                                controller
+                                    .arm_shadow_after_snapshot(original, &lookup.entry, reply)
+                                    .map(|pause| ShadowArmOutcome::Armed {
+                                        pause,
+                                        identity: pin.identity(),
+                                    })
+                                    .map_err(ShadowArmError::Fixture)
+                            }
+                            _ => Ok(ShadowArmOutcome::NotReady),
+                        }
+                    }
+                }
+            } else {
+                Ok(ShadowArmOutcome::NotReady)
+            };
+            self.chains.pending.insert(index, chain);
+            match result {
+                Ok(ShadowArmOutcome::NotReady) => index += 1,
+                other => return other,
+            }
+        }
+        Ok(ShadowArmOutcome::NotReady)
     }
 }
 

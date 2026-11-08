@@ -4955,7 +4955,18 @@ use native_runner::recovery_decision::{
 };
 
 #[cfg(feature = "editor_recovery_shadow_v0_dev")]
-pub struct PreparedStoreShadowModule(RecoveryDecisionAdapter);
+pub struct PreparedStoreShadowModule(
+    RecoveryDecisionAdapter,
+    #[cfg(feature = "editor_recovery_shadow_update_v0_dev")] RecoveryShadowIdentity,
+);
+#[cfg(feature = "editor_recovery_shadow_update_v0_dev")]
+#[path = "native_save_shadow_selection.rs"]
+mod shadow_selection;
+#[cfg(feature = "editor_recovery_shadow_update_v0_dev")]
+pub use shadow_selection::{
+    PinnedRecoveryShadowModule, RecoveryShadowIdentity, RecoveryShadowSelector,
+    RecoveryShadowUpdateError,
+};
 #[cfg(feature = "editor_recovery_shadow_v0_dev")]
 impl PreparedStoreShadowModule {
     pub fn prepare(bytes: &[u8], identity: RecoveryArtifactV0) -> Result<Self, RecoveryError> {
@@ -4972,7 +4983,14 @@ impl PreparedStoreShadowModule {
         if bytes.len() != 1349 || identity.abi_sha256 != ABI || identity.module_sha256 != C1 {
             return Err(RecoveryError::ArtifactIdentity);
         }
-        Ok(Self(RecoveryDecisionAdapter::new(bytes, identity)?))
+        Ok(Self(
+            RecoveryDecisionAdapter::new(bytes, identity)?,
+            #[cfg(feature = "editor_recovery_shadow_update_v0_dev")]
+            RecoveryShadowIdentity {
+                module_sha256: C1,
+                abi_sha256: ABI,
+            },
+        ))
     }
 }
 #[cfg(feature = "editor_recovery_shadow_v0_dev")]
@@ -5038,6 +5056,8 @@ pub enum ShadowResultTag {
 #[cfg(feature = "editor_recovery_shadow_v0_dev")]
 #[derive(Clone, Debug)]
 pub struct ShadowComparisonRecord {
+    #[cfg(feature = "editor_recovery_shadow_update_v0_dev")]
+    module_identity: Option<RecoveryShadowIdentity>,
     result: ShadowResultTag,
     return_code: Option<i32>,
     disagreement: Option<(RecoveryDispositionV0, RecoveryDispositionV0)>,
@@ -5049,6 +5069,10 @@ pub struct ShadowComparisonRecord {
 }
 #[cfg(feature = "editor_recovery_shadow_v0_dev")]
 impl ShadowComparisonRecord {
+    #[cfg(feature = "editor_recovery_shadow_update_v0_dev")]
+    pub fn module_identity(&self) -> Option<RecoveryShadowIdentity> {
+        self.module_identity
+    }
     pub fn result(&self) -> ShadowResultTag {
         self.result
     }
@@ -5179,6 +5203,8 @@ fn shadow_record(
         }
     };
     ShadowComparisonRecord {
+        #[cfg(feature = "editor_recovery_shadow_update_v0_dev")]
+        module_identity: None,
         result: tag,
         return_code,
         disagreement,
@@ -5394,7 +5420,13 @@ impl StoreHost {
                 .map_err(|e| failure(e, PostCommitShadowPhase::ClaimedNoPublication))?;
         }
         let result = module.0.decide(&binding, epoch, observation);
-        records.rows.push(shadow_record(result, epoch, receipt));
+        #[allow(unused_mut)]
+        let mut record = shadow_record(result, epoch, receipt);
+        #[cfg(feature = "editor_recovery_shadow_update_v0_dev")]
+        {
+            record.module_identity = Some(module.1);
+        }
+        records.rows.push(record);
         shadow_query_checks(&self.core, original, query, reply, joined)
             .map_err(|e| failure(e, PostCommitShadowPhase::ClaimedNoPublication))?;
         if let NativeOriginalObservation::Receipt { receipt: held, .. } = &reply.observation {

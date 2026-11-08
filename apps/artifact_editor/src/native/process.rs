@@ -422,6 +422,16 @@ impl ProcessArtifactEditor {
     pub fn assertion_pending_originals(&self) -> u32 {
         u32::try_from(self.chains.pending_groups()).unwrap_or(u32::MAX)
     }
+    #[cfg(feature = "host_editor_recovery_shadow_update_assertions_v0_dev")]
+    pub fn assertion_child_observation(
+        &self,
+    ) -> Result<desktop::ProcessChildObservation, NativeEditorError> {
+        let child = self.child.as_ref().ok_or(Status::Denied)?;
+        self.chains
+            .desktop
+            .observe_process_child(child)
+            .map_err(Into::into)
+    }
     #[cfg(feature = "host_editor_process_assertions_v0_dev")]
     #[allow(dead_code)]
     pub(super) fn take_assertion_run(&mut self) -> Option<desktop::ProcessAssertionRun> {

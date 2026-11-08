@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## 2026-11-08 — Independent recovery update and rollback
+
+- Add opt-in selection of the two exact recovery modules from private files.
+  Pin the selection for each eligible editor recovery lookup.
+- Exercise live update and rollback in the same Linux editor and host processes,
+  original receipt recovery and a fresh Save. Add the full suite to the required
+  Linux supplement. [Focused evidence](docs/plans/recovery-shadow-update-2026-11-08.md).
+
 ## 2026-11-08 — C2 technical correspondence
 
 - Record an identical independent C2 rebuild and one raw627/typed13/fresh13

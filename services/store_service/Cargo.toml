@@ -72,6 +72,8 @@ editor_native_save_v0_dev = ["editor_native_preview_v0_dev", "desktop_service/ed
 editor_recovery_shadow_v0_dev = ["editor_native_save_v0_dev", "desktop_service/editor_recovery_shadow_v0_dev", "dep:native_runner", "native_runner/recovery_decision_v0_dev"]
 # Supplemental owner/fault barriers; absent from ordinary shadow features.
 editor_recovery_shadow_assertions_v0_dev = ["editor_recovery_shadow_v0_dev"]
+# Fixed C1/C2 selection for the trusted host update experiment only.
+editor_recovery_shadow_update_v0_dev = ["editor_recovery_shadow_v0_dev"]
 ## Enable development mode with fallback signing key.
 ## WARNING: This feature MUST NOT be enabled in production builds.
 ## It allows unsigned/insecure key fallback for development only.

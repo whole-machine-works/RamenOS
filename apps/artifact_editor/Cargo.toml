@@ -37,6 +37,16 @@ host_editor_recovery_shadow_v0_dev = [
   "store_service/editor_recovery_shadow_v0_dev",
 ]
 
+host_editor_recovery_shadow_update_v0_dev = [
+  "host_editor_recovery_shadow_v0_dev",
+  "store_service/editor_recovery_shadow_update_v0_dev",
+]
+host_editor_recovery_shadow_update_assertions_v0_dev = [
+  "host_editor_recovery_shadow_update_v0_dev",
+  "host_editor_process_assertions_v0_dev",
+  "store_service/editor_recovery_shadow_assertions_v0_dev",
+]
+
 # Linux child has no Desktop, Store or schema dependency activation.
 host_editor_process_child_v0_dev = ["dep:desktop_editor_core", "dep:kernel_api", "dep:libc"]
 host_editor_process_child_assertions_v0_dev = ["host_editor_process_child_v0_dev"]
@@ -113,3 +123,8 @@ required-features = ["host_editor_process_child_v0_dev"]
 name = "recovery_shadow_owner_faults"
 path = "tests/recovery_shadow_owner_faults.rs"
 required-features = ["host_editor_recovery_shadow_v0_dev", "host_editor_process_assertions_v0_dev"]
+
+[[test]]
+name = "recovery_shadow_update"
+path = "tests/recovery_shadow_update.rs"
+required-features = ["host_editor_recovery_shadow_update_assertions_v0_dev"]

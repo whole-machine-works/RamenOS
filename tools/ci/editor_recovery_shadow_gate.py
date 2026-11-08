@@ -19,8 +19,14 @@ import selected_test_runner as runner
 ROOT = preparation.ROOT
 FIXTURE = "services/store_service/tests/fixtures/recovery-c1.wasm"
 C1_SHA = "6458a173cd09e73fe0be59b1a2d339c2070c33ac05628b3d2dd5fb264cb2e079"
+C2_FIXTURE = "services/native_runner/tests/fixtures/recovery-c2.wasm"
+C2_SHA = "fbcceae4411b17f2e517a8539991bfb41b097b2aa2b037ca58a828972a3b3ce4"
 STORE_CASE = "real_commit_pending_then_terminal_replay_refused_and_fresh_owner_remains_usable"
 PROCESS_CASE = "genuine_lost_reply_terminal_and_fresh_save"
+UPDATE_CASES = ["real_inflight_q7_pins_c1_then_c2_across_update_and_rollback", *(
+    "shadow_support::app_owner::cleanup_owners::tests::process_preparation_" + suffix
+    for suffix in ("cleanup_retry_preserves_deadline", "consuming_unwind_retains_parent_root",
+                   "joined_cleanup_releases_parent_root"))]
 STORE_FAULT_CASES = [
     "actual_terminal_snapshot_barrier_checks_query_and_unrelated_progress",
     "actual_expired_query_rejects_native_publication_after_c1_then_fresh_query_succeeds",
@@ -51,6 +57,11 @@ EXTRAS = {"tools/ci/editor_recovery_shadow_gate.py",
 def validate_fixture(raw):
     preparation.require(len(raw) == 1349 and hashlib.sha256(raw).hexdigest() == C1_SHA,
                         "reviewed C1 fixture identity differs")
+
+
+def validate_update_fixture(raw):
+    preparation.require(len(raw) == 1347 and hashlib.sha256(raw).hexdigest() == C2_SHA,
+                        "reviewed C2 fixture identity differs")
 
 
 def select_child(build_json, package, target):
@@ -121,6 +132,8 @@ def execute(requested):
         fixture = ROOT / FIXTURE
         raw = fixture.read_bytes()
         validate_fixture(raw)
+        update_fixture = ROOT / C2_FIXTURE
+        validate_update_fixture(update_fixture.read_bytes())
         # Never overwrite the canonical gate's archived parent library or children.
         target = (ROOT / "target/i1-recovery-shadow").resolve()
         os.environ.update(CARGO_TARGET_DIR=str(target), RUST_TEST_THREADS="1")
@@ -195,6 +208,15 @@ def execute(requested):
             "late_release_refuses_at_internal_deadline", "release_requires_entered_and_is_one_use")]
         unit_group("snapshot-watchdog", "store_service", watchdog_prefix, watchdogs,
                    features="editor_recovery_shadow_assertions_v0_dev")
+        selector_prefix = "editor_store::native_save::shadow_selection::tests::"
+        selector_cases = [selector_prefix + name for name in (
+            "refuses_unsafe_or_wrong_files_then_updates_and_retains_pins",
+            "poison_refuses_new_pins_and_swaps_but_held_pin_survives")]
+        unit_group("update-selector", "store_service", selector_prefix, selector_cases,
+                   features="editor_recovery_shadow_update_v0_dev")
+        command("update-selector-clippy", ["cargo", "clippy", "--locked", "-p", "store_service", "--lib",
+                                           "--features", "editor_recovery_shadow_update_v0_dev",
+                                           "--", "-D", "warnings"])
         for label, package, test, features, required in [
             ("store", "store_service", "editor_recovery_shadow", "editor_recovery_shadow_v0_dev", STORE_CASE),
             ("process", "artifact_editor", "recovery_shadow",
@@ -203,10 +225,13 @@ def execute(requested):
              "editor_recovery_shadow_assertions_v0_dev", STORE_FAULT_CASES),
             ("process-faults", "artifact_editor", "recovery_shadow_owner_faults",
              "host_editor_recovery_shadow_v0_dev,host_editor_process_assertions_v0_dev", PROCESS_FAULT_CASES),
+            ("process-update", "artifact_editor", "recovery_shadow_update",
+             "host_editor_recovery_shadow_update_assertions_v0_dev", UPDATE_CASES),
         ]:
             command(label, [sys.executable, str(ROOT / "tools/ci/selected_test_runner.py"),
                             "--package", package, "--test", test, "--features", features,
                             "--required-input", str(fixture), "--required-input", str(child),
+                            *(["--required-input", str(update_fixture)] if label == "process-update" else []),
                             "--retain-test-binary", str(output / "binaries" / label),
                             "--output", str(output / label)])
             summary = json.loads((output / label / "summary.json").read_text())
@@ -220,6 +245,7 @@ def execute(requested):
         after = snapshot()
         preparation.write_json(output / "source-after.json", after)
         preparation.require(before == after, "I1 source changed during assertions")
+        result["update_rollback"] = True
         result["status"] = "PASS_FIRST_AND_OWNER_FAULT_CONTROLS"
         return 0
     except (preparation.PreparationError, runner.RunnerError, OSError, ValueError, KeyError) as error:
