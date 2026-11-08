@@ -82,7 +82,7 @@ def _new_inert_runtime(prepared,policy,accounting,inventory,native):
         accounting=accounting,inventory=inventory,parent_identity=object(),transition_owner=transition,
         read_attempts={},read_operations={},native=native,before_spawn=None,before_spawn_ns=None,
         _descriptors={},_children={'qemu':owner},_launch_identity=None,_observations={},_current=None,
-        _closed_epochs={},_fact_receipts={},_failure=None,_closed=False,_preparing_epoch=None,_epochs={},_plan=None)
+        _closed_epochs={},_fact_receipts={},_failure=None,_closed=False,_preparing_epoch=None,_epochs={},_plan=None,_verification=None)
     for name,item in fields.items():setattr(value,name,item)
     policy._owner=transition
     return value
@@ -132,37 +132,10 @@ def _prepared(prepared,run,plan):
     return plan
 
 
-def _validate_call_runtime_inputs(prepared,plan):
-    """Exact static closure; no outputs, child, field read or replacement plan."""
-    expected=_prepared(prepared,Path(prepared.run),plan)
-    deny(type(plan) is dict and witness.canonical(plan)==prepared.plan_bytes and plan==expected,
-        'call_runtime_plan_bytes')
-    deny(prepared.observer_source_bytes==capture.parent_observer_source_bytes(),
-        'call_runtime_source_changed')
-    deny(plan['observer_ref']==witness.CaptureEvidence.ref('observer.json',prepared.observer_source_bytes),
-        'call_runtime_observer_ref')
-    profile=prepared.profile
-    deny(profile['invocation_profile']==base.VAPIC_OFF_INVOCATION_PROFILE,'call_runtime_profile')
-    witness.validate_native_layout(dict(prepared.native_layout))
-    store=c0._Blobs(capture._merge(prepared.abi_blobs,prepared.prior_blobs))
-    manifest=[witness.CaptureEvidence.ref(name,raw) for name,raw in prepared.prior_blobs]
-    deny(hashlib.sha256(witness.canonical(manifest)).hexdigest()==plan['prior_inputs_sha256'],
-        'call_runtime_input_manifest')
-    for name in capture.PLAN_INPUT_FIELDS:
-        reference=getattr(prepared,name)
-        deny(plan[name]==list(reference),'call_runtime_input_ref')
-        store.get(_input_ref(reference),witness.REPORT_LIMIT)
-    deny(prepared.source_persistence_ref[1]==witness.C0_SOURCE_PERSISTENCE_SHA256,
-        'call_runtime_persistence_pin')
-    efi=witness.read_exact(Path(prepared.inputs)/'efi',profile['inputs']['efi']['sha256'],profile['inputs']['efi']['length'])
-    symbols=witness.read_exact(Path(prepared.inputs)/'symbols',profile['inputs']['symbols']['sha256'],profile['inputs']['symbols']['length'])
-    deny(efi==prepared.pinned_efi and capture._bind_caller(_input_ref(prepared.caller_manifest_ref),store,efi,symbols)==prepared.pinned_caller,
-        'call_runtime_caller_closure')
-    abi_index=witness.strict_json(store.get(_input_ref(prepared.abi_ref),witness.REPORT_LIMIT),witness.REPORT_LIMIT)
-    c0._profile_binding(dict(profile_ref=witness.CaptureEvidence.ref('profile.json',prepared.profile_bytes),
-        prior_admission_ref=_input_ref(prepared.prior_admission_ref),profile_mapping_ref=_input_ref(prepared.profile_mapping_ref)),store)
-    c0._capability_binding(dict(capability_ref=_input_ref(prepared.capability_ref),source_dossier_ref=abi_index['source_dossier_ref']),store,profile)
-    return plan
+def _validate_call_runtime_inputs(prepared,plan,accounting,deadline_ns,*,verification=None):
+    """Fixed streaming verifier; immutable semantic state is paid only once."""
+    from run0_call_verify import validate_call_inputs
+    return validate_call_inputs(prepared,plan,accounting,deadline_ns,verification=verification)
 
 
 def _issued_call_registration(registration,wire):
@@ -1532,10 +1505,11 @@ def _lifecycle_record(owner):
 
 def _source_postcheck(owner):
     prepared=owner.prepared;plan=_thaw_plan(owner)
-    _validate_call_runtime_inputs(prepared,plan)
-    abi=witness.strict_json(dict(prepared.abi_blobs)[prepared.abi_ref[0]],witness.REPORT_LIMIT)
-    actual=witness.recheck_runtime(Path(prepared.inputs),prepared.profile,abi,dict(prepared.abi_blobs),
-        expected_identity=plan['launch_identity'],run=Path(prepared.run),deadline=owner.qemu_owner.deadline)
+    _validate_call_runtime_inputs(prepared,plan,owner.accounting,owner.deadlines.effective_hard_ns,
+        verification=owner._verification)
+    from run0_call_verify import recheck_runtime
+    actual=recheck_runtime(prepared,owner.accounting,verification=owner._verification,
+        expected_identity=plan['launch_identity'],deadline_ns=int(owner.qemu_owner.deadline*SECOND),receipts=None)
     deny(actual==owner._launch_identity,'call_runtime_launch_identity_changed')
     return _json(owner,'source-postcheck.json',dict(schema_version=1,
         observer_sha256=hashlib.sha256(prepared.observer_source_bytes).hexdigest(),
@@ -1802,7 +1776,7 @@ def _run_call_capture(prepared,run):
     ledger.reserve_output(16*len(prepared.plan_bytes)+4096)
     plan=prepared.plan
     capture.require_call_runtime_registration(prepared,plan)
-    _validate_call_runtime_inputs(prepared,plan)
+    verification=_validate_call_runtime_inputs(prepared,plan,ledger,policy.effective_work_ns)
     _prepared(prepared,run,plan)
     held_plan=_freeze_plan(plan,ledger)
     deny(threading.current_thread() is threading.main_thread() and threading.active_count()==1,
@@ -1812,6 +1786,7 @@ def _run_call_capture(prepared,run):
     inventory=capture.RootRawInventory(run,ledger)
     owner=_new_inert_runtime(prepared,policy,ledger,inventory,native)
     owner._plan=held_plan
+    owner._verification=verification
     streams={};failures=[]
     try:
         for name,raw in (('profile.json',prepared.profile_bytes),('plan.json',prepared.plan_bytes),
@@ -1828,11 +1803,13 @@ def _run_call_capture(prepared,run):
         # writer reap. It receives a final measured immutable identity only then.
         ledger.reserve_output(2*vars_spec['length']+1024)
         initial=witness.read_exact(Path(prepared.inputs)/'initial_vars',vars_spec['sha256'],vars_spec['length'])
-        witness.write_private(run/'vars.fd',initial)
-        abi=witness.strict_json(dict(prepared.abi_blobs)[prepared.abi_ref[0]],witness.REPORT_LIMIT)
+        # Use the unbuffered exclusive writer without publishing an immutable
+        # slot: QEMU still owns this mutable backing until its actual reap.
+        inventory._write_file('vars.fd',initial)
+        from run0_call_verify import recheck_runtime
         receipts={}
-        owner._launch_identity=witness.recheck_runtime(Path(prepared.inputs),prepared.profile,abi,dict(prepared.abi_blobs),
-            expected_identity=plan['launch_identity'],run=run,deadline=owner.qemu_owner.io_deadline,receipts=receipts)
+        owner._launch_identity=recheck_runtime(prepared,ledger,verification=owner._verification,
+            expected_identity=plan['launch_identity'],deadline_ns=int(owner.qemu_owner.io_deadline*SECOND),receipts=receipts)
         _json(owner,'source-closure.json',receipts)
         _json(owner,'runtime-observer.json',dict(schema_version=1,kind='run0_same_call_map_runtime_observer_v1',
             observer_ref=_held_blob(owner,'observer.json')[0].as_json(),launch_identity=owner._launch_identity,

@@ -33,7 +33,7 @@ PARENT_SOURCE_NAMES = witness.C0_OBSERVER_SOURCE_NAMES + (
     'run0_call_owner.py', 'run0_call_read.py', 'run0_call_budget.py',
     'run0_call_decode.py', 'run0_call_session.py', 'run0_call_wire.py',
     'run0_call_host.py', 'run0_call_capture.py', 'run0_call_runtime.py',
-    'run0_call_storage.py',
+    'run0_call_storage.py', 'run0_call_verify.py',
 )
 RAW_NAMES = ('qmp.bin', 'qmp-requests.bin', 'rsp.bin', 'rsp-requests.bin',
              'serial.bin', 'debug.bin', 'stdout.bin', 'stderr.bin')
@@ -585,7 +585,7 @@ class BoundCallTarget:
 
 class _OwnedCallRuntime:
     """Exact owner shape with fixed bodies; public execution remains held."""
-    __slots__ = ('prepared', '_plan', '_registration', 'qemu_owner', '_wire', 'deadlines',
+    __slots__ = ('prepared', '_plan', '_verification', '_registration', 'qemu_owner', '_wire', 'deadlines',
         'accounting', 'inventory', 'parent_identity', 'transition_owner',
         'read_attempts', 'read_operations', 'native', 'before_spawn',
         'before_spawn_ns', '_descriptors', '_children', '_launch_identity',
