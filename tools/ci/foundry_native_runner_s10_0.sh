@@ -64,6 +64,13 @@ if python3 "$ROOT_DIR/tools/ci/selected_test_runner.py" \
     --require-filter 'recovery_decision::q1_runtime_tests::t2::runtime_controls::' \
     --filter 'recovery_decision::q1_runtime_tests::t2::stage_controls::' \
     --require-filter 'recovery_decision::q1_runtime_tests::t2::stage_controls::' \
+    --filter 'recovery_decision::c2_tests::c2_synthetic_' \
+    --filter 'recovery_decision::c2_tests::stage_controls::c2_synthetic_' \
+    --require-filter 'recovery_decision::c2_tests::c2_synthetic_raw_error_rows_preserve_observations_and_fresh_call' \
+    --require-filter 'recovery_decision::c2_tests::c2_synthetic_typed_pre_admission_refusals_and_fresh_success_are_actual' \
+    --require-filter 'recovery_decision::c2_tests::c2_synthetic_typed_matrix_keeps_all_fresh_ids_and_real_disagreements' \
+    --require-filter 'recovery_decision::c2_tests::stage_controls::c2_synthetic_wrong_pins_and_duplicate_ids_deny_before_output_then_fresh' \
+    --require-filter 'recovery_decision::c2_tests::stage_controls::c2_synthetic_interrupted_writer_keeps_actual_prefix_then_fresh_run_succeeds' \
     --output "$SELECTED_RUN_ROOT/recovery"; then
     pass "recovery adapter controls pass"
 else

@@ -1,0 +1,57 @@
+{
+  "adapter_baseline": {
+    "note": "future test-only sibling declaration changes enclosing source bytes; execution plan must bind final source and verify production adapter unchanged",
+    "recovery_decision_rs_sha256": "66f15b9f7d9f47c45af0d25662cc77d0b5f26746f3fb5a7442700a5c7b642734",
+    "repository": "RamenOS",
+    "revision": "b97f096b8c88ceaddff2d51308fa99e069820624"
+  },
+  "candidate": {
+    "accepted_rebuild_review_sha256": "7334c2f44922cf6a4fda9e5fab0ef1f9e2757ed83cd2cd8aefe68039bc4ef3ce",
+    "bytes": 1347,
+    "sha256": "fbcceae4411b17f2e517a8539991bfb41b097b2aa2b037ca58a828972a3b3ce4",
+    "source_revision": "45060d06c644afa7be0023a91c763915c32c6e2a"
+  },
+  "contract": {
+    "r0_reference_revision": "958a6f1713129930b217c16b1a21140e8fab9ed0",
+    "sha256": "49daf52dd669411376770b3bc2a007d7c6a8b346843bcd123a45da8139b0da60"
+  },
+  "kind": "recovery_c2_correspondence_registration_v1",
+  "not_claimed": [
+    "live_store_authority",
+    "complete_18_owner_obligations",
+    "update_rollback",
+    "benefit",
+    "performance",
+    "selection",
+    "activation"
+  ],
+  "raw_cases": {
+    "bytes": 611903,
+    "distinct_inputs": 623,
+    "input_bytes": 336,
+    "output_bytes": 16,
+    "return_type": "i32",
+    "route": "existing_adapter_private_invoke_in_test_child",
+    "rows": 627,
+    "sha256": "84eece3246d9b4521a5b8ac48fa6324cb4be4e98889277ab46837f6764aeda49"
+  },
+  "runtime": {
+    "engine": "Wasmtime",
+    "fresh_instance_per_candidate_call": true,
+    "fuel_per_fresh_call": 100000,
+    "imports": 0,
+    "memory_pages_max": 1,
+    "memory_pages_min": 1,
+    "strategy": "Cranelift",
+    "version": "27.0.0",
+    "wasm_stack_bytes": 32768
+  },
+  "schema_version": 1,
+  "scope": "isolated raw ABI and typed public adapter correspondence; no owner/benefit/activation",
+  "typed_cases": {
+    "fresh_success": "after_all_13_rows",
+    "route": "existing_public_decide_or_new",
+    "rows": 13,
+    "sha256": "7c171588e54f7af16b63fdd86a075c57cc8bca4bfbf346bd84c2b397bce329a9"
+  }
+}

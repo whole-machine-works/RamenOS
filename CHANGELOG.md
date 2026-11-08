@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## 2026-11-08 — C2 technical correspondence
+
+- Record an identical independent C2 rebuild and one raw627/typed13/fresh13
+  matching run on Darwin arm64, accepted by independent actual-result review.
+- Preserve the production adapter and all Q1/T1/T2 records; package the exact
+  module/registration/typed matrix and add synthetic CI controls.
+- Keep C1 selected and independent updates/rollback, benefit and activation open.
+  [Exact source, execution and limits](docs/plans/recovery-c2-correspondence-2026-11-08.md).
+
 ## 2026-11-08 — Recovery fault failure retention
 
 - Preserve PR81's first failed watchdog/fresh-Save result and unresolved cause.
