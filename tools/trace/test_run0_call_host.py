@@ -155,7 +155,8 @@ class HostControls(unittest.TestCase):
 
     def test_missing_root_hook_refuses_before_any_io_or_helper(self):
         g=self.graph();o=self.observation(g)
-        with patch.object(host.os,'open') as opened,patch.object(ParentOwnedHelper,'start') as spawned:
+        with patch.object(capture._OwnedCallRuntime,'_require_host_observation',None),\
+             patch.object(host.os,'open') as opened,patch.object(ParentOwnedHelper,'start') as spawned:
             with self.assertRaisesRegex(ProbeError,'call_host_producer_pending'):o.observe()
         opened.assert_not_called();spawned.assert_not_called();self.assertIsNone(g[2]._host_lease)
 

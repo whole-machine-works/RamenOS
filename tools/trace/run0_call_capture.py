@@ -33,6 +33,7 @@ PARENT_SOURCE_NAMES = witness.C0_OBSERVER_SOURCE_NAMES + (
     'run0_call_owner.py', 'run0_call_read.py', 'run0_call_budget.py',
     'run0_call_decode.py', 'run0_call_session.py', 'run0_call_wire.py',
     'run0_call_host.py', 'run0_call_capture.py', 'run0_call_runtime.py',
+    'run0_call_storage.py',
 )
 RAW_NAMES = ('qmp.bin', 'qmp-requests.bin', 'rsp.bin', 'rsp-requests.bin',
              'serial.bin', 'debug.bin', 'stdout.bin', 'stderr.bin')
@@ -359,6 +360,14 @@ class RootRawInventory:
             length=slot.ref.length, family=slot.family, epoch=slot.epoch, state=slot.state)
             for slot in self._slots.values())
 
+    def _adopt_retainer(self, retainer):
+        from run0_call_storage import adopt_retainer
+        return adopt_retainer(self, retainer)
+
+    def seal_final_vars(self, runtime):
+        from run0_call_storage import seal_final_vars
+        return seal_final_vars(self, runtime)
+
 
 def _ref(value):
     return decoder._ref(value, 32 << 20)
@@ -575,7 +584,7 @@ class BoundCallTarget:
 
 
 class _OwnedCallRuntime:
-    """Reserved exact owner shape; no constructor currently publishes a graph."""
+    """Exact owner shape with fixed bodies; public execution remains held."""
     __slots__ = ('prepared', '_plan', '_registration', 'qemu_owner', '_wire', 'deadlines',
         'accounting', 'inventory', 'parent_identity', 'transition_owner',
         'read_attempts', 'read_operations', 'native', 'before_spawn',
@@ -585,6 +594,123 @@ class _OwnedCallRuntime:
 
     def __init__(self, *args, **kwargs):
         raise TypeError('the genuine parent graph producer is not yet registered')
+
+    def _require_wire_bootstrap(self, wire):
+        from run0_call_runtime import _require_wire_bootstrap
+        return _require_wire_bootstrap(self, wire)
+
+    def _require_wire_stop(self, wire, stop):
+        from run0_call_runtime import _require_wire_stop
+        return _require_wire_stop(self, wire, stop)
+
+    def _require_wire_binding(self, wire, registered, session):
+        from run0_call_runtime import _require_wire_binding
+        return _require_wire_binding(self, wire, registered, session)
+
+    def _require_wire_after(self, wire, complete):
+        from run0_call_runtime import _require_wire_after
+        return _require_wire_after(self, wire, complete)
+
+    def _require_session_archival(self, session):
+        from run0_call_runtime import _require_session_archival
+        return _require_session_archival(self, session)
+
+    def _require_epoch_initialization(self, binding, retainer):
+        from run0_call_runtime import _require_epoch_initialization
+        return _require_epoch_initialization(self, binding, retainer)
+
+    def _require_retainer_initialization(self, registration, binding, root, plan_ref, deadline_ns):
+        from run0_call_runtime import _require_retainer_initialization
+        return _require_retainer_initialization(self, registration, binding, root, plan_ref, deadline_ns)
+
+    def _require_retainer_current(self, retainer):
+        from run0_call_runtime import _require_retainer_current
+        return _require_retainer_current(self, retainer)
+
+    def _require_retainer_archival(self, retainer):
+        from run0_call_runtime import _require_retainer_archival
+        return _require_retainer_archival(self, retainer)
+
+    def _require_native_read_receipt(self, receipt):
+        from run0_call_runtime import _require_native_read_receipt
+        return _require_native_read_receipt(self, receipt)
+
+    def _require_epoch_after(self, session, after):
+        from run0_call_runtime import _require_epoch_after
+        return _require_epoch_after(self, session, after)
+
+    def _require_host_observation(self, wire, observation):
+        from run0_call_runtime import _require_host_observation
+        return _require_host_observation(self, wire, observation)
+
+    def _register_host_helper(self, wire, observation, helper):
+        from run0_call_runtime import _register_host_helper
+        return _register_host_helper(self, wire, observation, helper)
+
+    def _abort_wire_epoch(self, wire, failure):
+        from run0_call_runtime import _abort_wire_epoch
+        return _abort_wire_epoch(self, wire, failure)
+
+    def _require_wire_failure_drain(self, wire):
+        from run0_call_runtime import _require_wire_failure_drain
+        return _require_wire_failure_drain(self, wire)
+
+    def _prepare_wire_read(self, wire, grant, *, operation_seq):
+        from run0_call_runtime import _prepare_wire_read
+        return _prepare_wire_read(self, wire, grant, operation_seq=operation_seq)
+
+    def _commit_wire_read(self, wire, grant, pending):
+        from run0_call_runtime import _commit_wire_read
+        return _commit_wire_read(self, wire, grant, pending)
+
+    def _recheck_wire_read(self, wire, attempt):
+        from run0_call_runtime import _recheck_wire_read
+        return _recheck_wire_read(self, wire, attempt)
+
+    def _seal_wire_read(self, wire, pending, operation, *, request_bytes, response_bytes):
+        from run0_call_runtime import _seal_wire_read
+        return _seal_wire_read(self, wire, pending, operation,
+                               request_bytes=request_bytes, response_bytes=response_bytes)
+
+    def issue_first_target(self, closed_C0, completed_fresh_C0_facts_receipt):
+        from run0_call_runtime import issue_first_target
+        return issue_first_target(self, closed_C0, completed_fresh_C0_facts_receipt)
+
+    def issue_return_target(self, closed_C1, selected_call_receipt):
+        from run0_call_runtime import issue_return_target
+        return issue_return_target(self, closed_C1, selected_call_receipt)
+
+    def _require_wire_transition(self, wire, closed, target):
+        from run0_call_runtime import _require_wire_transition
+        return _require_wire_transition(self, wire, closed, target)
+
+    def _issue_wire_transition(self, wire, closed, target):
+        from run0_call_runtime import _issue_wire_transition
+        return _issue_wire_transition(self, wire, closed, target)
+
+    def _require_wire_resume(self, wire, ticket):
+        from run0_call_runtime import _require_wire_resume
+        return _require_wire_resume(self, wire, ticket)
+
+    def _require_wire_termination(self, wire, closed_C2):
+        from run0_call_runtime import _require_wire_termination
+        return _require_wire_termination(self, wire, closed_C2)
+
+    def _require_closed_projection(self, session, snapshot, closed, copied):
+        from run0_call_runtime import _require_closed_projection
+        return _require_closed_projection(self, session, snapshot, closed, copied)
+
+    def _publish_c0_facts(self, receipt):
+        from run0_call_runtime import _publish_c0_facts
+        return _publish_c0_facts(self, receipt)
+
+    def _publish_selected_call(self, receipt):
+        from run0_call_runtime import _publish_selected_call
+        return _publish_selected_call(self, receipt)
+
+    def _require_extent_record(self, session, ref, data):
+        from run0_call_runtime import _require_extent_record
+        return _require_extent_record(self, session, ref, data)
 
 
 def _construct_prepared(**fields):
@@ -671,12 +797,14 @@ def require_call_runtime_registration(prepared, plan):
 
 
 def _issued_call_registration(registration, wire):
-    # Genuine graph publication and its source guard remain receiving work.
-    # A string, caller dictionary, or manually populated slots cannot replace it.
-    return False
+    # Archival graph identity does not authorize an effect. Live bodies also
+    # enforce the public release, exact current epoch and original deadlines.
+    from run0_call_runtime import _issued_call_registration as issued
+    return issued(registration, wire)
 
 
 def run_call_capture(prepared, run):
     """Fail before any run mutation or child until the complete producer exists."""
     require_call_runtime_registration(prepared, {})
-    raise base.ProbeError('INCOMPLETE', 'call_capture_runtime_producer_unregistered')
+    from run0_call_runtime import _run_call_capture
+    return _run_call_capture(prepared, run)
