@@ -147,25 +147,55 @@ class _ChargedBlobs(c0._Blobs):
         deny(type(parsed_paths) is tuple and all(type(path) is str for path in parsed_paths),
              'call_verify_parsed_paths')
         self.parsed_paths=set(parsed_paths)
-    def get(self, reference, limit):
+    def prepay_json(self, reference, limit, *, projection=False):
+        # Retrieval aliases already held bytes; reserve before the fixed caller
+        # passes them to a semantic parser or its unchanged projection helper.
+        deny(type(projection) is bool,'call_verify_projection_type')
         raw=super().get(reference,limit)
-        if reference['path'] in self.parsed_paths or reference['path'].endswith('.json'):
-            # Roles, not suffixes, decide which referenced bytes can be parsed.
-            # Each retrieval may be followed by an independent parse/projection.
-            self.accounting.reserve_output(4*session._json_copy_cost(raw))
+        self.accounting.reserve_output((2 if projection else 1)*session._json_copy_cost(raw))
         return raw
 
 
 def _discover_parsed_paths(store, prepared):
     # These two authenticated JSON documents name nested documents parsed by
     # the unchanged C0 validators. The store charges before these parses too.
-    mapping=witness.strict_json(store.get(_ref(prepared.profile_mapping_ref),witness.REPORT_LIMIT),witness.REPORT_LIMIT)
-    previous=witness.strict_json(store.get(_ref(prepared.capability_ref),witness.REPORT_LIMIT),witness.REPORT_LIMIT)
+    mapping=witness.strict_json(store.prepay_json(_ref(prepared.profile_mapping_ref),witness.REPORT_LIMIT),witness.REPORT_LIMIT)
+    previous=witness.strict_json(store.prepay_json(_ref(prepared.capability_ref),witness.REPORT_LIMIT),witness.REPORT_LIMIT)
     for reference in (mapping['probe_report_ref'],):
         store.parsed_paths.add(capture._ref(reference)['path'])
     for key in ('profile_ref','argv_ref'):
         reference=capture._ref(previous[key])
         store.parsed_paths.add('prior-cap1/'+reference['path'])
+    return mapping,previous
+
+
+def _profile_semantics(store, accounting, prepared, mapping, efi):
+    profile_ref=witness.CaptureEvidence.ref('profile.json',prepared.profile_bytes)
+    admission_ref=_ref(prepared.prior_admission_ref)
+    mapping_ref=_ref(prepared.profile_mapping_ref)
+    probe_ref=capture._ref(mapping['probe_report_ref'])
+    # Only these four documents are parsed by the unchanged helper. Its full
+    # probe tree is not cloned; only bounded profile/candidate fields are walked.
+    for ref in (profile_ref,mapping_ref,admission_ref):
+        store.prepay_json(ref,witness.REPORT_LIMIT,projection=True)
+    store.prepay_json(probe_ref,witness.REPORT_LIMIT)
+    accounting.reserve_output(session._pe_copy_bound(efi)+16*65536
+        +4*(len(prepared.profile_bytes)+mapping_ref['length']+admission_ref['length'])+16384)
+    return c0._profile_binding(dict(profile_ref=profile_ref,prior_admission_ref=admission_ref,
+                                    profile_mapping_ref=mapping_ref),store)
+
+
+def _capability_semantics(store, accounting, prepared, previous, abi_index, profile):
+    store.prepay_json(_ref(prepared.capability_ref),witness.REPORT_LIMIT,projection=True)
+    for key in ('profile_ref','argv_ref'):
+        nested=capture._ref(previous[key]);nested['path']='prior-cap1/'+nested['path']
+        store.prepay_json(nested,witness.REPORT_LIMIT,projection=True)
+    layout_ref=capture._ref(previous['observations']['layout_ref'])
+    layout_ref['path']='prior-cap1/'+layout_ref['path']
+    layout=store.get(layout_ref,65536)
+    accounting.reserve_output(16*len(layout)+16384)
+    return c0._capability_binding(dict(capability_ref=_ref(prepared.capability_ref),
+        source_dossier_ref=abi_index['source_dossier_ref']),store,profile)
 
 
 def _state_guard(state,prepared,accounting):
@@ -209,7 +239,7 @@ def validate_call_inputs(prepared, plan, accounting, deadline_ns, *, verificatio
     parsed_paths=tuple(getattr(prepared,name)[0] for name in capture.PLAN_INPUT_FIELDS)+(prepared.abi_ref[0],'profile.json')
     store=_ChargedBlobs(capture._merge(prepared.abi_blobs,prepared.prior_blobs),accounting,
                         parsed_paths=parsed_paths)
-    _discover_parsed_paths(store,prepared)
+    mapping,previous=_discover_parsed_paths(store,prepared)
     manifest=[witness.CaptureEvidence.ref(name,raw) for name,raw in prepared.prior_blobs]
     deny(hashlib.sha256(witness.canonical(manifest)).hexdigest()==plan['prior_inputs_sha256'],
          'call_runtime_input_manifest')
@@ -221,6 +251,7 @@ def validate_call_inputs(prepared, plan, accounting, deadline_ns, *, verificatio
          'call_runtime_persistence_pin')
     efi=prepared.pinned_efi
     symbols=store.get(profile['inputs']['symbols'],base.INPUT_LIMITS['symbols'])
+    store.prepay_json(_ref(prepared.caller_manifest_ref),witness.REPORT_LIMIT,projection=True)
     deny(type(efi) is bytes and capture._bind_caller(_ref(prepared.caller_manifest_ref),store,efi,symbols)
          ==prepared.pinned_caller,'call_runtime_caller_closure')
     for name,raw in (('efi',efi),('symbols',symbols)):
@@ -228,11 +259,9 @@ def validate_call_inputs(prepared, plan, accounting, deadline_ns, *, verificatio
         deny(len(raw)==ref['length'] and hashlib.sha256(raw).hexdigest()==ref['sha256'],
              'call_runtime_held_input')
         _stream(Path(prepared.inputs)/ref['path'],ref['sha256'],ref['length'],scratch,deadline_ns,private=True)
-    abi_index=witness.strict_json(store.get(_ref(prepared.abi_ref),witness.REPORT_LIMIT),witness.REPORT_LIMIT)
-    accounting.reserve_output(session._pe_copy_bound(efi)+16*65536)
-    c0._profile_binding(dict(profile_ref=witness.CaptureEvidence.ref('profile.json',prepared.profile_bytes),
-        prior_admission_ref=_ref(prepared.prior_admission_ref),profile_mapping_ref=_ref(prepared.profile_mapping_ref)),store)
-    c0._capability_binding(dict(capability_ref=_ref(prepared.capability_ref),source_dossier_ref=abi_index['source_dossier_ref']),store,profile)
+    abi_index=witness.strict_json(store.prepay_json(_ref(prepared.abi_ref),witness.REPORT_LIMIT),witness.REPORT_LIMIT)
+    _profile_semantics(store,accounting,prepared,mapping,efi)
+    _capability_semantics(store,accounting,prepared,previous,abi_index,profile)
     # Parse only the three authenticated runtime indexes needed by both checks.
     blobs=dict(prepared.abi_blobs)
     runtime=_json_blob(abi_index['runtime_dependencies_ref'],blobs,accounting)

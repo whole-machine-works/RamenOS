@@ -137,11 +137,54 @@ class StreamingControls(unittest.TestCase):
             with patch.object(type(ledger),'reserve_output',side_effect=base.ProbeError('INCOMPLETE','budget')):
                 with patch.object(witness,'strict_json',side_effect=AssertionError('unpaid parse')):
                     with self.assertRaises(base.ProbeError):
-                        witness.strict_json(store.get(ref,65536),65536)
+                        witness.strict_json(store.prepay_json(ref,65536),65536)
         fresh=memory_ledger();store=verify._ChargedBlobs({r['path']:raw for r in refs},fresh,
                                    parsed_paths=tuple(r['path'] for r in refs))
-        for ref in refs:self.assertEqual(witness.strict_json(store.get(ref,65536),65536)['kind'],'same pinned manifest')
+        for ref in refs:self.assertEqual(witness.strict_json(store.prepay_json(ref,65536),65536)['kind'],'same pinned manifest')
         self.assertGreater(fresh.view()['actual_bytes'],0)
+
+    def test_hash_only_json_get_never_spends_parser_credit(self):
+        raw=b'{"not":"parsed"}';ref=dict(path='caller/metadata.json',length=len(raw),
+            sha256=hashlib.sha256(raw).hexdigest())
+        ledger=memory_ledger();store=verify._ChargedBlobs({ref['path']:raw},ledger)
+        before=ledger.view()['actual_bytes']
+        self.assertIs(store.get(ref,65536),raw)
+        self.assertEqual(ledger.view()['actual_bytes'],before)
+        store.prepay_json(ref,65536)
+        self.assertGreater(ledger.view()['actual_bytes'],before)
+
+    def test_profile_and_capability_helpers_prepay_before_validator_then_fresh(self):
+        import run0_call_capture as capture
+        raw=b'{"fixture":true}'
+        def ref(name):return dict(path=name,length=len(raw),sha256=hashlib.sha256(raw).hexdigest())
+        def packed(name):
+            r=ref(name);return (name,r['sha256'],r['length'])
+        prepared=object.__new__(capture.PreparedCallInputs)
+        for name,value in dict(profile_bytes=raw,prior_admission_ref=packed('admission.bin'),
+            profile_mapping_ref=packed('mapping.bin'),capability_ref=packed('cap.bin')).items():
+            object.__setattr__(prepared,name,value)
+        mapping={'probe_report_ref':ref('probe.bin')}
+        previous={'profile_ref':ref('profile.bin'),'argv_ref':ref('argv.bin'),
+                  'observations':{'layout_ref':ref('layout.bin')}}
+        paths=('profile.json','admission.bin','mapping.bin','probe.bin','cap.bin',
+               'prior-cap1/profile.bin','prior-cap1/argv.bin','prior-cap1/layout.bin')
+        def run_one(which,fail):
+            ledger=memory_ledger();store=verify._ChargedBlobs({path:raw for path in paths},ledger)
+            target='_profile_binding' if which=='profile' else '_capability_binding'
+            with patch.object(verify.c0,target,return_value='accepted') as validator, \
+                 patch.object(verify.session,'_pe_copy_bound',return_value=512):
+                def call():
+                    if which=='profile':return verify._profile_semantics(store,ledger,prepared,mapping,b'fixture')
+                    return verify._capability_semantics(store,ledger,prepared,previous,{'source_dossier_ref':ref('source')},{})
+                if fail:
+                    with patch.object(type(ledger),'reserve_output',side_effect=base.ProbeError('INCOMPLETE','budget')):
+                        with self.assertRaises(base.ProbeError):call()
+                    validator.assert_not_called()
+                else:
+                    self.assertEqual(call(),'accepted');validator.assert_called_once()
+                    self.assertGreater(ledger.view()['actual_bytes'],0)
+        for kind in ('profile','capability'):
+            run_one(kind,True);run_one(kind,False)
 
     def test_nested_parsed_document_roles_do_not_depend_on_suffix(self):
         import json
