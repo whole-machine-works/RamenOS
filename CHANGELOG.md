@@ -4,8 +4,9 @@
 
 - Record reviewed successor host source and private fixture controls through
   the fixed wrapper gate. The public runtime guard remains `INCOMPLETE`;
-  static verification accounting, integrated budget and source execution
-  qualification remain open. No new VM capture or full CI is claimed.
+  reviewed static copy accounting and explicit geometric replan now have scoped
+  measurements; complete-parent execution qualification remains open. No new VM
+  capture or full CI is claimed.
   [Source closeout](docs/plans/run0-same-call-source-2026-11-08.md).
 
 ## 2026-11-07 — PR76 complete hosted qualification
