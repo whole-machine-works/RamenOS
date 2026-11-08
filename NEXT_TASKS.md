@@ -1,6 +1,6 @@
 # Next Tasks
 
-**Last Updated:** 2026-11-06
+**Last Updated:** 2026-11-08
 **Status:** Authoritative ready work and acceptance dependencies
 
 [Current Status](CURRENT_STATUS.md) records landed behavior; [Roadmap](ROADMAP.md)
