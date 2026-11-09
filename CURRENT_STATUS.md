@@ -87,9 +87,8 @@ full Q1/all-18 receiving acceptance and activation remain open.
 The [C2 build/correspondence packet](docs/plans/recovery-c2-correspondence-2026-11-08.md)
 records a separate identical-byte rebuild and one matching run of all 627 R0 raw
 cases, thirteen public-API observations and thirteen fresh followups. Independent
-actual-result review accepts this finite technical scope; successor harness CI
-remains pending. Store still admits only C1;
-independent update/rollback, benefit and activation remain open.
+actual-result review accepts this finite technical scope. The harness integration
+is a separate hosted check. The ordinary Store preparation path admits C1.
 
 The [first recovery shadow consumer](docs/plans/recovery-i1-first-shadow-2026-11-08.md)
 has default-off Store and process integration. Development tests exercise genuine
@@ -108,6 +107,13 @@ and independent execution review remain pending. PR81's first hosted run passed
 all canonical stages but failed the new watchdog case's subsequent fresh Save
 with `Unknown`; its cause remains unresolved. The diagnostic successor preserves
 that failure and the assertion. No full I1 or activation follows.
+
+The [independent update and rollback packet](docs/plans/recovery-shadow-update-2026-11-08.md)
+has focused Linux evidence from the real editor and Store. Three genuine
+recoveries used C1, C2 and restored C1 in sequence, with the original pins held
+through each in-flight selection change. A fresh Save succeeded with the same
+running editor. The new development path is opt-in. The hosted supplement,
+complete live-owner acceptance, practical benefit and activation remain separate.
 
 The default-off Linux process implementation merged through
 [PR52](https://github.com/whole-machine-works/RamenOS/pull/52) on November 5 as

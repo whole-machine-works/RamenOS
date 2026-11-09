@@ -136,13 +136,18 @@ fn genuine_lost_reply_terminal_and_fresh_save() {
         "actual terminal receipt retained"
     );
     assert_eq!(owner.borrow().1.recovery_shadow_record_count(), 0);
-    {
+    let fresh_result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
         let (f, app) = owner.borrow();
         shadow_support::app_until_at(f, app, NEW, true, 3);
         shadow_support::app_replace_at(f, app, b"note=next\n", 4);
         shadow_support::app_save_at(f, app, b"note=next\n", 4);
         assert_eq!(f.counts(101), (2, 2, 2));
         assert_eq!(selected_blob(f, 101), b"note=next\n");
+    }));
+    if let Err(payload) = fresh_result {
+        drop(pause);
+        drop(service);
+        owner.retain_failure_diagnostics(4, 5, payload);
     }
     drop(pause);
     drop(service);

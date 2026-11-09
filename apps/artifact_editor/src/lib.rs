@@ -27,3 +27,8 @@ pub use native::{NativeArtifactEditor, NativeEditorError};
 
 #[cfg(all(target_os = "linux", feature = "host_editor_process_v0_dev"))]
 pub use native::{ProcessArtifactEditor, ProcessEditorOpenFailure, ProcessOpenCleanup};
+#[cfg(all(
+    target_os = "linux",
+    feature = "host_editor_recovery_shadow_update_assertions_v0_dev"
+))]
+pub use native::{ShadowArmError, ShadowArmOutcome};
