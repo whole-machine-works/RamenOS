@@ -1,0 +1,27 @@
+--- a/hw/char/debugcon.c
++++ b/hw/char/debugcon.c
+@@ -32,6 +32,7 @@
+ #include "hw/qdev-properties.h"
+ #include "hw/qdev-properties-system.h"
+ #include "qom/object.h"
++#include "trace.h"
+ 
+ #define TYPE_ISA_DEBUGCON_DEVICE "isa-debugcon"
+ OBJECT_DECLARE_SIMPLE_TYPE(ISADebugconState, ISA_DEBUGCON_DEVICE)
+@@ -63,6 +64,7 @@
+ 
+     /* XXX this blocks entire thread. Rewrite to use
+      * qemu_chr_fe_write and background I/O callbacks */
++    trace_store0_debugcon_write(s, addr, width, ch);
+     qemu_chr_fe_write_all(&s->chr, &ch, 1);
+ }
+ 
+--- a/hw/char/trace-events
++++ b/hw/char/trace-events
+@@ -113,3 +113,6 @@
+ xen_console_realize(unsigned int idx, const char *chrdev) "idx %u chrdev %s"
+ xen_console_device_create(unsigned int idx) "idx %u"
+ xen_console_device_destroy(unsigned int idx) "idx %u"
++
++# debugcon.c
++store0_debugcon_write(void *debugcon, uint64_t offset, unsigned int width, unsigned int value) "debugcon %p offset 0x%" PRIx64 " width %u value 0x%02x"

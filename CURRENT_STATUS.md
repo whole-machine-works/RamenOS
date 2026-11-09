@@ -15,6 +15,13 @@ and [Changelog](CHANGELOG.md), outside routine agent intake.
 
 ## Execution state
 
+The [STORE0 Linux/QEMU Oracle](docs/plans/store0-linux-flush-oracle-v0.md)
+recorded a device write and FLUSH, clean guest shutdown and a read-only reopen
+of the same retained image in a fresh guest. The second boot read the expected
+bytes and the image remained unchanged across reopen. The next target step is
+to capture the modern PCI and queue initialization evidence needed for a real
+RamenOS block provider. Target I/O and Store persistence remain separate.
+
 The default-off UI1.1c host task reads an approved artifact, processes logical
 keyboard input, edits bounded text, renders offscreen frames, saves through typed
 Store authority and reconciles original outcomes through joined-owner reopen.
