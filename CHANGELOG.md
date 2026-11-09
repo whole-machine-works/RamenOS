@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## 2026-11-08 — Linux virtio block flush and reopen Oracle
+
+- Add a pinned, instrumented QEMU Oracle for one private scratch image. Verify
+  the actual write, typed FLUSH and used-ring publication before a distinct
+  read-only boot reads the retained bytes. Keep failed captures and owner
+  receipts for both successful boots.
+- Run focused owner and receiver checks in the existing quality tooling stage.
+  Keep the native block provider and Store persistence as separate gates.
+
 ## 2026-11-06 — RUN0 reset debugger capability
 
 - Add bounded, allowlisted RSP and an owned reset capability collector. Twenty-one

@@ -32,5 +32,7 @@ python3 tools/trace/test_run0_rsp_capability.py
 python3 tools/trace/test_run0_host_cpu_reader.py
 python3 tools/trace/test_run0_host_cpu_witness.py
 python3 tools/trace/test_run0_c0_decode.py
+python3 tools/trace/test_store0_oracle_owner.py
+python3 -m unittest discover -s tools/trace -p test_store0_oracle_evidence.py
 cargo test --locked -p idl_codegen --test content_stable
 printf '%s\n' 'FOUNDRY_CI_OPTIMIZATION: PASS scope=tooling'

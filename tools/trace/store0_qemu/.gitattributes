@@ -1,0 +1,2 @@
+# Preserve blank context lines in the exact reviewed unified patches.
+*.patch whitespace=-blank-at-eol

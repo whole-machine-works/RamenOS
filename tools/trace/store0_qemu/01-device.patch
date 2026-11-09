@@ -1,0 +1,45 @@
+--- a/hw/block/virtio-blk.c
++++ b/hw/block/virtio-blk.c
+@@ -144,6 +144,9 @@
+     VirtIOBlock *s = req->dev;
+ 
+     aio_context_acquire(blk_get_aio_context(s->conf.conf.blk));
++    trace_store0_virtio_blk_flush_return(VIRTIO_DEVICE(s), req,
++                                        virtio_get_queue_index(req->vq),
++                                        req->elem.index, ret);
+     if (ret) {
+         if (virtio_blk_handle_rw_error(req, -ret, 0, true)) {
+             goto out;
+@@ -500,6 +503,9 @@
+     if (mrb->is_write && mrb->num_reqs > 0) {
+         virtio_blk_submit_multireq(s, mrb);
+     }
++    trace_store0_virtio_blk_flush_submit(VIRTIO_DEVICE(s), req,
++                                        virtio_get_queue_index(req->vq),
++                                        req->elem.index);
+     blk_aio_flush(s->blk, virtio_blk_flush_complete, req);
+ }
+ 
+@@ -1438,6 +1444,10 @@
+                                                            VIRTIO_BLK_F_WCE));
+         aio_context_release(blk_get_aio_context(s->blk));
+     }
++
++    trace_store0_virtio_blk_driver_ready(vdev, status, vdev->host_features,
++                                        vdev->guest_features,
++                                        blk_enable_write_cache(s->blk));
+ }
+ 
+ static void virtio_blk_save_device(VirtIODevice *vdev, QEMUFile *f)
+--- a/hw/block/trace-events
++++ b/hw/block/trace-events
+@@ -46,6 +46,9 @@
+ 
+ # virtio-blk.c
+ virtio_blk_req_complete(void *vdev, void *req, int status) "vdev %p req %p status %d"
++store0_virtio_blk_driver_ready(void *vdev, unsigned int status, uint64_t offered, uint64_t accepted, bool writeback) "vdev %p status %u offered 0x%" PRIx64 " accepted 0x%" PRIx64 " writeback %d"
++store0_virtio_blk_flush_submit(void *vdev, void *req, unsigned int queue, unsigned int descriptor) "vdev %p req %p queue %u descriptor %u"
++store0_virtio_blk_flush_return(void *vdev, void *req, unsigned int queue, unsigned int descriptor, int ret) "vdev %p req %p queue %u descriptor %u ret %d"
+ virtio_blk_rw_complete(void *vdev, void *req, int ret) "vdev %p req %p ret %d"
+ virtio_blk_zone_report_complete(void *vdev, void *req, unsigned int nr_zones, int ret) "vdev %p req %p nr_zones %u ret %d"
+ virtio_blk_zone_mgmt_complete(void *vdev, void *req, int ret) "vdev %p req %p ret %d"
