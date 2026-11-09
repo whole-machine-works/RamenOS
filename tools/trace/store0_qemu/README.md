@@ -1,6 +1,6 @@
 # Instrumented QEMU for the STORE0 Linux Oracle
 
-Apply these three patches in order to a private copy of the upstream QEMU 8.2.2
+Apply the first three patches in order to a private copy of the upstream QEMU 8.2.2
 release. The verified source tarball has SHA-256
 `847346c1b82c1a54b2c38f6edbd85549edeb17430b7d4d3da12620e2962bc4f3`.
 Verify the release signature with the published QEMU release key and the patch
@@ -15,6 +15,12 @@ operations.
 - `03-used-ring.patch` records the existing split-ring element write result
   and direct writable guest RAM readbacks of the element and published index.
   The receiver rejects absent, indirect, or mismatched readbacks.
+
+Apply `04-modern-pci-init.patch` after those three for the separate modern
+initialization captures. It adds PCI config access widths and values, virtio
+common-register accesses, and a queue snapshot at the existing enable path.
+Writes are recorded as attempted accesses. The receiver joins the observed
+queue to a successful device read.
 
 Build in an empty directory beside the patched source. Supply the checked
 compiler, build dependencies, and `libfdt` headers and library in the build

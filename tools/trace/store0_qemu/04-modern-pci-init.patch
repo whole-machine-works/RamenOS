@@ -1,0 +1,88 @@
+--- a/hw/pci/pci_host.c
++++ b/hw/pci/pci_host.c
+@@ -93,6 +93,9 @@
+     trace_pci_cfg_write(pci_dev->name, pci_dev_bus_num(pci_dev),
+                         PCI_SLOT(pci_dev->devfn),
+                         PCI_FUNC(pci_dev->devfn), addr, val);
++    trace_store0_pci_cfg_write(pci_dev, pci_dev_bus_num(pci_dev),
++                               PCI_SLOT(pci_dev->devfn), PCI_FUNC(pci_dev->devfn),
++                               addr, MIN(len, limit - addr), val);
+     pci_dev->config_write(pci_dev, addr, val, MIN(len, limit - addr));
+ }
+ 
+@@ -119,6 +122,9 @@
+     trace_pci_cfg_read(pci_dev->name, pci_dev_bus_num(pci_dev),
+                        PCI_SLOT(pci_dev->devfn),
+                        PCI_FUNC(pci_dev->devfn), addr, ret);
++    trace_store0_pci_cfg_read(pci_dev, pci_dev_bus_num(pci_dev),
++                              PCI_SLOT(pci_dev->devfn), PCI_FUNC(pci_dev->devfn),
++                              addr, MIN(len, limit - addr), ret);
+ 
+     return ret;
+ }
+--- a/hw/pci/trace-events
++++ b/hw/pci/trace-events
+@@ -8,6 +8,8 @@
+ # pci_host.c
+ pci_cfg_read(const char *dev, uint32_t bus, uint32_t slot, uint32_t func, unsigned offs, unsigned val) "%s %02x:%02x.%x @0x%x -> 0x%x"
+ pci_cfg_write(const char *dev, uint32_t bus, uint32_t slot, uint32_t func, unsigned offs, unsigned val) "%s %02x:%02x.%x @0x%x <- 0x%x"
++store0_pci_cfg_read(void *pdev, unsigned int bus, unsigned int slot, unsigned int func, unsigned int offset, unsigned int size, unsigned int value) "pdev=%p bus=%u slot=%u func=%u offset=0x%x size=%u value=0x%x"
++store0_pci_cfg_write(void *pdev, unsigned int bus, unsigned int slot, unsigned int func, unsigned int offset, unsigned int size, unsigned int value) "pdev=%p bus=%u slot=%u func=%u offset=0x%x size=%u value=0x%x"
+ 
+ # msix.c
+ msix_write_config(char *name, bool enabled, bool masked) "dev %s enabled %d masked %d"
+--- a/hw/virtio/virtio-pci.c
++++ b/hw/virtio/virtio-pci.c
+@@ -1531,6 +1531,8 @@
+         val = 0;
+     }
+ 
++    trace_store0_virtio_pci_common_read(&proxy->pci_dev, vdev, addr, size,
++                                        val, vdev->queue_sel);
+     return val;
+ }
+ 
+@@ -1545,6 +1547,8 @@
+         return;
+     }
+ 
++    trace_store0_virtio_pci_common_write(&proxy->pci_dev, vdev, addr, size,
++                                         val, vdev->queue_sel);
+     switch (addr) {
+     case VIRTIO_PCI_COMMON_DFSELECT:
+         proxy->dfselect = val;
+@@ -1614,6 +1618,7 @@
+         break;
+     case VIRTIO_PCI_COMMON_Q_ENABLE:
+         if (val == 1) {
++            uint16_t selected = vdev->queue_sel;
+             virtio_queue_set_num(vdev, vdev->queue_sel,
+                                  proxy->vqs[vdev->queue_sel].num);
+             virtio_queue_set_rings(vdev, vdev->queue_sel,
+@@ -1626,6 +1631,13 @@
+             proxy->vqs[vdev->queue_sel].enabled = 1;
+             proxy->vqs[vdev->queue_sel].reset = 0;
+             virtio_queue_enable(vdev, vdev->queue_sel);
++            trace_store0_virtio_pci_queue_ready(
++                &proxy->pci_dev, vdev, virtio_get_queue(vdev, selected),
++                selected, virtio_queue_get_num(vdev, selected),
++                virtio_queue_get_desc_addr(vdev, selected),
++                virtio_queue_get_avail_addr(vdev, selected),
++                virtio_queue_get_used_addr(vdev, selected),
++                proxy->vqs[selected].enabled, vdev->status);
+         } else {
+             virtio_error(vdev, "wrong value for queue_enable %"PRIx64, val);
+         }
+--- a/hw/virtio/trace-events
++++ b/hw/virtio/trace-events
+@@ -68,6 +68,10 @@
+ vhost_vdpa_set_config_call(void *dev, int fd)"dev: %p fd: %d"
+ 
+ # virtio.c
++# STORE0 modern PCI common-configuration observation.
++store0_virtio_pci_common_read(void *pdev, void *vdev, uint64_t offset, unsigned int size, uint64_t value, unsigned int selected) "pdev=%p vdev=%p offset=0x%"PRIx64" size=%u value=0x%"PRIx64" selected=%u"
++store0_virtio_pci_common_write(void *pdev, void *vdev, uint64_t offset, unsigned int size, uint64_t value, unsigned int selected) "pdev=%p vdev=%p offset=0x%"PRIx64" size=%u value=0x%"PRIx64" selected=%u"
++store0_virtio_pci_queue_ready(void *pdev, void *vdev, void *vq, unsigned int queue, unsigned int size, uint64_t desc, uint64_t avail, uint64_t used, bool enabled, unsigned int status) "pdev=%p vdev=%p vq=%p queue=%u size=%u desc=0x%"PRIx64" avail=0x%"PRIx64" used=0x%"PRIx64" enabled=%d status=%u"
+ # STORE0 split-ring observation only. Gap codes are described in the handoff.
+ store0_used_element(void *vdev, void *vq, const void *elem, unsigned int queue, unsigned int id, unsigned int slot, unsigned int old_idx, int result, bool direct, bool matches) "vdev=%p vq=%p elem=%p queue=%u id=%u slot=%u old=%u result=%d direct=%d matches=%d"
+ store0_used_index(void *vdev, void *vq, unsigned int queue, unsigned int old_idx, unsigned int new_idx, bool direct, bool matches) "vdev=%p vq=%p queue=%u old=%u new=%u direct=%d matches=%d"

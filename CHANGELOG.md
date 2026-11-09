@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## 2026-11-08 — modern PCI configuration and queue observation
+
+- Capture the actual virtio-blk PCI configuration and operative split queue in a
+  read-only Linux guest. Verify all 256 guest config bytes against device
+  callbacks and join the queue to the marked read and unchanged image.
+- Add focused host and Linux guest-helper controls to the existing quality lane.
+  Keep the original write and reopen profile and native device gates separate.
+
 ## 2026-11-08 — Linux virtio block flush and reopen Oracle
 
 - Add a pinned, instrumented QEMU Oracle for one private scratch image. Verify
