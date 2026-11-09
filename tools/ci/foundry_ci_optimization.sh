@@ -34,5 +34,16 @@ python3 tools/trace/test_run0_host_cpu_witness.py
 python3 tools/trace/test_run0_c0_decode.py
 python3 tools/trace/test_store0_oracle_owner.py
 python3 -m unittest discover -s tools/trace -p test_store0_oracle_evidence.py
+python3 -B -m unittest discover -s tools/trace -p 'test_*modern_init*.py'
+python3 -B -m unittest discover -s tools/trace -p test_store0_pci_snapshot_evidence.py
+if [[ "$(uname -s)" == Linux ]]; then
+  (
+    output=$(mktemp -d)
+    trap 'rm -f "$output/store0-pci-snapshot"; rmdir "$output"' EXIT
+    cc -std=c11 -O2 -Wall -Wextra -Werror -Wpedantic \
+      tools/trace/test_store0_pci_snapshot.c -o "$output/store0-pci-snapshot"
+    "$output/store0-pci-snapshot"
+  )
+fi
 cargo test --locked -p idl_codegen --test content_stable
 printf '%s\n' 'FOUNDRY_CI_OPTIMIZATION: PASS scope=tooling'

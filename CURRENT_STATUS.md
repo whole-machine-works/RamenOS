@@ -18,9 +18,11 @@ and [Changelog](CHANGELOG.md), outside routine agent intake.
 The [STORE0 Linux/QEMU Oracle](docs/plans/store0-linux-flush-oracle-v0.md)
 recorded a device write and FLUSH, clean guest shutdown and a read-only reopen
 of the same retained image in a fresh guest. The second boot read the expected
-bytes and the image remained unchanged across reopen. The next target step is
-to capture the modern PCI and queue initialization evidence needed for a real
-RamenOS block provider. Target I/O and Store persistence remain separate.
+bytes and the image remained unchanged across reopen. A separate
+[modern PCI Oracle](docs/plans/store0-modern-pci-init-v0.md) now joins the
+device's actual config bytes, BAR spans and split-queue setup to a read on that
+queue. Use it to define the native PCI decoder and exclusive device owner.
+Native I/O and Store persistence remain separate.
 
 The default-off UI1.1c host task reads an approved artifact, processes logical
 keyboard input, edits bounded text, renders offscreen frames, saves through typed
